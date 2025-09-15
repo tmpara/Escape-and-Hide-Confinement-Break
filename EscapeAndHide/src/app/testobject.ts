@@ -1,10 +1,11 @@
 import * as PIXI from 'pixi.js';
 
-export class Player {
+export class TestObject {
   id: string;
   sprite: PIXI.Graphics;
   gridX: number;
   gridY: number;
+  hasCollision = true;
 
   constructor(id: string, x: number, y: number) {
     this.id = id;
@@ -12,10 +13,10 @@ export class Player {
     this.gridY = y;
 
     this.sprite = new PIXI.Graphics();
-    this.sprite.beginFill(0x0000ff); // blue
+    this.sprite.beginFill(0xff0000); // red
     this.sprite.drawRect(0, 0, 32, 32);
     this.sprite.endFill();
-    this.sprite._zIndex = 1
+    this.sprite._zIndex = 0.5;
 
     this.updatePosition();
   }

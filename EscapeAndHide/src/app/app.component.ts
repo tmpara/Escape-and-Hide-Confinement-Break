@@ -20,8 +20,7 @@ export class GameComponent implements AfterViewInit {
     await this.gameController.init(this.containerRef.nativeElement);
 
     this.gameController.addLocalPlayer('player1', 1, 1);
-    this.gameController.grid.addObstacle(2, 1);
-    this.gameController.grid.addObstacle(1, 2);
+    this.gameController.addTestObject('box', 4, 4);
   }
 
 }
