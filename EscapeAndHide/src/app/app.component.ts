@@ -1,13 +1,26 @@
-import { Component } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { AfterViewInit, ViewChild, ElementRef, Component } from '@angular/core';
+import { GameController } from './game.controller'; // adjust path
+import * as PIXI from 'pixi.js';
 
 @Component({
-  selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet],
-  templateUrl: './app.component.html',
-  styleUrl: './app.component.css'
+  selector: 'app-game',
+  template: `<div #gameContainer></div>`,
+  styles: [`
+    div {
+   
+    }
+  `]
 })
-export class AppComponent {
-  title = 'EscapeAndHide';
+export class GameComponent implements AfterViewInit {
+  @ViewChild('gameContainer', { static: true }) containerRef!: ElementRef;
+  gameController = new GameController();
+
+  async ngAfterViewInit(): Promise<void> {
+    await this.gameController.init(this.containerRef.nativeElement);
+
+    this.gameController.addLocalPlayer('player1', 1, 1);
+    this.gameController.addTestObject('box', 4, 4);
+  }
+
 }
