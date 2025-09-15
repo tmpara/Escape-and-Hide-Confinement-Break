@@ -1,6 +1,7 @@
 import { Application } from 'pixi.js';
 import { GameGrid } from './grid';
 import { Player } from './player';
+import { TestObject } from './testobject';
 import * as PIXI from 'pixi.js';
 
 export class GameController {
@@ -29,12 +30,17 @@ export class GameController {
 
 
   addLocalPlayer(id: string, x: number, y: number) {
-  const player = new Player(id, x, y);
-  this.app.stage.addChild(player.sprite);
-  this.players.set(id, player);
-  this.grid.addPlayer(id, x, y);
-  this.localPlayerId = id;
-}
+    const player = new Player(id, x, y);
+    this.app.stage.addChild(player.sprite);
+    this.players.set(id, player);
+    this.grid.addPlayer(id, x, y);
+    this.localPlayerId = id;
+  }
+
+  addTestObject(id: string, x: number, y: number) {
+    const testObject = new TestObject(id, x, y);
+    this.app.stage.addChild(testObject.sprite);
+  }
 
   setupInputHandlers(): void {
     window.addEventListener('keydown', (e) => this.handleKey(e));
