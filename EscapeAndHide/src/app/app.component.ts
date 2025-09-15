@@ -14,7 +14,7 @@ export class AppComponent {
     canvas!: ElementRef;
 
     ngAfterViewInit() {
-      
+
         let ctx = this.canvas.nativeElement.getContext('2d');
 
         let gameOver: boolean = false;
@@ -34,7 +34,7 @@ export class AppComponent {
 
         function drawPlayer() {
             ctx.fillStyle = 'black';
-            ctx.fillRect(player.x, player.y, 20, 10);
+            ctx.fillRect(player.x, player.y, 20, 20);
         };
 
         function changeDirection(event: any) {
@@ -52,7 +52,7 @@ export class AppComponent {
             }
             else if (keyPressed == UP) {
                 xVelocity = 0;
-                yVelocity = -10;
+                yVelocity = -20;
                 movePlayer();
             }
             else if (keyPressed == RIGHT) {
@@ -62,7 +62,7 @@ export class AppComponent {
             }
             else if (keyPressed == DOWN) {
                 xVelocity = 0;
-                yVelocity = 10;
+                yVelocity = 20;
                 movePlayer();
             }
         };
