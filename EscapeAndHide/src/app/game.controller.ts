@@ -21,7 +21,7 @@ export class GameController {
 
     container.appendChild(this.app.renderer.view.canvas as unknown as HTMLCanvasElement);
 
-    this.grid = new GameGrid(10, 10);
+    this.grid = new GameGrid(64, 64);
     this.players = new Map();
 
     this.drawGrid();
@@ -37,9 +37,11 @@ export class GameController {
     this.localPlayerId = id;
   }
 
-  addTestObject(id: string, x: number, y: number) {
-    const testObject = new TestObject(id, x, y);
-    this.app.stage.addChild(testObject.sprite);
+  addObject(x: number, y: number) {
+    const testObject = new TestObject();
+    testObject.tile.spawn(x,y);
+    this.app.stage.addChild(testObject.tile.sprite);
+    this.grid.addObject(testObject, x, y);
   }
 
   setupInputHandlers(): void {
