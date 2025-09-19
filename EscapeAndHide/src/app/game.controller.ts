@@ -37,9 +37,11 @@ export class GameController {
     this.localPlayerId = id;
   }
 
-  addTestObject(x: number, y: number) {
-    const testObject = new TestObject(x, y);
-    this.app.stage.addChild(testObject.sprite);
+  addObject(x: number, y: number) {
+    const testObject = new TestObject();
+    testObject.tile.spawn(x,y);
+    this.app.stage.addChild(testObject.tile.sprite);
+    this.grid.addObject(testObject, x, y);
   }
 
   setupInputHandlers(): void {

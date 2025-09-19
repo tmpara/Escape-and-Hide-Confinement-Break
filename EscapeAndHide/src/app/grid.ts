@@ -1,13 +1,17 @@
+import { TestObject } from "./testobject";
+
 export class GameGrid {
   width: number;
   height: number;
   obstacles: Set<string>; // Set of "x,y"
+  objects: Map<{x: number; y: number }, TestObject>;
   players: Map<string, { x: number; y: number }>; // playerId => position
 
   constructor(width = 64, height = 64) {
     this.width = width;
     this.height = height;
     this.obstacles = new Set();
+    this.objects = new Map();
     this.players = new Map();
   }
 
@@ -17,6 +21,7 @@ export class GameGrid {
 
   isBlocked(x: number, y: number): boolean {
     if (x < 0 || y < 0 || x >= this.width || y >= this.height) return true;
+    if (this.objects.get({ x, y })?.tile.hasCollision == true) return true
     return this.obstacles.has(this.posKey(x, y)) ||
            [...this.players.values()].some(p => p.x === x && p.y === y);
   }
@@ -24,6 +29,12 @@ export class GameGrid {
   addPlayer(id: string, x: number, y: number): boolean {
     if (this.isBlocked(x, y)) return false;
     this.players.set(id, { x, y });
+    return true;
+  }
+
+  addObject(object: TestObject, x: number, y: number): boolean {
+    if (this.isBlocked(x, y)) return false;
+    this.objects.set({ x, y },object);
     return true;
   }
 
