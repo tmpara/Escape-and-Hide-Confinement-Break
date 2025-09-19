@@ -21,7 +21,7 @@ export class GameController {
 
     container.appendChild(this.app.renderer.view.canvas as unknown as HTMLCanvasElement);
 
-    this.grid = new GameGrid(64, 64);
+    this.grid = new GameGrid(32, 32);
     this.players = new Map();
 
     this.drawGrid();
