@@ -1,47 +1,42 @@
+import { Player } from "./player";
+import { Tile } from "./Tile";
 export class GameGrid {
   width: number;
   height: number;
-  obstacles: Set<string>; // Set of "x,y"
-  players: Map<string, { x: number; y: number }>; // playerId => position
+  Tiles:Tile[][];
 
-  constructor(width = 64, height = 64) {
+  constructor(width: number, height: number) {
     this.width = width;
     this.height = height;
-    this.obstacles = new Set();
-    this.players = new Map();
+    this.Tiles = new Array();
+    
+
   }
 
-  posKey(x: number, y: number): string {
-    return `${x},${y}`;
+  CreateEmptyMap(){
+    for(let x=0;x<=this.width;x++){
+      this.Tiles[x] = new Array();
+      for(let y=0;y<=this.height;y++){
+        this.Tiles[x][y] = new Tile(false,"",false,null,null);
+    }
+    }
+  }
+  
+  CreateMap(){
+
   }
 
-  isBlocked(x: number, y: number): boolean {
-    if (x < 0 || y < 0 || x >= this.width || y >= this.height) return true;
-    return this.obstacles.has(this.posKey(x, y)) ||
-           [...this.players.values()].some(p => p.x === x && p.y === y);
+  
+
+  CreatePlayer(x: number, y:number, id:string){
+    this.Tiles[x][y].entity = new Player(x,y,id);
   }
 
-  addPlayer(id: string, x: number, y: number): boolean {
-    if (this.isBlocked(x, y)) return false;
-    this.players.set(id, { x, y });
-    return true;
+  LoadPlayer(x: number, y:number, player: Player){
+    this.Tiles[x][y].entity = player;
   }
 
-  movePlayer(id: string, dx: number, dy: number): boolean {
-    const player = this.players.get(id);
-    if (!player) return false;
 
-    const newX = player.x + dx;
-    const newY = player.y + dy;
 
-    if (this.isBlocked(newX, newY)) return false;
 
-    player.x = newX;
-    player.y = newY;
-    return true;
-  }
-
-  addObstacle(x: number, y: number): void {
-    this.obstacles.add(this.posKey(x, y));
-  }
 }

@@ -1,114 +1,138 @@
-import { Application } from 'pixi.js';
+import { Application, Graphics, Container } from 'pixi.js';
 import { GameGrid } from './grid';
 import { Player } from './player';
-import { TestObject } from './testobject';
-import * as PIXI from 'pixi.js';
+
+
 
 export class GameController {
   app!: Application;
-  grid!: GameGrid;
-  players!: Map<string, Player>;
-  localPlayerId!: string;
+  map!: GameGrid;
+  player1 = new Player(1, 1, "1");
+  gridContainer = new Container();
+  playerSprite = new Graphics();
 
-  constructor() {
-    // Nothing in constructor now
-  }
+  tileSize = 40; // Size of each tile in pixels
+
+  constructor() {}
 
   async init(container: HTMLDivElement): Promise<void> {
-    this.app = new Application({ width: 320, height: 320 });
-
-    await this.app.init(); // ✅ Wait for Pixi to be ready
-
-    container.appendChild(this.app.renderer.view.canvas as unknown as HTMLCanvasElement);
-
-    this.grid = new GameGrid(10, 10);
-    this.players = new Map();
-
-    this.drawGrid();
-    this.setupInputHandlers();
-  }
-
-
-  addLocalPlayer(id: string, x: number, y: number) {
-    const player = new Player(id, x, y);
-    this.app.stage.addChild(player.sprite);
-    this.players.set(id, player);
-    this.grid.addPlayer(id, x, y);
-    this.localPlayerId = id;
-  }
-
-  addTestObject(id: string, x: number, y: number) {
-    const testObject = new TestObject(id, x, y);
-    this.app.stage.addChild(testObject.sprite);
-  }
-
-  setupInputHandlers(): void {
-    window.addEventListener('keydown', (e) => this.handleKey(e));
-
-    // Pixi v7+ input handling
-    this.app.stage.eventMode = 'static';
-    this.app.stage.hitArea = this.app.screen;
-
-    this.app.stage.on('pointerdown', (event) => {
-      const pos = event.getLocalPosition(this.app.stage);
-      const gridX = Math.floor(pos.x / 32);
-      const gridY = Math.floor(pos.y / 32);
-      this.tryMoveTo(gridX, gridY);
+    // Create PIXI app
+    this.app = new Application();
+    await this.app.init({
+      width: 400,
+      height: 400,
+      backgroundColor: 0x222222,
+      antialias: true,
     });
+    container.appendChild(this.app.canvas as HTMLCanvasElement);
+
+    // Create map and player
+    this.map = new GameGrid(10, 10);
+    this.map.CreateEmptyMap();
+    this.map.LoadPlayer(1, 1, this.player1);
+
+    // Draw grid and player
+    this.drawGrid();
+    this.drawPlayer();
+
+    // Add containers to stage
+    this.app.stage.addChild(this.gridContainer);
+    this.app.stage.addChild(this.playerSprite);
+
+    // Listen for movement
+    this.listenForMovement(this.player1);
+
+    // Start game loop
+    this.gameLoop();
   }
 
-  handleKey(e: KeyboardEvent): void {
-    const directions: { [key: string]: [number, number] } = {
-      ArrowUp: [0, -1],
-      ArrowDown: [0, 1],
-      ArrowLeft: [-1, 0],
-      ArrowRight: [1, 0],
-    };
-
-    const move = directions[e.key];
-    if (!move) return;
-
-    if (this.grid.movePlayer(this.localPlayerId, move[0], move[1])) {
-      const p = this.players.get(this.localPlayerId);
-      const gridPos = this.grid.players.get(this.localPlayerId)!;
-      p?.setGridPosition(gridPos.x, gridPos.y);
-    }
-  }
-
-  tryMoveTo(x: number, y: number): void {
-    const player = this.grid.players.get(this.localPlayerId);
-    if (!player) return;
-
-    const dx = x - player.x;
-    const dy = y - player.y;
-
-    if ((Math.abs(dx) === 1 && dy === 0) || (Math.abs(dy) === 1 && dx === 0)) {
-      if (this.grid.movePlayer(this.localPlayerId, dx, dy)) {
-        const p = this.players.get(this.localPlayerId);
-        const gridPos = this.grid.players.get(this.localPlayerId)!;
-        p?.setGridPosition(gridPos.x, gridPos.y);
+  drawGrid() {
+    this.gridContainer.removeChildren();
+    for (let x = 0; x < this.map.width; x++) {
+      for (let y = 0; y < this.map.height; y++) {
+        const tile = new Graphics();
+        tile.lineStyle(1, 0x888888);
+        tile.beginFill(this.map.Tiles[x][y].hasCollision ? 0x444444 : 0xcccccc);
+        tile.drawRect(
+          x * this.tileSize,
+          y * this.tileSize,
+          this.tileSize,
+          this.tileSize
+        );
+        tile.endFill();
+        this.gridContainer.addChild(tile);
       }
     }
   }
-  drawGrid(): void {
-  const lineColor = 0xcccccc;
-  const tileSize = 32;
-  const gridSize = 10;
 
-  const gridGraphics = new PIXI.Graphics();
-  gridGraphics.lineStyle(1, lineColor);
-
-  for (let i = 0; i <= gridSize; i++) {
-    // Vertical lines
-    gridGraphics.moveTo(i * tileSize, 0);
-    gridGraphics.lineTo(i * tileSize, gridSize * tileSize);
-
-    // Horizontal lines
-    gridGraphics.moveTo(0, i * tileSize);
-    gridGraphics.lineTo(gridSize * tileSize, i * tileSize);
+  drawPlayer() {
+    this.playerSprite.clear();
+    this.playerSprite.beginFill(0x00ff00);
+    this.playerSprite.drawCircle(
+      this.player1.PosX * this.tileSize + this.tileSize / 2,
+      this.player1.PosY * this.tileSize + this.tileSize / 2,
+      this.tileSize / 3
+    );
+    this.playerSprite.endFill();
   }
 
-  this.app.stage.addChild(gridGraphics);
-}
+  gameLoop() {
+    // Redraw player at new position
+    this.drawPlayer();
+    requestAnimationFrame(() => this.gameLoop());
+  }
 
+  TryToMovePlayer(player: Player, targetX: number, targetY: number) {
+    let playerPosX = player.PosX;
+    let playerPosY = player.PosY;
+
+    let deltaX = Math.abs(targetX - playerPosX);
+    let deltaY = Math.abs(targetY - playerPosY);
+
+    // Bounds and collision check
+    if (
+      targetX < 0 ||
+      targetY < 0 ||
+      targetX >= this.map.width ||
+      targetY >= this.map.height ||
+      this.map.Tiles[targetX][targetY].hasCollision ||
+      deltaX + deltaY > 1
+    ) {
+      console.log("Collision detected or too far away or out of bounds");
+      
+    }
+    else{
+
+    this.map.Tiles[playerPosX][playerPosY].entity = null;
+    player.PosX = targetX;
+    player.PosY = targetY;
+    this.map.Tiles[targetX][targetY].entity = player;
+    }
+  }
+
+  listenForMovement(player: Player) {
+    window.addEventListener('keydown', (event) => {
+      let targetX = player.PosX;
+      let targetY = player.PosY;
+
+      switch (event.key.toLowerCase()) {
+        case 'w':
+          targetY -= 1;
+          break;
+        case 'a':
+          targetX -= 1;
+          break;
+        case 's':
+          targetY += 1;
+          break;
+        case 'd':
+          targetX += 1;
+          break;
+        default:
+          return;
+      }
+
+      this.TryToMovePlayer(player, targetX, targetY);
+    });
+  }
 }
