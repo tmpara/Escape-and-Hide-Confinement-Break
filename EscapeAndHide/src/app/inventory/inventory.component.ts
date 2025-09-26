@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, ElementRef, ViewChild } from '@angular/core';
 import { Item } from './item';
+import { Inventory } from './inventory';
 import * as PIXI from 'pixi.js';
 @Component({
   selector: 'app-inventory',
@@ -9,9 +10,9 @@ import * as PIXI from 'pixi.js';
   styleUrl: './inventory.component.css',
 })
 export class InventoryComponent {
+  @ViewChild('inventoryContainer', { static: true}) containerRef!: ElementRef<HTMLDivElement>;
   app!: PIXI.Application;
-
-  items: Item[] = [];
+  inventory: Inventory = new Inventory();
 
   async ngAfterViewInit() {
     this.app = new PIXI.Application();
@@ -20,21 +21,21 @@ export class InventoryComponent {
       height: 800,
       backgroundColor: 0x1099bb,
     });
-    document.body.append(this.app.canvas);
+    this.containerRef.nativeElement.appendChild(this.app.canvas);
     this.display();
   }
 
   display() {
     this.app.stage.removeChildren();
-    for (let i = 0; i < this.items.length; i++) {
-      this.items[i].displayed = false;
+    for (let i = 0; i < this.inventory.items.length; i++) {
+      this.inventory.items[i].displayed = false;
     }
 
-    for (let i = 0; i < this.items.length; i++) {
-      if (!this.items[i].displayed) {
-        this.items[i].displayed = true;
+    for (let i = 0; i < this.inventory.items.length; i++) {
+      if (!this.inventory.items[i].displayed) {
+        this.inventory.items[i].displayed = true;
         const text = new PIXI.Text({
-          text: this.items[i].name,
+          text: this.inventory.items[i].name,
           style: {
             fontFamily: 'Arial',
             fontSize: 28,
@@ -52,12 +53,12 @@ export class InventoryComponent {
   }
 
   pickUp(itemName: string) {
-    this.items.push(new Item(itemName, false));
+    this.inventory.addItem(itemName);
     this.display();
   }
+
   drop(itemIndex: number) {
-    this.items.splice(itemIndex, 1);
-    this.app.stage.removeChildren(itemIndex, itemIndex + 1);
+    this.inventory.removeItem(itemIndex);
     this.display();
   }
 }
