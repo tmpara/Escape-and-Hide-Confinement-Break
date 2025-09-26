@@ -1,3 +1,4 @@
+import { Health } from "./health/health";
 import { Player } from "./player";
 import { Tile } from "./Tile";
 export class GameGrid {
@@ -29,7 +30,7 @@ export class GameGrid {
   
 
   CreatePlayer(x: number, y:number, id:string){
-    this.Tiles[x][y].entity = new Player(x,y,id);
+    this.Tiles[x][y].entity = new Player(x,y,id, new Health(5.00, 5.00));
   }
 
   LoadPlayer(x: number, y:number, player: Player){
