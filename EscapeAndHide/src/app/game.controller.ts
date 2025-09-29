@@ -9,7 +9,7 @@ import { effect } from '@angular/core';
 export class GameController {
   app!: Application;
   map!: GameGrid;
-  player1 = new Player(1, 1, "1");
+  player1 = new Player(1, 1, "1" , new Health(5.00, 4.00));
   gridContainer = new Container();
   playerSprite = new Graphics();
 
