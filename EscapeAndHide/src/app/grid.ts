@@ -26,6 +26,11 @@ export class GameGrid {
 
   }
 
+  addTileEffect(x:number,y:number,effect:string){
+    this.Tiles[x][y].effect = effect;
+    
+  }
+
   
 
   CreatePlayer(x: number, y:number, id:string){
