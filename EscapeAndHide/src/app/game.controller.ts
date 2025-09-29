@@ -1,13 +1,14 @@
 import { Application, Graphics, Container } from 'pixi.js';
 import { GameGrid } from './grid';
 import { Player } from './player';
-
-
+import { Items } from './inventory/items';
+import { inventoryRendering } from './inventory/inventoryRendering';
 
 export class GameController {
   app!: Application;
   map!: GameGrid;
-  player1 = new Player(1, 1, "1");
+  inventory!: inventoryRendering;
+  player1 = new Player(1, 1, '1');
   gridContainer = new Container();
   playerSprite = new Graphics();
 
@@ -30,6 +31,8 @@ export class GameController {
     this.map = new GameGrid(10, 10);
     this.map.CreateEmptyMap();
     this.map.LoadPlayer(1, 1, this.player1);
+
+    this.map.SpawnItem(1, 2, new Items().gun);
 
     // Draw grid and player
     this.drawGrid();
@@ -98,16 +101,19 @@ export class GameController {
       this.map.Tiles[targetX][targetY].hasCollision ||
       deltaX + deltaY > 1
     ) {
-      console.log("Collision detected or too far away or out of bounds");
-      
-    }
-    else{
+      console.log('Collision detected or too far away or out of bounds');
+    } else {
+      this.map.Tiles[playerPosX][playerPosY].entity = null;
+      player.PosX = targetX;
+      player.PosY = targetY;
+      this.map.Tiles[targetX][targetY].entity = player;
 
-    this.map.Tiles[playerPosX][playerPosY].entity = null;
-    player.PosX = targetX;
-    player.PosY = targetY;
-    this.map.Tiles[targetX][targetY].entity = player;
+      this.checkTileForItem(player);
     }
+  }
+
+  checkTileForItem(player: Player) {
+    this.inventory.checkForItem(player.PosX, player.PosY);
   }
 
   listenForMovement(player: Player) {

@@ -1,17 +1,24 @@
-import { Item } from "./item";
+import { Item } from './item';
 
 export class Inventory {
-    items: Item[] = [];
+  items: Item[] = [];
+  maxItems: number = 10;
 
-    addItem(itemName: string) {
-        this.items.push(new Item(itemName, false));
-    }
+  constructor() {}
 
-    removeItem(itemIndex: number) {
-        this.items.splice(itemIndex, 1);
+  addItem(itemName: string, itemCategory: string) {
+    if (this.items.length < this.maxItems) {
+      this.items.push(new Item(itemName, itemCategory, false));
+    } else {
+      alert('Inventory full');
     }
-    
-    getItems(): Item[] {
-        return this.items;
-    }
+  }
+
+  removeItem(itemIndex: number) {
+    this.items.splice(itemIndex, 1);
+  }
+
+  getItems(): Item[] {
+    return this.items;
+  }
 }
