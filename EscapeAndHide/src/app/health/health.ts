@@ -27,7 +27,6 @@ export class Health{
             }else{
                 this.Dot -= this.Regeneration;
             }
-
         }else{
             if(this.currentHealth + this.Regeneration < this.maxHealth){
             this.currentHealth += this.Regeneration;
@@ -36,7 +35,4 @@ export class Health{
             }
         }
     }
-    
-
-
 }

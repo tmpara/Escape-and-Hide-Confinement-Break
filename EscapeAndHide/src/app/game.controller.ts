@@ -4,16 +4,18 @@ import { Player } from './player';
 import { Health } from './health/health';
 import * as PIXI from 'pixi.js';
 import { Text, TextStyle, Assets } from 'pixi.js';
+import { Energy } from './energy/energy';
 
 export class GameController {
   app!: Application;
   map!: GameGrid;
-  player1 = new Player(1, 1, "1", new Health(5.00, 4.00));
+  player1 = new Player(1, 1, "1", new Health(5.00, 4.00), new Energy(100,100));
   gridContainer = new Container();
   playerSprite = new Graphics();
   healthBar = new Graphics();
+  energyBar = new Graphics();
 
-  tileSize = 40; // Size of each tile in pixels
+  tileSize = 64; // Size of each tile in pixels
 
   constructor() {}
 
@@ -21,16 +23,15 @@ export class GameController {
     // Create PIXI app
     this.app = new Application();
     await this.app.init({
-      width: 1000,
-      height: 1000,
+      width: 896,
+      height: 896,
       backgroundColor: 0x222222,
       antialias: true,
     });
     container.appendChild(this.app.canvas as HTMLCanvasElement);
 
     // Create map and player
-    this.map = new GameGrid(10, 10);
-    this.map.CreateEmptyMap();
+    this.GenerateRoom();
     this.map.LoadPlayer(1, 1, this.player1);
 
     // Draw grid and player
@@ -38,45 +39,39 @@ export class GameController {
     this.drawGrid();
     this.drawPlayer();
     this.drawHealthBar();
+    this.drawEnergyBar();
     // Add containers to stage
     this.app.stage.addChild(this.gridContainer);
     this.app.stage.addChild(this.playerSprite);
     this.app.stage.addChild(this.healthBar);
+    this.app.stage.addChild(this.energyBar);
 
     // Listen for movement
     this.listenForMovement(this.player1);
+    this.listenForInput(this.player1);
 
     // Start game loop
     this.gameLoop();
 
+  }
 
+  GenerateRoom(){
+    this.map = new GameGrid(14,14);
+    this.map.CreateEmptyMap()
+    this.map.CreateMap()
+  }
 
-   
-    
+  GenerateRandomNumber(min: number, max: number){
+    return Math.floor(Math.random() * (max - min + 1) + min);
   }
   
-  
   drawHealthBar() {
- 
-    
-
-
-  const myText = new Text({
-    text: '' + this.player1.health.currentHealth,
-    style: {
-      fill: '#ffffff',
-      fontSize: 36,
-    },
-    anchor: 0.5,
-    x:100,
-    y:50
-  });
 
     this.healthBar.removeChild();
     const barWidth = 200;
     const barHeight = 20;
     const x = 10;
-    const y = 500;
+    const y = 830;
 
     // Background
     this.healthBar.beginFill(0x555555);
@@ -88,8 +83,7 @@ export class GameController {
 
     this.healthBar.beginFill(0xff0000);
     this.healthBar.drawRect(x, y, barWidth * healthPercentage, barHeight);
-    this.healthBar.addChild(myText);
-   
+    
     this.healthBar.endFill();
 
     // DOT effect
@@ -99,6 +93,29 @@ export class GameController {
       this.healthBar.drawRect(x + barWidth * healthPercentage, y, barWidth * dotPercentage, barHeight);
       this.healthBar.endFill();
     }
+  }
+
+  drawEnergyBar() {
+
+    this.energyBar.removeChild();
+    const barWidth = 200;
+    const barHeight = 20;
+    const x = 10;
+    const y = 860;
+
+    // Background
+    this.energyBar.beginFill(0x555555);
+    this.energyBar.drawRect(x, y, barWidth, barHeight);
+    this.energyBar.endFill();
+
+    // Energy
+    const energyPercentage = this.player1.energy.currentEnergy / this.player1.energy.maxEnergy;
+
+    this.energyBar.beginFill(0xffff00);
+    this.energyBar.drawRect(x, y, barWidth * energyPercentage, barHeight);
+    
+    this.energyBar.endFill();
+
   }
 
   drawGrid() {
@@ -157,10 +174,17 @@ export class GameController {
     // Redraw player at new position
     this.drawPlayer();
     this.drawHealthBar();
+    this.drawEnergyBar();
     requestAnimationFrame(() => this.gameLoop());
   }
 
   TryToMovePlayer(player: Player, targetX: number, targetY: number) {
+
+    if(this.player1.energy.currentEnergy < 10){
+      console.log("Not enough energy");
+      return
+    }
+
     let playerPosX = player.PosX;
     let playerPosY = player.PosY;
 
@@ -177,17 +201,17 @@ export class GameController {
       deltaX + deltaY > 1
     ) {
       console.log("Collision detected or too far away or out of bounds");
-      
     }
     else{
 
-  this.map.Tiles[playerPosX][playerPosY].entity = null;
-  player.PosX = targetX;
-  player.PosY = targetY;
-  this.map.Tiles[targetX][targetY].entity = player;
-  this.animatePlayerMove(player, targetX, targetY);
-  this.player1.health.TriggerDot();
-    }
+        this.map.Tiles[playerPosX][playerPosY].entity = null;
+        player.PosX = targetX;
+        player.PosY = targetY;
+        this.map.Tiles[targetX][targetY].entity = player;
+        this.animatePlayerMove(player, targetX, targetY);
+        this.player1.playerAction(10);
+
+      }
   }
 
   listenForMovement(player: Player) {
@@ -215,4 +239,18 @@ export class GameController {
       this.TryToMovePlayer(player, targetX, targetY);
     });
   }
+
+  listenForInput(player: Player) {
+    window.addEventListener('keydown', (event) => {
+      switch (event.key.toLowerCase()) {
+        case 'x':
+          this.player1.energy.setEnergy(100);
+          this.player1.playerAction(0);
+          break;
+        default:
+          return;
+      }
+    });
+  }
+
 }
