@@ -2,9 +2,10 @@ import { Application, Graphics, Container } from 'pixi.js';
 import { GameGrid } from './grid';
 import { Player } from './player';
 import { Health } from './health/health';
-import * as PIXI from 'pixi.js';
 import { Text, TextStyle, Assets } from 'pixi.js';
+import * as PIXI from 'pixi.js';
 import { Energy } from './energy/energy';
+import { effect } from '@angular/core';
 
 export class GameController {
   app!: Application;
@@ -50,10 +51,18 @@ export class GameController {
     this.listenForInput(this.player1);
     this.listenForMovement(this.player1);
 
+    // Add some tile effects for testing
+    this.map.addTileEffect(2, 2, "glassShards");
+
     // Start game loop
     this.gameLoop();
 
   }
+  
+  
+  drawHealthBar() {
+ 
+    
 
   GenerateRoom(){
     this.map = new GameGrid(14,14);
@@ -65,36 +74,6 @@ export class GameController {
     return Math.floor(Math.random() * (max - min + 1) + min);
   }
   
-  drawHealthBar() {
-
-    this.healthBar.removeChild();
-    const barWidth = 200;
-    const barHeight = 20;
-    const x = 10;
-    const y = 830;
-    this.healthBar.beginFill(0x555555);
-    this.healthBar.drawRect(x, y, barWidth, barHeight);
-    this.healthBar.endFill();
-    // Background
-
-
-    const healthPercentage = this.player1.health.currentHealth / this.player1.health.maxHealth;
-    // Health
-
-    this.healthBar.beginFill(0xff0000);
-    this.healthBar.drawRect(x, y, barWidth * healthPercentage, barHeight);
-    
-
-    this.healthBar.endFill();
-    // DOT effect
-    if (this.player1.health.Dot > 0) {
-      const dotPercentage = Math.min(this.player1.health.Dot / this.player1.health.maxHealth, 1);
-      this.healthBar.beginFill(0xffff00);
-      this.healthBar.drawRect(x + barWidth * healthPercentage, y, barWidth * dotPercentage, barHeight);
-      this.healthBar.endFill();
-    }
-  }
-
   drawEnergyBar() {
 
     this.energyBar.removeChild();
@@ -116,6 +95,48 @@ export class GameController {
     
     this.energyBar.endFill();
 
+  }
+
+  const myText = new Text({
+    text: Math.round(this.player1.health.currentHealth*100)/100+ " L",
+    style: {
+      fontSize: 20,
+      fill: '#ffffff',
+    },
+    anchor: 0.5,
+    y:510
+    x:100,
+  });
+
+    this.healthBar.removeChildren();
+    const barWidth = 200;
+    const barHeight = 20;
+    const x = 10;
+
+    const y = 500;
+    // Background
+    this.healthBar.drawRect(x, y, barWidth, barHeight);
+    this.healthBar.beginFill(0x555555);
+    this.healthBar.endFill();
+
+    // Health
+    const healthPercentage = this.player1.health.currentHealth / this.player1.health.maxHealth;
+    this.healthBar.beginFill(0xff0000);
+
+    this.healthBar.drawRect(x, y, barWidth * healthPercentage, barHeight);
+    this.healthBar.addChild(myText);
+   
+    this.healthBar.endFill();
+    // DOT effect
+
+    if (this.player1.health.Dot > 0) {
+      let dotRate = this.player1.health.DotReduceRate/0.25;
+      let dotDamage =0.25/this.player1.health.DotDamageRate ;
+      const dotPercentage = Math.min(this.player1.health.Dot / this.player1.health.maxHealth, 1);
+      this.healthBar.beginFill(0xffff00);
+      this.healthBar.drawRect(x + barWidth * (healthPercentage-((dotPercentage/dotDamage)/dotRate)), y, barWidth * ((dotPercentage / dotRate) / dotDamage), barHeight);
+      this.healthBar.endFill();
+    }
   }
 
   drawGrid() {
@@ -210,9 +231,23 @@ export class GameController {
         this.map.Tiles[targetX][targetY].entity = player;
         this.animatePlayerMove(player, targetX, targetY);
         this.player1.playerAction(10);
+  player.health.TriggerDot();
 
       }
   }
+
+  checkUnderPlayer(player: Player) {
+    let tileEffect = this.map.Tiles[player.PosX][player.PosY].effect;
+    if (tileEffect) {
+      if (tileEffect == "glassShards") {
+        player.health.Damage(0, 1.0)
+    }
+
+  }
+
+  }
+
+
 
   listenForMovement(player: Player) {
     window.addEventListener('keydown', (event) => {

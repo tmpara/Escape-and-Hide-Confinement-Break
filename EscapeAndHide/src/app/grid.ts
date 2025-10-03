@@ -28,6 +28,10 @@ export class GameGrid {
 
   }
 
+  addTileEffect(x:number,y:number,effect:string){
+    this.Tiles[x][y].effect = effect;
+  }
+
   CreatePlayer(x: number, y:number, id:string){
     this.Tiles[x][y].entity = new Player(x,y,id, new Health(5.00, 5.00), new Energy(100,100));
   }
