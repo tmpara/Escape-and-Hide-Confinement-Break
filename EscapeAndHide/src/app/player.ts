@@ -1,33 +1,35 @@
 import * as PIXI from 'pixi.js';
+import { entity } from './entity';
+import { Health } from './health/health';
+import { Energy } from './energy/energy';
 
-export class Player {
+
+export class Player extends entity{
+  
+  PosX: number;
+  PosY: number;
+  renderX: number;
+  renderY: number;
   id: string;
-  sprite: PIXI.Graphics;
-  gridX: number;
-  gridY: number;
+  health: Health;
+  energy: Energy;
 
-  constructor(id: string, x: number, y: number) {
+  constructor( PosX: number, PosY: number, id: string, health: Health, energy: Energy){ 
+    super();
     this.id = id;
-    this.gridX = x;
-    this.gridY = y;
-
-    this.sprite = new PIXI.Graphics();
-    this.sprite.beginFill(0x0000ff); // blue
-    this.sprite.drawRect(0, 0, 32, 32);
-    this.sprite.endFill();
-    this.sprite._zIndex = 1
-
-    this.updatePosition();
+    this.PosX = PosX;
+    this.PosY = PosY;
+    this.renderX = PosX;
+    this.renderY = PosY;
+    this.health = health;
+    this.energy = energy;
   }
 
-  updatePosition(): void {
-    this.sprite.x = this.gridX * 32;
-    this.sprite.y = this.gridY * 32;
+  playerAction(energyCost: number){
+
+    this.health.TriggerDot();
+    this.energy.loseEnergy(energyCost);
+
   }
 
-  setGridPosition(x: number, y: number): void {
-    this.gridX = x;
-    this.gridY = y;
-    this.updatePosition();
-  }
 }

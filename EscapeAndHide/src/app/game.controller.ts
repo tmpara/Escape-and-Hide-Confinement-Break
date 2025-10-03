@@ -1,116 +1,256 @@
-import { Application } from 'pixi.js';
+import { Application, Graphics, Container } from 'pixi.js';
 import { GameGrid } from './grid';
 import { Player } from './player';
-import { TestObject } from './testobject';
+import { Health } from './health/health';
 import * as PIXI from 'pixi.js';
+import { Text, TextStyle, Assets } from 'pixi.js';
+import { Energy } from './energy/energy';
 
 export class GameController {
   app!: Application;
-  grid!: GameGrid;
-  players!: Map<string, Player>;
-  localPlayerId!: string;
+  map!: GameGrid;
+  player1 = new Player(1, 1, "1", new Health(5.00, 4.00), new Energy(100,100));
+  gridContainer = new Container();
+  playerSprite = new Graphics();
+  healthBar = new Graphics();
+  energyBar = new Graphics();
 
-  constructor() {
-    // Nothing in constructor now
-  }
+  tileSize = 64; // Size of each tile in pixels
+
+  constructor() {}
 
   async init(container: HTMLDivElement): Promise<void> {
-    this.app = new Application({ width: 320, height: 320 });
-
-    await this.app.init(); // ✅ Wait for Pixi to be ready
-
-    container.appendChild(this.app.renderer.view.canvas as unknown as HTMLCanvasElement);
-
-    this.grid = new GameGrid(32, 32);
-    this.players = new Map();
-
-    this.drawGrid();
-    this.setupInputHandlers();
-  }
-
-
-  addLocalPlayer(id: string, x: number, y: number) {
-    const player = new Player(id, x, y);
-    this.app.stage.addChild(player.sprite);
-    this.players.set(id, player);
-    this.grid.addPlayer(id, x, y);
-    this.localPlayerId = id;
-  }
-
-  addObject(x: number, y: number) {
-    const testObject = new TestObject();
-    testObject.tile.spawn(x,y);
-    this.app.stage.addChild(testObject.tile.sprite);
-    this.grid.addObject(testObject, x, y);
-  }
-
-  setupInputHandlers(): void {
-    window.addEventListener('keydown', (e) => this.handleKey(e));
-
-    // Pixi v7+ input handling
-    this.app.stage.eventMode = 'static';
-    this.app.stage.hitArea = this.app.screen;
-
-    this.app.stage.on('pointerdown', (event) => {
-      const pos = event.getLocalPosition(this.app.stage);
-      const gridX = Math.floor(pos.x / 32);
-      const gridY = Math.floor(pos.y / 32);
-      this.tryMoveTo(gridX, gridY);
+    // Create PIXI app
+    this.app = new Application();
+    await this.app.init({
+      width: 896,
+      height: 896,
+      backgroundColor: 0x222222,
+      antialias: true,
     });
+    container.appendChild(this.app.canvas as HTMLCanvasElement);
+
+    // Create map and player
+    this.GenerateRoom();
+    this.map.LoadPlayer(1, 1, this.player1);
+
+    // Draw grid and player
+    
+    this.drawGrid();
+    this.drawPlayer();
+    this.drawHealthBar();
+    this.drawEnergyBar();
+    // Add containers to stage
+    this.app.stage.addChild(this.gridContainer);
+    this.app.stage.addChild(this.playerSprite);
+    this.app.stage.addChild(this.healthBar);
+    this.app.stage.addChild(this.energyBar);
+
+    // Listen for movement
+    this.listenForInput(this.player1);
+    this.listenForMovement(this.player1);
+
+    // Start game loop
+    this.gameLoop();
+
   }
 
-  handleKey(e: KeyboardEvent): void {
-    const directions: { [key: string]: [number, number] } = {
-      ArrowUp: [0, -1],
-      ArrowDown: [0, 1],
-      ArrowLeft: [-1, 0],
-      ArrowRight: [1, 0],
-    };
+  GenerateRoom(){
+    this.map = new GameGrid(14,14);
+    this.map.CreateEmptyMap()
+    this.map.CreateMap()
+  }
 
-    const move = directions[e.key];
-    if (!move) return;
+  GenerateRandomNumber(min: number, max: number){
+    return Math.floor(Math.random() * (max - min + 1) + min);
+  }
+  
+  drawHealthBar() {
 
-    if (this.grid.movePlayer(this.localPlayerId, move[0], move[1])) {
-      const p = this.players.get(this.localPlayerId);
-      const gridPos = this.grid.players.get(this.localPlayerId)!;
-      p?.setGridPosition(gridPos.x, gridPos.y);
+    this.healthBar.removeChild();
+    const barWidth = 200;
+    const barHeight = 20;
+    const x = 10;
+    const y = 830;
+    this.healthBar.beginFill(0x555555);
+    this.healthBar.drawRect(x, y, barWidth, barHeight);
+    this.healthBar.endFill();
+    // Background
+
+
+    const healthPercentage = this.player1.health.currentHealth / this.player1.health.maxHealth;
+    // Health
+
+    this.healthBar.beginFill(0xff0000);
+    this.healthBar.drawRect(x, y, barWidth * healthPercentage, barHeight);
+    
+
+    this.healthBar.endFill();
+    // DOT effect
+    if (this.player1.health.Dot > 0) {
+      const dotPercentage = Math.min(this.player1.health.Dot / this.player1.health.maxHealth, 1);
+      this.healthBar.beginFill(0xffff00);
+      this.healthBar.drawRect(x + barWidth * healthPercentage, y, barWidth * dotPercentage, barHeight);
+      this.healthBar.endFill();
     }
   }
 
-  tryMoveTo(x: number, y: number): void {
-    const player = this.grid.players.get(this.localPlayerId);
-    if (!player) return;
+  drawEnergyBar() {
 
-    const dx = x - player.x;
-    const dy = y - player.y;
+    this.energyBar.removeChild();
+    const barWidth = 200;
+    const barHeight = 20;
+    const x = 10;
+    const y = 860;
 
-    if ((Math.abs(dx) === 1 && dy === 0) || (Math.abs(dy) === 1 && dx === 0)) {
-      if (this.grid.movePlayer(this.localPlayerId, dx, dy)) {
-        const p = this.players.get(this.localPlayerId);
-        const gridPos = this.grid.players.get(this.localPlayerId)!;
-        p?.setGridPosition(gridPos.x, gridPos.y);
+    // Background
+    this.energyBar.beginFill(0x555555);
+    this.energyBar.drawRect(x, y, barWidth, barHeight);
+    this.energyBar.endFill();
+
+    // Energy
+    const energyPercentage = this.player1.energy.currentEnergy / this.player1.energy.maxEnergy;
+
+    this.energyBar.beginFill(0xffff00);
+    this.energyBar.drawRect(x, y, barWidth * energyPercentage, barHeight);
+    
+    this.energyBar.endFill();
+
+  }
+
+  drawGrid() {
+    this.gridContainer.removeChildren();
+    for (let x = 0; x < this.map.width; x++) {
+      for (let y = 0; y < this.map.height; y++) {
+        const tile = new Graphics();
+        tile.lineStyle(1, 0x888888);
+        tile.beginFill(this.map.Tiles[x][y].hasCollision ? 0x444444 : 0xcccccc);
+        tile.drawRect(
+          x * this.tileSize,
+          y * this.tileSize,
+          this.tileSize,
+          this.tileSize
+        );
+        tile.endFill();
+        this.gridContainer.addChild(tile);
       }
     }
   }
-  drawGrid(): void {
-  const lineColor = 0xcccccc;
-  const tileSize = 32;
-  const gridSize = 10;
 
-  const gridGraphics = new PIXI.Graphics();
-  gridGraphics.lineStyle(1, lineColor);
-
-  for (let i = 0; i <= gridSize; i++) {
-    // Vertical lines
-    gridGraphics.moveTo(i * tileSize, 0);
-    gridGraphics.lineTo(i * tileSize, gridSize * tileSize);
-
-    // Horizontal lines
-    gridGraphics.moveTo(0, i * tileSize);
-    gridGraphics.lineTo(gridSize * tileSize, i * tileSize);
+  drawPlayer() {
+    this.playerSprite.clear();
+    this.playerSprite.beginFill(0x00ff00);
+    this.playerSprite.drawCircle(
+      this.player1.renderX * this.tileSize + this.tileSize / 2,
+      this.player1.renderY * this.tileSize + this.tileSize / 2,
+      this.tileSize / 3
+    );
+    this.playerSprite.endFill();
   }
 
-  this.app.stage.addChild(gridGraphics);
-}
+  animatePlayerMove(player: Player, targetX: number, targetY: number, duration: number = 150) {
+    const startX = player.renderX;
+    const startY = player.renderY;
+    const deltaX = targetX - startX;
+    const deltaY = targetY - startY;
+    const startTime = performance.now();
+
+    const animate = (now: number) => {
+      const elapsed = now - startTime;
+      const t = Math.min(elapsed / duration, 1);
+      player.renderX = startX + deltaX * t;
+      player.renderY = startY + deltaY * t;
+      if (t < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        player.renderX = targetX;
+        player.renderY = targetY;
+      }
+    };
+    requestAnimationFrame(animate);
+  }
+
+  gameLoop() {
+    // Redraw player at new position
+    this.drawPlayer();
+    this.drawHealthBar();
+    this.drawEnergyBar();
+    requestAnimationFrame(() => this.gameLoop());
+  }
+
+  TryToMovePlayer(player: Player, targetX: number, targetY: number) {
+
+    if(this.player1.energy.currentEnergy < 10){
+      console.log("Not enough energy");
+      return
+    }
+
+    let playerPosX = player.PosX;
+    let playerPosY = player.PosY;
+
+    let deltaX = Math.abs(targetX - playerPosX);
+    let deltaY = Math.abs(targetY - playerPosY);
+
+    // Bounds and collision check
+    if (
+      targetX < 0 ||
+      targetY < 0 ||
+      targetX >= this.map.width ||
+      targetY >= this.map.height ||
+      this.map.Tiles[targetX][targetY].hasCollision ||
+      deltaX + deltaY > 1
+    ) {
+      console.log("Collision detected or too far away or out of bounds");
+    }
+    else{
+
+        this.map.Tiles[playerPosX][playerPosY].entity = null;
+        player.PosX = targetX;
+        player.PosY = targetY;
+        this.map.Tiles[targetX][targetY].entity = player;
+        this.animatePlayerMove(player, targetX, targetY);
+        this.player1.playerAction(10);
+
+      }
+  }
+
+  listenForMovement(player: Player) {
+    window.addEventListener('keydown', (event) => {
+      let targetX = player.PosX;
+      let targetY = player.PosY;
+
+      switch (event.key.toLowerCase()) {
+        case 'w':
+          targetY -= 1;
+          break;
+        case 'a':
+          targetX -= 1;
+          break;
+        case 's':
+          targetY += 1;
+          break;
+        case 'd':
+          targetX += 1;
+          break;
+        default:
+          return;
+      }
+
+      this.TryToMovePlayer(player, targetX, targetY);
+    });
+  }
+
+  listenForInput(player: Player) {
+    window.addEventListener('keydown', (event) => {
+      switch (event.key.toLowerCase()) {
+        case 'x':
+          this.player1.energy.setEnergy(100);
+          this.player1.playerAction(0);
+          break;
+        default:
+          return;
+      }
+    });
+  }
 
 }
