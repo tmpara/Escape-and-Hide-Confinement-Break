@@ -51,18 +51,10 @@ export class GameController {
     this.listenForInput(this.player1);
     this.listenForMovement(this.player1);
 
-    // Add some tile effects for testing
-    this.map.addTileEffect(2, 2, "glassShards");
-
     // Start game loop
     this.gameLoop();
 
   }
-  
-  
-  drawHealthBar() {
- 
-    
 
   GenerateRoom(){
     this.map = new GameGrid(14,14);
@@ -73,10 +65,64 @@ export class GameController {
   GenerateRandomNumber(min: number, max: number){
     return Math.floor(Math.random() * (max - min + 1) + min);
   }
-  
+
+  drawHealthBar() {
+
+    const myText = new Text({
+      text: Math.round(this.player1.health.currentHealth*100)/100+ " L",
+      style: {
+        fontSize: 20,
+        fill: '#ffffff',
+      },
+      anchor: 0.5,
+      y:830,
+      x:100
+    });
+
+    this.healthBar.removeChildren();
+    const barWidth = 200;
+    const barHeight = 20;
+    const x = 10;
+    const y = 820;
+    // Background
+    this.healthBar.drawRect(x, y, barWidth, barHeight);
+    this.healthBar.beginFill(0x555555);
+    this.healthBar.endFill();
+
+    // Health
+    const healthPercentage = this.player1.health.currentHealth / this.player1.health.maxHealth;
+    this.healthBar.beginFill(0xff0000);
+
+    this.healthBar.drawRect(x, y, barWidth * healthPercentage, barHeight);
+    this.healthBar.addChild(myText);
+   
+    this.healthBar.endFill();
+
+    // DOT effect
+    if (this.player1.health.Dot > 0) {
+      let dotRate = this.player1.health.DotReduceRate/0.25;
+      let dotDamage =0.25/this.player1.health.DotDamageRate ;
+      const dotPercentage = Math.min(this.player1.health.Dot / this.player1.health.maxHealth, 1);
+      this.healthBar.beginFill(0xffff00);
+      this.healthBar.drawRect(x + barWidth * (healthPercentage-((dotPercentage/dotDamage)/dotRate)), y, barWidth * ((dotPercentage / dotRate) / dotDamage), barHeight);
+      this.healthBar.endFill();
+    }
+  }
+
   drawEnergyBar() {
 
-    this.energyBar.removeChild();
+    const myText2 = new Text({
+      text: Math.round(this.player1.energy.currentEnergy*100)/100,
+      style: {
+        fontSize: 20,
+        fill: '#ffffff',
+      },
+      anchor: 0.5,
+      y:850,
+      x:100
+    });
+
+    this.energyBar.removeChildren();
     const barWidth = 200;
     const barHeight = 20;
     const x = 10;
@@ -97,66 +143,36 @@ export class GameController {
 
   }
 
-  const myText = new Text({
-    text: Math.round(this.player1.health.currentHealth*100)/100+ " L",
-    style: {
-      fontSize: 20,
-      fill: '#ffffff',
-    },
-    anchor: 0.5,
-    y:510
-    x:100,
-  });
-
-    this.healthBar.removeChildren();
-    const barWidth = 200;
-    const barHeight = 20;
-    const x = 10;
-
-    const y = 500;
-    // Background
-    this.healthBar.drawRect(x, y, barWidth, barHeight);
-    this.healthBar.beginFill(0x555555);
-    this.healthBar.endFill();
-
-    // Health
-    const healthPercentage = this.player1.health.currentHealth / this.player1.health.maxHealth;
-    this.healthBar.beginFill(0xff0000);
-
-    this.healthBar.drawRect(x, y, barWidth * healthPercentage, barHeight);
-    this.healthBar.addChild(myText);
-   
-    this.healthBar.endFill();
-    // DOT effect
-
-    if (this.player1.health.Dot > 0) {
-      let dotRate = this.player1.health.DotReduceRate/0.25;
-      let dotDamage =0.25/this.player1.health.DotDamageRate ;
-      const dotPercentage = Math.min(this.player1.health.Dot / this.player1.health.maxHealth, 1);
-      this.healthBar.beginFill(0xffff00);
-      this.healthBar.drawRect(x + barWidth * (healthPercentage-((dotPercentage/dotDamage)/dotRate)), y, barWidth * ((dotPercentage / dotRate) / dotDamage), barHeight);
-      this.healthBar.endFill();
-    }
-  }
-
   drawGrid() {
     this.gridContainer.removeChildren();
     for (let x = 0; x < this.map.width; x++) {
       for (let y = 0; y < this.map.height; y++) {
-        const tile = new Graphics();
-        tile.lineStyle(1, 0x888888);
-        tile.beginFill(this.map.Tiles[x][y].hasCollision ? 0x444444 : 0xcccccc);
-        tile.drawRect(
-          x * this.tileSize,
-          y * this.tileSize,
-          this.tileSize,
-          this.tileSize
-        );
-        tile.endFill();
-        this.gridContainer.addChild(tile);
+        if(this.map.tiles[x][y].sprite != ""){
+          const texture = PIXI.Texture.from('https://pixijs.com/assets/bunny.png');
+          const sprite = new PIXI.Sprite(texture);
+          sprite.x = x * this.tileSize
+          sprite.y = y * this.tileSize
+          sprite.width = this.tileSize
+          sprite.height = this.tileSize
+          this.gridContainer.addChild(sprite);
+        }
+        else{
+          const tile = new Graphics();
+          tile.lineStyle(1, 0x888888);
+          tile.beginFill(this.map.tiles[x][y].hasCollision ? 0x444444 : 0xcccccc);
+          tile.drawRect(
+            x * this.tileSize,
+            y * this.tileSize,
+            this.tileSize,
+            this.tileSize
+          );
+          tile.endFill();
+          this.gridContainer.addChild(tile);
+        }
       }
     }
   }
+
 
   drawPlayer() {
     this.playerSprite.clear();
@@ -193,6 +209,7 @@ export class GameController {
 
   gameLoop() {
     // Redraw player at new position
+    this.drawGrid();
     this.drawPlayer();
     this.drawHealthBar();
     this.drawEnergyBar();
@@ -218,36 +235,33 @@ export class GameController {
       targetY < 0 ||
       targetX >= this.map.width ||
       targetY >= this.map.height ||
-      this.map.Tiles[targetX][targetY].hasCollision ||
+      this.map.tiles[targetX][targetY].hasCollision ||
       deltaX + deltaY > 1
     ) {
       console.log("Collision detected or too far away or out of bounds");
     }
     else{
 
-        this.map.Tiles[playerPosX][playerPosY].entity = null;
+        this.map.tiles[playerPosX][playerPosY].entity = null;
         player.PosX = targetX;
         player.PosY = targetY;
-        this.map.Tiles[targetX][targetY].entity = player;
+        this.map.tiles[targetX][targetY].entity = player;
         this.animatePlayerMove(player, targetX, targetY);
         this.player1.playerAction(10);
-  player.health.TriggerDot();
+        this.checkUnderPlayer(player);
+        player.health.TriggerDot();
 
-      }
+    }
   }
 
   checkUnderPlayer(player: Player) {
-    let tileEffect = this.map.Tiles[player.PosX][player.PosY].effect;
+    let tileEffect = this.map.tiles[player.PosX][player.PosY].effect;
     if (tileEffect) {
       if (tileEffect == "glassShards") {
         player.health.Damage(0, 1.0)
+      }
     }
-
   }
-
-  }
-
-
 
   listenForMovement(player: Player) {
     window.addEventListener('keydown', (event) => {

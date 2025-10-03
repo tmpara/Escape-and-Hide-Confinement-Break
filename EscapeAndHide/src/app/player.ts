@@ -19,6 +19,8 @@ export class Player extends entity{
     this.id = id;
     this.PosX = PosX;
     this.PosY = PosY;
+    this.renderX = PosX;
+    this.renderY = PosY;
     this.health = health;
     this.energy = energy;
   }
