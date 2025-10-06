@@ -15,7 +15,7 @@ export class GameController {
   playerSprite = new Graphics();
   healthBar = new Graphics();
   energyBar = new Graphics();
-
+  tile = new Graphics();
   tileSize = 64; // Size of each tile in pixels
 
   constructor() {}
@@ -33,6 +33,7 @@ export class GameController {
 
     // Create map and player
     this.GenerateRoom();
+    this.map.addTileEffect(2, 2, "glassShards");
     this.map.LoadPlayer(1, 1, this.player1);
 
     // Draw grid and player
@@ -80,6 +81,7 @@ export class GameController {
     });
 
     this.healthBar.removeChildren();
+    this.healthBar.clear();
     const barWidth = 200;
     const barHeight = 20;
     const x = 10;
@@ -89,6 +91,8 @@ export class GameController {
     this.healthBar.beginFill(0x555555);
     this.healthBar.endFill();
 
+    const dotPercentage = Math.min(this.player1.health.Dot / this.player1.health.maxHealth, 1);
+    const regenPercentage = Math.min(this.player1.health.Regeneration / this.player1.health.maxHealth, 1);
     // Health
     const healthPercentage = this.player1.health.currentHealth / this.player1.health.maxHealth;
     this.healthBar.beginFill(0xff0000);
@@ -98,31 +102,48 @@ export class GameController {
    
     this.healthBar.endFill();
 
+    
     // DOT effect
     if (this.player1.health.Dot > 0) {
       let dotRate = this.player1.health.DotReduceRate/0.25;
       let dotDamage =0.25/this.player1.health.DotDamageRate ;
-      const dotPercentage = Math.min(this.player1.health.Dot / this.player1.health.maxHealth, 1);
       this.healthBar.beginFill(0xffff00);
       this.healthBar.drawRect(x + barWidth * (healthPercentage-((dotPercentage/dotDamage)/dotRate)), y, barWidth * ((dotPercentage / dotRate) / dotDamage), barHeight);
       this.healthBar.endFill();
     }
+
+    // Regeneration
+   
+
+
+    if (this.player1.health.Regeneration > 0 && this.player1.health.currentHealth < this.player1.health.maxHealth) {
+      
+      if (this.player1.health.Dot > 0) {
+      this.healthBar.beginFill(0x00ff00);
+      this.healthBar.drawRect(x + barWidth * (healthPercentage-dotPercentage), y, barWidth * (regenPercentage), barHeight);
+      this.healthBar.endFill();
+      }else if(this.player1.health.currentHealth + this.player1.health.Regeneration > this.player1.health.maxHealth){
+        const regenerationToMaxPercentage = (this.player1.health.maxHealth-this.player1.health.currentHealth)/ this.player1.health.maxHealth;
+        this.healthBar.beginFill(0x00ff00);
+        this.healthBar.drawRect(x + barWidth * healthPercentage, y, barWidth * (regenerationToMaxPercentage), barHeight);
+        this.healthBar.endFill();
+      
+      }else{
+        this.healthBar.beginFill(0x00ff00);
+        this.healthBar.drawRect(x + barWidth * healthPercentage, y, barWidth * (regenPercentage), barHeight);
+        this.healthBar.endFill();
+      }
+    }
+
   }
 
+  
+
   drawEnergyBar() {
-
-    const myText2 = new Text({
-      text: Math.round(this.player1.energy.currentEnergy*100)/100,
-      style: {
-        fontSize: 20,
-        fill: '#ffffff',
-      },
-      anchor: 0.5,
-      y:850,
-      x:100
-    });
-
+    
+  
     this.energyBar.removeChildren();
+    this.energyBar.clear();
     const barWidth = 200;
     const barHeight = 20;
     const x = 10;
@@ -145,9 +166,11 @@ export class GameController {
 
   drawGrid() {
     this.gridContainer.removeChildren();
+    this.tile.clear();
+    
     for (let x = 0; x < this.map.width; x++) {
       for (let y = 0; y < this.map.height; y++) {
-        if(this.map.tiles[x][y].sprite != ""){
+       /* if(this.map.tiles[x][y].sprite != ""){
           const texture = PIXI.Texture.from('https://pixijs.com/assets/bunny.png');
           const sprite = new PIXI.Sprite(texture);
           sprite.x = x * this.tileSize
@@ -156,25 +179,28 @@ export class GameController {
           sprite.height = this.tileSize
           this.gridContainer.addChild(sprite);
         }
-        else{
-          const tile = new Graphics();
-          tile.lineStyle(1, 0x888888);
-          tile.beginFill(this.map.tiles[x][y].hasCollision ? 0x444444 : 0xcccccc);
-          tile.drawRect(
+        else{*/
+          
+          this.tile.lineStyle(1, 0x888888);
+          this.tile.beginFill(this.map.tiles[x][y].hasCollision ? 0x444444 : 0xcccccc);
+          this.tile.drawRect(
             x * this.tileSize,
             y * this.tileSize,
             this.tileSize,
             this.tileSize
           );
-          tile.endFill();
-          this.gridContainer.addChild(tile);
-        }
+          this.tile.endFill();
+          this.gridContainer.addChild(this.tile);
+          
+        //}
       }
     }
+    
   }
 
 
   drawPlayer() {
+    this.playerSprite.removeChildren();
     this.playerSprite.clear();
     this.playerSprite.beginFill(0x00ff00);
     this.playerSprite.drawCircle(
@@ -249,7 +275,7 @@ export class GameController {
         this.animatePlayerMove(player, targetX, targetY);
         this.player1.playerAction(10);
         this.checkUnderPlayer(player);
-        player.health.TriggerDot();
+      
 
     }
   }
