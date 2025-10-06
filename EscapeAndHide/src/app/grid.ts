@@ -2,7 +2,7 @@ import { Health } from "./health/health";
 import { Energy } from "./energy/energy";
 import { Player } from "./player";
 import { tile } from "./tile";
-import { glass_shards } from "./glass_shards";
+
 export class GameGrid {
   width: number;
   height: number;
@@ -26,7 +26,38 @@ export class GameGrid {
   }
   
   CreateMap(){
-    this.tiles[2][2].entity = new glass_shards
+    this.tiles[2][2] = this.getTileData("glass_shards")
+    this.tiles[4][1] = this.getTileData("wall_basic")
+    this.tiles[4][2] = this.getTileData("wall_basic")
+    this.tiles[4][3] = this.getTileData("wall_basic")
+    this.tiles[4][4] = this.getTileData("wall_basic")
+    this.tiles[4][5] = this.getTileData("wall_basic")
+    this.tiles[4][6] = this.getTileData("wall_basic")
+    this.tiles[4][7] = this.getTileData("wall_basic")
+    this.tiles[4][8] = this.getTileData("wall_basic")
+    this.tiles[4][9] = this.getTileData("wall_basic")
+    this.tiles[4][10] = this.getTileData("wall_basic")
+    this.tiles[4][11] = this.getTileData("wall_basic")
+    this.tiles[4][12] = this.getTileData("wall_basic")
+  }
+  
+
+  getTileData(name: String){
+
+    let info = new tile(false,"",false,100,"",null);
+
+    switch (name){
+    case 'glass_shards':
+      info = new tile(false,"glass_shards",true,5,"glass_shards",null);
+      return info
+      break;
+    case 'wall_basic':
+      info = new tile(true,"",true,100,"https://art.pixilart.com/sr24d0c9ad1eded.png",null);
+      return info
+      break;
+    }
+    return info
+
   }
 
   addTileEffect(x:number,y:number,effect:string){

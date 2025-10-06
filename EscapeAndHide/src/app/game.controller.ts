@@ -2,7 +2,7 @@ import { Application, Graphics, Container } from 'pixi.js';
 import { GameGrid } from './grid';
 import { Player } from './player';
 import { Health } from './health/health';
-import { Text, TextStyle, Assets } from 'pixi.js';
+import { Text, Sprite , Assets } from 'pixi.js';
 import * as PIXI from 'pixi.js';
 import { Energy } from './energy/energy';
 import { effect } from '@angular/core';
@@ -21,6 +21,9 @@ export class GameController {
   constructor() {}
 
   async init(container: HTMLDivElement): Promise<void> {
+
+    const texture_placeholder = await Assets.load('https://art.pixilart.com/sr24d0c9ad1eded.png');
+
     // Create PIXI app
     this.app = new Application();
     await this.app.init({
@@ -35,12 +38,6 @@ export class GameController {
     this.GenerateRoom();
     this.map.LoadPlayer(1, 1, this.player1);
 
-    // Draw grid and player
-    
-    this.drawGrid();
-    this.drawPlayer();
-    this.drawHealthBar();
-    this.drawEnergyBar();
     // Add containers to stage
     this.app.stage.addChild(this.gridContainer);
     this.app.stage.addChild(this.playerSprite);
@@ -148,8 +145,8 @@ export class GameController {
     for (let x = 0; x < this.map.width; x++) {
       for (let y = 0; y < this.map.height; y++) {
         if(this.map.tiles[x][y].sprite != ""){
-          const texture = PIXI.Texture.from('https://pixijs.com/assets/bunny.png');
-          const sprite = new PIXI.Sprite(texture);
+          let texture = Assets.get(this.map.tiles[x][y].sprite.toString());
+          let sprite = new PIXI.Sprite(texture);
           sprite.x = x * this.tileSize
           sprite.y = y * this.tileSize
           sprite.width = this.tileSize
@@ -157,7 +154,7 @@ export class GameController {
           this.gridContainer.addChild(sprite);
         }
         else{
-          const tile = new Graphics();
+          let tile = new Graphics();
           tile.lineStyle(1, 0x888888);
           tile.beginFill(this.map.tiles[x][y].hasCollision ? 0x444444 : 0xcccccc);
           tile.drawRect(
@@ -172,7 +169,6 @@ export class GameController {
       }
     }
   }
-
 
   drawPlayer() {
     this.playerSprite.clear();
@@ -257,7 +253,7 @@ export class GameController {
   checkUnderPlayer(player: Player) {
     let tileEffect = this.map.tiles[player.PosX][player.PosY].effect;
     if (tileEffect) {
-      if (tileEffect == "glassShards") {
+      if (tileEffect == "glass_shards") {
         player.health.Damage(0, 1.0)
       }
     }
