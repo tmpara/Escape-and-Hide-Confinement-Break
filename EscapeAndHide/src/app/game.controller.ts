@@ -2,18 +2,21 @@ import { Application, Graphics, Container } from 'pixi.js';
 import { GameGrid } from './grid';
 import { Player } from './player';
 import { Health } from './health/health';
-import * as PIXI from 'pixi.js';
 import { Text, TextStyle, Assets } from 'pixi.js';
+import * as PIXI from 'pixi.js';
+import { Energy } from './energy/energy';
 import { effect } from '@angular/core';
 
 export class GameController {
   app!: Application;
   map!: GameGrid;
-  player1 = new Player(1, 1, "1" , new Health(5.00, 4.00));
+  player1 = new Player(1, 1, "1", new Health(5.00, 4.00), new Energy(100,100));
   gridContainer = new Container();
   playerSprite = new Graphics();
+  healthBar = new Graphics();
+  energyBar = new Graphics();
 
-  tileSize = 40; // Size of each tile in pixels
+  tileSize = 64; // Size of each tile in pixels
 
   constructor() {}
 
@@ -21,73 +24,75 @@ export class GameController {
     // Create PIXI app
     this.app = new Application();
     await this.app.init({
-      width: 400,
-      height: 400,
+      width: 896,
+      height: 896,
       backgroundColor: 0x222222,
       antialias: true,
     });
     container.appendChild(this.app.canvas as HTMLCanvasElement);
 
     // Create map and player
-    this.map = new GameGrid(10, 10);
-    this.map.CreateEmptyMap();
+    this.GenerateRoom();
     this.map.LoadPlayer(1, 1, this.player1);
 
     // Draw grid and player
+    
     this.drawGrid();
     this.drawPlayer();
-
+    this.drawHealthBar();
+    this.drawEnergyBar();
     // Add containers to stage
     this.app.stage.addChild(this.gridContainer);
     this.app.stage.addChild(this.playerSprite);
+    this.app.stage.addChild(this.healthBar);
+    this.app.stage.addChild(this.energyBar);
 
     // Listen for movement
+    this.listenForInput(this.player1);
     this.listenForMovement(this.player1);
-
-    // Add some tile effects for testing
-    this.map.addTileEffect(2, 2, "glassShards");
 
     // Start game loop
     this.gameLoop();
 
-
-
-   
-    
   }
-  
-  
+
+  GenerateRoom(){
+    this.map = new GameGrid(14,14);
+    this.map.CreateEmptyMap()
+    this.map.CreateMap()
+  }
+
+  GenerateRandomNumber(min: number, max: number){
+    return Math.floor(Math.random() * (max - min + 1) + min);
+  }
+
   drawHealthBar() {
- 
-    
 
-
-  const myText = new Text({
-    text: Math.round(this.player1.health.currentHealth*100)/100+ " L",
-    style: {
-      fill: '#ffffff',
-      fontSize: 20,
-    },
-    anchor: 0.5,
-    x:100,
-    y:510
-  });
+    const myText = new Text({
+      text: Math.round(this.player1.health.currentHealth*100)/100+ " L",
+      style: {
+        fontSize: 20,
+        fill: '#ffffff',
+      },
+      anchor: 0.5,
+      y:830,
+      x:100
+    });
 
     this.healthBar.removeChildren();
     const barWidth = 200;
     const barHeight = 20;
     const x = 10;
-    const y = 500;
-
+    const y = 820;
     // Background
-    this.healthBar.beginFill(0x555555);
     this.healthBar.drawRect(x, y, barWidth, barHeight);
+    this.healthBar.beginFill(0x555555);
     this.healthBar.endFill();
 
     // Health
     const healthPercentage = this.player1.health.currentHealth / this.player1.health.maxHealth;
-
     this.healthBar.beginFill(0xff0000);
+
     this.healthBar.drawRect(x, y, barWidth * healthPercentage, barHeight);
     this.healthBar.addChild(myText);
    
@@ -104,43 +109,120 @@ export class GameController {
     }
   }
 
+  drawEnergyBar() {
+
+    const myText2 = new Text({
+      text: Math.round(this.player1.energy.currentEnergy*100)/100,
+      style: {
+        fontSize: 20,
+        fill: '#ffffff',
+      },
+      anchor: 0.5,
+      y:850,
+      x:100
+    });
+
+    this.energyBar.removeChildren();
+    const barWidth = 200;
+    const barHeight = 20;
+    const x = 10;
+    const y = 860;
+
+    // Background
+    this.energyBar.beginFill(0x555555);
+    this.energyBar.drawRect(x, y, barWidth, barHeight);
+    this.energyBar.endFill();
+
+    // Energy
+    const energyPercentage = this.player1.energy.currentEnergy / this.player1.energy.maxEnergy;
+
+    this.energyBar.beginFill(0xffff00);
+    this.energyBar.drawRect(x, y, barWidth * energyPercentage, barHeight);
+    
+    this.energyBar.endFill();
+
+  }
+
   drawGrid() {
     this.gridContainer.removeChildren();
     for (let x = 0; x < this.map.width; x++) {
       for (let y = 0; y < this.map.height; y++) {
-        const tile = new Graphics();
-        tile.lineStyle(1, 0x888888);
-        tile.beginFill(this.map.Tiles[x][y].hasCollision ? 0x444444 : 0xcccccc);
-        tile.drawRect(
-          x * this.tileSize,
-          y * this.tileSize,
-          this.tileSize,
-          this.tileSize
-        );
-        tile.endFill();
-        this.gridContainer.addChild(tile);
+        if(this.map.tiles[x][y].sprite != ""){
+          const texture = PIXI.Texture.from('https://pixijs.com/assets/bunny.png');
+          const sprite = new PIXI.Sprite(texture);
+          sprite.x = x * this.tileSize
+          sprite.y = y * this.tileSize
+          sprite.width = this.tileSize
+          sprite.height = this.tileSize
+          this.gridContainer.addChild(sprite);
+        }
+        else{
+          const tile = new Graphics();
+          tile.lineStyle(1, 0x888888);
+          tile.beginFill(this.map.tiles[x][y].hasCollision ? 0x444444 : 0xcccccc);
+          tile.drawRect(
+            x * this.tileSize,
+            y * this.tileSize,
+            this.tileSize,
+            this.tileSize
+          );
+          tile.endFill();
+          this.gridContainer.addChild(tile);
+        }
       }
     }
   }
+
 
   drawPlayer() {
     this.playerSprite.clear();
     this.playerSprite.beginFill(0x00ff00);
     this.playerSprite.drawCircle(
-      this.player1.PosX * this.tileSize + this.tileSize / 2,
-      this.player1.PosY * this.tileSize + this.tileSize / 2,
+      this.player1.renderX * this.tileSize + this.tileSize / 2,
+      this.player1.renderY * this.tileSize + this.tileSize / 2,
       this.tileSize / 3
     );
     this.playerSprite.endFill();
   }
 
+  animatePlayerMove(player: Player, targetX: number, targetY: number, duration: number = 150) {
+    const startX = player.renderX;
+    const startY = player.renderY;
+    const deltaX = targetX - startX;
+    const deltaY = targetY - startY;
+    const startTime = performance.now();
+
+    const animate = (now: number) => {
+      const elapsed = now - startTime;
+      const t = Math.min(elapsed / duration, 1);
+      player.renderX = startX + deltaX * t;
+      player.renderY = startY + deltaY * t;
+      if (t < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        player.renderX = targetX;
+        player.renderY = targetY;
+      }
+    };
+    requestAnimationFrame(animate);
+  }
+
   gameLoop() {
     // Redraw player at new position
+    this.drawGrid();
     this.drawPlayer();
+    this.drawHealthBar();
+    this.drawEnergyBar();
     requestAnimationFrame(() => this.gameLoop());
   }
 
   TryToMovePlayer(player: Player, targetX: number, targetY: number) {
+
+    if(this.player1.energy.currentEnergy < 10){
+      console.log("Not enough energy");
+      return
+    }
+
     let playerPosX = player.PosX;
     let playerPosY = player.PosY;
 
@@ -153,36 +235,33 @@ export class GameController {
       targetY < 0 ||
       targetX >= this.map.width ||
       targetY >= this.map.height ||
-      this.map.Tiles[targetX][targetY].hasCollision ||
+      this.map.tiles[targetX][targetY].hasCollision ||
       deltaX + deltaY > 1
     ) {
       console.log("Collision detected or too far away or out of bounds");
-      
     }
     else{
 
-  this.map.Tiles[playerPosX][playerPosY].entity = null;
-  player.PosX = targetX;
-  player.PosY = targetY;
-  this.map.Tiles[targetX][targetY].entity = player;
-  this.animatePlayerMove(player, targetX, targetY);
-  this.checkUnderPlayer(player);
-  player.health.TriggerDot();
+        this.map.tiles[playerPosX][playerPosY].entity = null;
+        player.PosX = targetX;
+        player.PosY = targetY;
+        this.map.tiles[targetX][targetY].entity = player;
+        this.animatePlayerMove(player, targetX, targetY);
+        this.player1.playerAction(10);
+        this.checkUnderPlayer(player);
+        player.health.TriggerDot();
+
     }
   }
 
   checkUnderPlayer(player: Player) {
-    let tileEffect = this.map.Tiles[player.PosX][player.PosY].effect;
+    let tileEffect = this.map.tiles[player.PosX][player.PosY].effect;
     if (tileEffect) {
       if (tileEffect == "glassShards") {
         player.health.Damage(0, 1.0)
+      }
     }
-
   }
-
-  }
-
-
 
   listenForMovement(player: Player) {
     window.addEventListener('keydown', (event) => {
@@ -209,4 +288,18 @@ export class GameController {
       this.TryToMovePlayer(player, targetX, targetY);
     });
   }
+
+  listenForInput(player: Player) {
+    window.addEventListener('keydown', (event) => {
+      switch (event.key.toLowerCase()) {
+        case 'x':
+          this.player1.energy.setEnergy(100);
+          this.player1.playerAction(0);
+          break;
+        default:
+          return;
+      }
+    });
+  }
+
 }

@@ -2,7 +2,7 @@ export class Health{
     maxHealth: number;
     currentHealth: number;
     Dot: number;
-    Regeneration: number = 0.0; //base 50ml, how much health is regenerated each turn
+    Regeneration: number = 0.05; //base 50ml, how much health is regenerated each turn
     DotReduceRate: number = 0.25; //base 25%, how much the dot effect reduces each turn
     DotDamageRate: number = 0.25; //base 25%, how much damage the dot effect does each turn
 
@@ -15,7 +15,6 @@ export class Health{
     Damage(Damage: number, addDot: number = 0){
         this.currentHealth -= Damage;
         this.Dot += addDot;
-
     }
     
     TriggerDot(){
@@ -47,7 +46,4 @@ export class Health{
             }
         }
     }
-    
-
-
 }
