@@ -11,13 +11,12 @@ import * as PIXI from 'pixi.js';
   styleUrl: `./app.component.css`,
 })
 export class GameComponent implements AfterViewInit {
+  
   @ViewChild('gameContainer', { static: true }) containerRef!: ElementRef;
   gameController = new GameController();
 
   async ngAfterViewInit(): Promise<void> {
     await this.gameController.init(this.containerRef.nativeElement);
-
-
   }
 
 }
