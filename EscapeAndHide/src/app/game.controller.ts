@@ -43,9 +43,22 @@ export class GameController {
     this.app.stage.addChild(this.gridContainer);
     this.app.stage.addChild(this.playerSprite);
 
-    // Initialize inventoryRendering
-    const invDiv = document.querySelector('app-inventory div') as HTMLDivElement;
-    this.inventory = new inventoryRendering(invDiv);
+    // Create inventory and equipped containers side by side
+    const inventoryRow = document.createElement('div');
+    inventoryRow.style.display = 'flex';
+    inventoryRow.style.flexDirection = 'row';
+    container.appendChild(inventoryRow);
+
+    const invDiv = document.createElement('div');
+    invDiv.id = 'inventory-container';
+    inventoryRow.appendChild(invDiv);
+
+    const equippedDiv = document.createElement('div');
+    equippedDiv.id = 'equipped-container';
+    inventoryRow.appendChild(equippedDiv);
+
+    // Pass both containers to inventoryRendering
+    this.inventory = new inventoryRendering(invDiv, equippedDiv);
 
     // Listen for movement
     this.listenForMovement(this.player1);

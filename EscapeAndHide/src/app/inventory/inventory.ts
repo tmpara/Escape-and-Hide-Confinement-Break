@@ -2,9 +2,9 @@ import { Item } from './item';
 
 export class Inventory {
   items: Item[] = [];
+  equippedItems: Item[] = [];
   maxItems: number = 10;
-
-  constructor() {}
+  maxEquippedItems: number = 2;
 
   addItem(itemName: string, itemCategory: string) {
     if (this.items.length < this.maxItems) {
@@ -14,11 +14,32 @@ export class Inventory {
     }
   }
 
+  equipItem(itemIndex: number) {
+    if (this.equippedItems.length < this.maxEquippedItems) {
+      const item = this.items[itemIndex];
+      this.equippedItems.push(item);
+      this.items.splice(itemIndex, 1);
+    } else {
+      alert('Cannot equip more items');
+    }
+  }
+
+  unequipItem(itemIndex: number) {
+    const item = this.equippedItems[itemIndex];
+    if (item) {
+      this.items.push(item);
+      this.equippedItems.splice(itemIndex, 1);
+    }
+  }
+
   removeItem(itemIndex: number) {
     this.items.splice(itemIndex, 1);
   }
 
   getItems(): Item[] {
     return this.items;
+  }
+  getEquippedItems(): Item[] {
+    return this.equippedItems;
   }
 }

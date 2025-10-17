@@ -4,12 +4,17 @@ import * as PIXI from 'pixi.js';
 
 export class inventoryRendering {
   app!: PIXI.Application;
+  equippedApp!: PIXI.Application;
   inventory: Inventory = new Inventory();
   items = new Items();
   container: HTMLDivElement;
-  constructor(container: HTMLDivElement) {
+  equippedContainer: HTMLDivElement;
+
+  constructor(container: HTMLDivElement, equippedContainer: HTMLDivElement) {
     this.container = container;
+    this.equippedContainer = equippedContainer;
     this.initPIXI();
+    this.initEquippedPIXI();
   }
 
   async initPIXI() {
@@ -20,9 +25,21 @@ export class inventoryRendering {
       backgroundColor: 0x1099bb,
     });
     this.container.appendChild(this.app.canvas as HTMLCanvasElement);
-    this.display();
+    this.displayInventory();
   }
-  display() {
+
+  async initEquippedPIXI() {
+    this.equippedApp = new PIXI.Application();
+    await this.equippedApp.init({
+      width: 300,
+      height: 400,
+      backgroundColor: 0x333399,
+    });
+    this.equippedContainer.appendChild(this.equippedApp.canvas as HTMLCanvasElement);
+    this.displayEquipped();
+  }
+
+  displayInventory() {
     this.app.stage.removeChildren();
     for (let i = 0; i < this.inventory.items.length; i++) {
       this.inventory.items[i].displayed = false;
@@ -41,21 +58,67 @@ export class inventoryRendering {
         });
         text.anchor.set(0);
         text.x = 10;
-        text.y = 10 + i * 40;
+        text.y = 10 + i * 35;
         text.eventMode = 'static';
-        text.onclick = () => this.drop(i);
+        text.onpointerupoutside = () => this.drop(i);
+        text.onclick = () => this.equip(i);
         this.app.stage.addChild(text);
       }
     }
   }
 
+  displayEquipped() {
+    this.equippedApp.stage.removeChildren();
+    for (let i = 0; i < this.inventory.equippedItems.length; i++) {
+      this.inventory.equippedItems[i].displayed = false;
+    }
+
+    for (let i = 0; i < this.inventory.equippedItems.length; i++) {
+      if (!this.inventory.equippedItems[i].displayed) {
+        this.inventory.equippedItems[i].displayed = true;
+        const text = new PIXI.Text({
+          text: this.inventory.equippedItems[i].name,
+          style: {
+            fontFamily: 'Arial',
+            fontSize: 28,
+            wordWrap: true,
+          },
+        });
+        text.anchor.set(0);
+        text.x = 10;
+        text.y = 10 + i * 40;
+        text.onclick = () => this.unequip(i);
+        text.eventMode = 'static';
+        this.equippedApp.stage.addChild(text);
+      }
+    }
+  }
+
+  equip(itemIndex: number) {
+    this.inventory.equipItem(itemIndex);
+    this.displayInventory();
+    this.displayEquipped();
+  }
+
+  unequip(itemIndex: number) {
+    const item = this.inventory.equippedItems[itemIndex];
+    if (item) {
+      this.inventory.items.push(item);
+      this.inventory.equippedItems.splice(itemIndex, 1);
+    }
+    this.displayInventory();
+    this.displayEquipped();
+  }
+
   pickUp(itemName: string, itemCategory: string) {
     this.inventory.addItem(itemName, itemCategory);
-    this.display();
+    this.displayInventory();
+    this.displayEquipped();
   }
 
   drop(itemIndex: number) {
     this.inventory.removeItem(itemIndex);
-    this.display();
+    this.displayInventory();
+    this.displayEquipped();
   }
 }
