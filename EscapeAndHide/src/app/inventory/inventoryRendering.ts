@@ -49,12 +49,6 @@ export class inventoryRendering {
     }
   }
 
-  checkForItem(PosX: number, PosY: number) {
-    if (PosX === 1 && PosY === 2) {
-      this.pickUp(this.items.gun.name, this.items.gun.category);
-    }
-  }
-
   pickUp(itemName: string, itemCategory: string) {
     this.inventory.addItem(itemName, itemCategory);
     this.display();

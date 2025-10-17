@@ -33,6 +33,7 @@ export class GameController {
     this.map.LoadPlayer(1, 1, this.player1);
 
     this.map.SpawnItem(1, 2, new Items().gun);
+    this.map.SpawnItem(2, 2, new Items().bigGun);
 
     // Draw grid and player
     this.drawGrid();
@@ -41,6 +42,10 @@ export class GameController {
     // Add containers to stage
     this.app.stage.addChild(this.gridContainer);
     this.app.stage.addChild(this.playerSprite);
+
+    // Initialize inventoryRendering
+    const invDiv = document.querySelector('app-inventory div') as HTMLDivElement;
+    this.inventory = new inventoryRendering(invDiv);
 
     // Listen for movement
     this.listenForMovement(this.player1);
@@ -113,7 +118,13 @@ export class GameController {
   }
 
   checkTileForItem(player: Player) {
-    this.inventory.checkForItem(player.PosX, player.PosY);
+    if (this.map.Tiles[player.PosX][player.PosY].hasItem) {
+      const item = this.map.Tiles[player.PosX][player.PosY].item;
+      if (item) {
+        this.inventory.pickUp(item.name, item.category);
+        this.map.RemoveItem(player.PosX, player.PosY);
+      }
+    }  
   }
 
   listenForMovement(player: Player) {

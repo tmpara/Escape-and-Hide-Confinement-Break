@@ -35,4 +35,8 @@ export class GameGrid {
     this.Tiles[x][y].hasItem = true;
     this.Tiles[x][y].item = item;
   }
+  RemoveItem(x: number, y: number) {
+    this.Tiles[x][y].hasItem = false;
+    this.Tiles[x][y].item = null;
+  }
 }
