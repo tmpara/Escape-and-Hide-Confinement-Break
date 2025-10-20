@@ -22,9 +22,7 @@ export class GameController {
 
   async init(container: HTMLDivElement): Promise<void> {
 
-    
-
-    const texture_placeholder = await Assets.load('https://art.pixilart.com/sr24d0c9ad1eded.png');
+    const wall_metal = await Assets.load('placeholder.png');
 
     const placeholderSprite = await Assets.load('placeholder.png');
 
@@ -86,6 +84,7 @@ export class GameController {
     const barHeight = 20;
     const x = 10;
     const y = 820;
+
     // Background
     this.healthBar.drawRect(x, y, barWidth, barHeight);
     this.healthBar.beginFill(0x555555);
@@ -93,16 +92,14 @@ export class GameController {
 
     const dotPercentage = Math.min(this.player1.health.Dot / this.player1.health.maxHealth, 1);
     const regenPercentage = Math.min(this.player1.health.Regeneration / this.player1.health.maxHealth, 1);
+
     // Health
     const healthPercentage = this.player1.health.currentHealth / this.player1.health.maxHealth;
     this.healthBar.beginFill(0xff0000);
-
     this.healthBar.drawRect(x, y, barWidth * healthPercentage, barHeight);
     this.healthBar.addChild(myText);
-   
     this.healthBar.endFill();
 
-    
     // DOT effect
     if (this.player1.health.Dot > 0) {
       let dotRate = this.player1.health.DotReduceRate/0.25;
@@ -113,9 +110,6 @@ export class GameController {
     }
 
     // Regeneration
-   
-
-
     if (this.player1.health.Regeneration > 0 && this.player1.health.currentHealth < this.player1.health.maxHealth) {
       
       if (this.player1.health.Dot > 0) {
@@ -134,14 +128,10 @@ export class GameController {
         this.healthBar.endFill();
       }
     }
-
   }
 
-  
-
   drawEnergyBar() {
-    
-  
+
     this.energyBar.removeChildren();
     this.energyBar.clear();
     const barWidth = 200;
@@ -156,10 +146,8 @@ export class GameController {
 
     // Energy
     const energyPercentage = this.player1.energy.currentEnergy / this.player1.energy.maxEnergy;
-
     this.energyBar.beginFill(0xffff00);
     this.energyBar.drawRect(x, y, barWidth * energyPercentage, barHeight);
-    
     this.energyBar.endFill();
 
   }
@@ -196,12 +184,9 @@ export class GameController {
           this.gridContainer.addChild(this.tile);
         }
           this.tile.endFill();
-          this.gridContainer.addChild(this.tile);
-          
-       
+          this.gridContainer.addChild(this.tile);  
       }
     }
-    
   }
 
   drawPlayer() {
@@ -280,7 +265,6 @@ export class GameController {
         this.animatePlayerMove(player, targetX, targetY);
         this.player1.playerAction(10);
         this.checkUnderPlayer(player);
-      
 
     }
   }
@@ -333,5 +317,4 @@ export class GameController {
       }
     });
   }
-  
 }

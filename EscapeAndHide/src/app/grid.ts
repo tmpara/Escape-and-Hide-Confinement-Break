@@ -26,7 +26,6 @@ export class GameGrid {
   }
   
   CreateMap(){
-    this.tiles[2][2] = this.getTileData("glass_shards")
     this.tiles[4][1] = this.getTileData("wall_basic")
     this.tiles[4][2] = this.getTileData("wall_basic")
     this.tiles[4][3] = this.getTileData("wall_basic")
@@ -41,7 +40,6 @@ export class GameGrid {
     this.tiles[4][12] = this.getTileData("wall_basic")
   }
   
-
   getTileData(name: String){
 
     let info = new tile(false,"",false,100,"",null);
@@ -53,7 +51,7 @@ export class GameGrid {
       return info
       break;
     case 'wall_basic':
-      info = new tile(true,"",true,100,"https://art.pixilart.com/sr24d0c9ad1eded.png",null);
+      info = new tile(true,"",true,100,'placeholder.png',null);
       return info
       break;
     }
