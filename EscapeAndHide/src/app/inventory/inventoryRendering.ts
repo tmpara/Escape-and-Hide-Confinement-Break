@@ -35,7 +35,9 @@ export class inventoryRendering {
       height: 400,
       backgroundColor: 0x333399,
     });
-    this.equippedContainer.appendChild(this.equippedApp.canvas as HTMLCanvasElement);
+    this.equippedContainer.appendChild(
+      this.equippedApp.canvas as HTMLCanvasElement
+    );
     this.displayEquipped();
   }
 
@@ -101,11 +103,7 @@ export class inventoryRendering {
   }
 
   unequip(itemIndex: number) {
-    const item = this.inventory.equippedItems[itemIndex];
-    if (item) {
-      this.inventory.items.push(item);
-      this.inventory.equippedItems.splice(itemIndex, 1);
-    }
+    this.inventory.unequipItem(itemIndex);
     this.displayInventory();
     this.displayEquipped();
   }
