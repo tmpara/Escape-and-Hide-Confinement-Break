@@ -24,6 +24,8 @@ export class GameController {
 
     const wall_metal = await Assets.load('placeholder.png');
 
+    const placeholderSprite = await Assets.load('placeholder.png');
+
     // Create PIXI app
     this.app = new Application();
     await this.app.init({
@@ -156,6 +158,7 @@ export class GameController {
     
     for (let x = 0; x < this.map.width; x++) {
       for (let y = 0; y < this.map.height; y++) {
+       
         if(this.map.tiles[x][y].sprite != ""){
           let texture = Assets.get(this.map.tiles[x][y].sprite.toString());
           let sprite = new PIXI.Sprite(texture);
@@ -165,11 +168,13 @@ export class GameController {
           sprite.height = this.tileSize
           this.gridContainer.addChild(sprite);
         }
+
+         
         else{
-          let tile = new Graphics();
-          tile.lineStyle(1, 0x888888);
-          tile.beginFill(this.map.tiles[x][y].hasCollision ? 0x444444 : 0xcccccc);
-          tile.drawRect(
+          
+          this.tile.lineStyle(1, 0x888888);
+          this.tile.beginFill(0xcccccc);
+          this.tile.drawRect(
             x * this.tileSize,
             y * this.tileSize,
             this.tileSize,
@@ -178,6 +183,8 @@ export class GameController {
           this.tile.endFill();
           this.gridContainer.addChild(this.tile);
         }
+          this.tile.endFill();
+          this.gridContainer.addChild(this.tile);  
       }
     }
   }
@@ -264,6 +271,7 @@ export class GameController {
 
   checkUnderPlayer(player: Player) {
     let tileEffect = this.map.tiles[player.PosX][player.PosY].effect;
+    console.log("Tile effect: " + tileEffect);
     if (tileEffect) {
       if (tileEffect == "glass_shards") {
         player.health.Damage(0, 1.0)
