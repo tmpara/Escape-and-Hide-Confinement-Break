@@ -328,8 +328,8 @@ export class GameController {
   }
 
   checkTileForItem(player: Player) {
-    if (this.map.Tiles[player.PosX][player.PosY].hasItem) {
-      const item = this.map.Tiles[player.PosX][player.PosY].item;
+    if (this.map.tiles[player.PosX][player.PosY].hasItem) {
+      const item = this.map.tiles[player.PosX][player.PosY].item;
       if (item) {
         this.inventory.pickUp(item.name, item.category);
         this.map.RemoveItem(player.PosX, player.PosY);

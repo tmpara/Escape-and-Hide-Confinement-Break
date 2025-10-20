@@ -19,7 +19,16 @@ export class GameGrid {
     for (let x = 0; x <= this.width; x++) {
       this.tiles[x] = new Array();
       for (let y = 0; y <= this.height; y++) {
-        this.tiles[x][y] = new tile(false, '', false, null, '', null);
+        this.tiles[x][y] = new tile(
+          false,
+          '',
+          false,
+          null,
+          false,
+          null,
+          '',
+          null
+        );
       }
     }
   }
@@ -41,13 +50,15 @@ export class GameGrid {
   }
 
   getTileData(name: String) {
-    let info = new tile(false, '', false, 100, '', null);
+    let info = new tile(false, '', false, null, false, 100, '', null);
 
     switch (name) {
       case 'glass_shards':
         info = new tile(
           false,
           'glass_shards',
+          false,
+          null,
           true,
           5,
           'placeholder.png',
@@ -59,6 +70,8 @@ export class GameGrid {
         info = new tile(
           true,
           '',
+          false,
+          null,
           true,
           100,
           'https://art.pixilart.com/sr24d0c9ad1eded.png',
@@ -89,11 +102,11 @@ export class GameGrid {
   }
 
   SpawnItem(x: number, y: number, item: Item) {
-    this.Tiles[x][y].hasItem = true;
-    this.Tiles[x][y].item = item;
+    this.tiles[x][y].hasItem = true;
+    this.tiles[x][y].item = item;
   }
   RemoveItem(x: number, y: number) {
-    this.Tiles[x][y].hasItem = false;
-    this.Tiles[x][y].item = null;
+    this.tiles[x][y].hasItem = false;
+    this.tiles[x][y].item = null;
   }
 }
