@@ -39,8 +39,16 @@ export class GameGrid {
     this.tiles[4][10] = this.getTileData("wall_basic")
     this.tiles[4][11] = this.getTileData("wall_basic")
     this.tiles[4][12] = this.getTileData("wall_basic")
+    this.tiles[1][6] = this.getTileData("room_entrance")
   }
-  
+
+  LoadMap(x:number,y:number,map: string[][]){
+    for(let i=0;i<map.length;i++){
+      for(let j=0;j<map[i].length;j++){
+        this.tiles[i][j] = this.getTileData(map[i][j])
+    }
+  }
+}
 
   getTileData(name: String){
 
@@ -51,11 +59,15 @@ export class GameGrid {
     case 'glass_shards':
       info = new tile(false,"glass_shards",true,5,"placeholder.png",null);
       return info
-      break;
+      
     case 'wall_basic':
       info = new tile(true,"",true,100,"https://art.pixilart.com/sr24d0c9ad1eded.png",null);
       return info
-      break;
+
+    case 'room_entrance':
+      info = new tile(false,"entrance",false,null,"placeholder.png",null);
+      return info
+      
     }
     return info
 

@@ -6,16 +6,19 @@ import { Text, Sprite , Assets } from 'pixi.js';
 import * as PIXI from 'pixi.js';
 import { Energy } from './energy/energy';
 import { effect } from '@angular/core';
+import { World } from './world';
 
 export class GameController {
   app!: Application;
   map!: GameGrid;
+  world = new World();
   player1 = new Player(1, 1, "1", new Health(5.00, 4.00), new Energy(100,100));
   gridContainer = new Container();
   playerSprite = new Graphics();
   healthBar = new Graphics();
   energyBar = new Graphics();
   tile = new Graphics();
+  ;
   tileSize = 64; // Size of each tile in pixels
 
   constructor() {}
@@ -28,20 +31,25 @@ export class GameController {
 
     const placeholderSprite = await Assets.load('placeholder.png');
 
-    // Create PIXI app
-    this.app = new Application();
-    await this.app.init({
-      width: 896,
-      height: 896,
-      backgroundColor: 0x222222,
-      antialias: true,
-    });
-    container.appendChild(this.app.canvas as HTMLCanvasElement);
-
+ 
+    this.world.CreateWorld();
     // Create map and player
-    this.GenerateRoom();
+    this.map = this.world.rooms[5][5];
+    console.log(this.map.width + " " + this.map.height);
     this.map.LoadPlayer(1, 1, this.player1);
 
+       // Create PIXI app
+    this.app = new Application();
+    await this.app.init({
+      width: this.tileSize * 30,
+      height: this.tileSize * 30,
+      backgroundColor: 0x222222,
+      antialias: true,
+      resizeTo: window
+      
+    });
+    
+    container.appendChild(this.app.canvas as HTMLCanvasElement);
     // Add containers to stage
     this.app.stage.addChild(this.gridContainer);
     this.app.stage.addChild(this.playerSprite);
@@ -57,10 +65,14 @@ export class GameController {
 
   }
 
-  GenerateRoom(){
-    this.map = new GameGrid(14,14);
+    async GenerateRoom(x: number, y: number)  {
+    this.map = new GameGrid(x,y);
     this.map.CreateEmptyMap()
     this.map.CreateMap()
+    this.map.LoadPlayer(1, 1, this.player1);
+
+ 
+    
   }
 
   GenerateRandomNumber(min: number, max: number){
@@ -247,6 +259,19 @@ export class GameController {
     requestAnimationFrame(() => this.gameLoop());
   }
 
+  TeleportPlayer(player: Player, targetX: number, targetY: number) {
+    let playerPosX = player.PosX;
+    let playerPosY = player.PosY;
+    this.map.tiles[playerPosX][playerPosY].entity = null;
+    player.PosX = targetX;
+    player.PosY = targetY;
+    this.map.tiles[targetX][targetY].entity = player;
+    this.animatePlayerMove(player, targetX, targetY);
+    //player.playerAction(10);
+    this.checkUnderPlayer(player);
+    console.log("Player teleported to: " + player.PosX + ", " + player.PosY);
+  }
+
   TryToMovePlayer(player: Player, targetX: number, targetY: number) {
 
     if(this.player1.energy.currentEnergy < 10){
@@ -278,9 +303,9 @@ export class GameController {
         player.PosY = targetY;
         this.map.tiles[targetX][targetY].entity = player;
         this.animatePlayerMove(player, targetX, targetY);
-        this.player1.playerAction(10);
+        player.playerAction(10);
         this.checkUnderPlayer(player);
-      
+        console.log("Player moved to: " + player.PosX + ", " + player.PosY);
 
     }
   }
@@ -288,12 +313,19 @@ export class GameController {
   checkUnderPlayer(player: Player) {
     let tileEffect = this.map.tiles[player.PosX][player.PosY].effect;
     console.log("Tile effect: " + tileEffect);
-    if (tileEffect) {
-      if (tileEffect == "glass_shards") {
-        player.health.Damage(0, 1.0)
+    switch (tileEffect) {
+      case 'glass_shards':
+        player.health.Damage(0, 1.0);
+        break;
+      case 'entrance':
+        this.GenerateRoom(20,20);
+        this.TeleportPlayer(this.player1, 1, 1);
+
+        break;
       }
+
     }
-  }
+  
 
   listenForMovement(player: Player) {
     window.addEventListener('keydown', (event) => {
