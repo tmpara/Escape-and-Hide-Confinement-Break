@@ -2,7 +2,7 @@ import { Health } from "./health/health";
 import { Energy } from "./energy/energy";
 import { Player } from "./player";
 import { tile } from "./tile";
-
+import * as PIXI from 'pixi.js';
 export class GameGrid {
   width: number;
   height: number;
@@ -87,6 +87,7 @@ export class GameGrid {
 
     let info = new tile(false,"",false,null,true,"",null);
 
+    
     switch (name){
     case 'glass_shards':
       info = new tile(false,"glass_shards",true,5,true,"placeholder.png",null);
