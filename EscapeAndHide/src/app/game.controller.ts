@@ -11,6 +11,7 @@ import { World } from './world';
 export class GameController {
   app!: Application;
   map!: GameGrid;
+ 
   world = new World();
   player1 = new Player(1, 1, "1", new Health(5.00, 4.00), new Energy(100,100));
   gridContainer = new Container();
@@ -18,6 +19,8 @@ export class GameController {
   healthBar = new Graphics();
   energyBar = new Graphics();
   tile = new Graphics();
+  playerWorldX = 5;
+  playerWorldY = 5
   ;
   tileSize = 64; // Size of each tile in pixels
 
@@ -25,14 +28,16 @@ export class GameController {
 
   async init(container: HTMLDivElement): Promise<void> {
 
-    const wall_metal = await Assets.load('placeholder.png');
-
-    const placeholderSprite = await Assets.load('placeholder.png');
+    await Assets.load('placeholder.png');
+    await Assets.load('door1.png');
+    
 
  
     this.world.CreateWorld();
     // Create map and player
+
     this.map = this.world.rooms[5][5];
+    
     console.log(this.map.width + " " + this.map.height);
     this.map.LoadPlayer(1, 1, this.player1);
 
@@ -247,7 +252,10 @@ export class GameController {
   TeleportPlayer(player: Player, targetX: number, targetY: number) {
     let playerPosX = player.PosX;
     let playerPosY = player.PosY;
-    this.map.tiles[playerPosX][playerPosY].entity = null;
+    if(playerPosX < this.map.width && playerPosY < this.map.height){
+      this.map.tiles[playerPosX][playerPosY].entity = null;
+    }
+    
     player.PosX = targetX;
     player.PosY = targetY;
     this.map.tiles[targetX][targetY].entity = player;
@@ -295,6 +303,51 @@ export class GameController {
     }
   }
 
+  findRoom(player: Player){
+    let playerPosX = player.PosX;
+    let playerPosY = player.PosY;
+
+    let mapX = this.map.width;
+    let mapY = this.map.height;
+
+    if(playerPosX == 0 && playerPosY < mapY){
+      //left
+      if (this.playerWorldX - 1  >= 0){
+        this.map = this.world.rooms[this.playerWorldX-1][this.playerWorldY];
+        this.playerWorldX -= 1;
+        this.TeleportPlayer(this.player1, this.map.width-1, Math.floor(this.map.height/2));
+        console.log("Moved to left room");
+      }
+    }
+    else if(playerPosX == mapX-1 && playerPosY < mapY){
+      //right
+      if (this.playerWorldX + 1  <= 10){
+        this.map = this.world.rooms[this.playerWorldX+1][this.playerWorldY];
+        this.playerWorldX += 1;
+        console.log("Moved to right room");
+      }
+    }
+    else if(playerPosY == 0 && playerPosX < mapX){
+      //up
+      if (this.playerWorldY + 1  <= 10){
+        this.map = this.world.rooms[this.playerWorldX][this.playerWorldY+1];
+        this.playerWorldY += 1;
+        this.TeleportPlayer(this.player1, Math.floor(this.map.width/2), this.map.height-2);
+        console.log("Moved to up room");
+      }
+    }
+    else if(playerPosY == mapY-1 && playerPosX < mapX){
+      //down
+      if (this.playerWorldY - 1  >= 0){
+        this.map = this.world.rooms[this.playerWorldX][this.playerWorldY-1];
+        this.playerWorldY -= 1;
+        this.TeleportPlayer(this.player1, Math.floor(this.map.width/2), 1);
+        console.log("Moved to down room");
+      }
+    }
+   
+  }
+
   checkUnderPlayer(player: Player) {
     let tileEffect = this.map.tiles[player.PosX][player.PosY].effect;
     console.log("Tile effect: " + tileEffect);
@@ -303,8 +356,7 @@ export class GameController {
         player.health.Damage(0, 1.0);
         break;
       case 'entrance':
-        this.GenerateRoom(20,20);
-        this.TeleportPlayer(this.player1, 1, 1);
+        this.findRoom(this.player1);
 
         break;
       }

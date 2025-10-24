@@ -27,7 +27,12 @@ export class World {
         }
 
         this.rooms[5][5] = new GameGrid(9,9);
+        this.rooms[5][5].CreateEmptyMap();
         this.rooms[5][5].LoadMap(9,9,this.data.startingRoom);
+
+        this.rooms[5][6] = new GameGrid(11,11);
+        this.rooms[5][6].CreateEmptyMap();
+        this.rooms[5][6].LoadMap(11,11,this.data.testRoomUp);
             
 
     }

@@ -7,12 +7,13 @@ export class GameGrid {
   width: number;
   height: number;
   tiles:tile[][];
-
+  emptyTile: tile;
   constructor(width: number, height: number) {
     
     this.width = width;
     this.height = height;
     this.tiles = new Array();
+    this.emptyTile = new tile(false,"",false,null,"",null);
 
   }
 
@@ -44,7 +45,12 @@ export class GameGrid {
   LoadMap(x:number,y:number,map: string[][]){
     for(let i=0;i<map.length;i++){
       for(let j=0;j<map[i].length;j++){
-        this.tiles[i][j] = this.getTileData(map[i][j])
+        if(this.emptyTile == this.getTileData(map[i][j])){
+          
+        }else{
+          this.tiles[i][j] = this.getTileData(map[i][j])
+        }
+        
     }
   }
 
@@ -57,6 +63,8 @@ export class GameGrid {
 
     
     switch (name){
+
+    
     case 'glass_shards':
       info = new tile(false,"glass_shards",true,5,"placeholder.png",null);
       return info
@@ -66,7 +74,7 @@ export class GameGrid {
       return info
 
     case 'room_entrance':
-      info = new tile(false,"entrance",false,null,"placeholder.png",null);
+      info = new tile(false,"entrance",false,null,"door1.png",null);
       return info
       
     }
