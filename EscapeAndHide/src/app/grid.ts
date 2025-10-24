@@ -1,19 +1,18 @@
-import { Health } from "./health/health";
-import { Energy } from "./energy/energy";
-import { Player } from "./player";
-import { tile } from "./tile";
+import { Health } from './health/health';
+import { Energy } from './energy/energy';
+import { Player } from './player';
+import { tile } from './tile';
+import { Item } from './inventory/item';
 import * as PIXI from 'pixi.js';
 export class GameGrid {
   width: number;
   height: number;
-  tiles:tile[][];
+  tiles: tile[][];
 
   constructor(width: number, height: number) {
-    
     this.width = width;
     this.height = height;
     this.tiles = new Array();
-
   }
 
   createEmptyMap(){
@@ -106,8 +105,7 @@ export class GameGrid {
       return info
       break;
     }
-    return info
-
+    return info;
   }
 
   createTile(x: number, y: number, name: String, replace: boolean){
@@ -142,4 +140,14 @@ export class GameGrid {
     this.tiles[x][y].entity = player;
   }
 
+  SpawnItem(x: number, y: number, item: Item) {
+    this.tiles[x][y].hasItem = true;
+    this.tiles[x][y].item = item;
+    this.tiles[x][y].sprite = item.sprite;
+  }
+  RemoveItem(x: number, y: number) {
+    this.tiles[x][y].hasItem = false;
+    this.tiles[x][y].item = null;
+    this.tiles[x][y].sprite = "";
+  }
 }
