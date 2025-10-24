@@ -4,6 +4,7 @@ import { Player } from './player';
 import { tile } from './tile';
 import { Item } from './inventory/item';
 import * as PIXI from 'pixi.js';
+import { Assets } from 'pixi.js';
 export class GameGrid {
   width: number;
   height: number;
@@ -19,7 +20,7 @@ export class GameGrid {
     for(let x=0;x<=this.width;x++){
       this.tiles[x] = new Array();
       for(let y=0;y<=this.height;y++){
-        this.tiles[x][y] = new tile(false,"",false,null,true,"",null);
+        this.tiles[x][y] = new tile(false,"", false, null, false,null,true,"",null);
       }
     }
   }
@@ -84,24 +85,24 @@ export class GameGrid {
   
   getTileData(name: String){
 
-    let info = new tile(false,"",false,null,true,"",null);
+    let info = new tile(false,"",false, null, false,null,true,"",null);
 
     
     switch (name){
     case 'glass_shards':
-      info = new tile(false,"glass_shards",true,5,true,"placeholder.png",null);
+      info = new tile(false,"glass_shards", false, null, true,5,true,"placeholder.png",null);
       return info
       break;
     case 'wall_basic':
-      info = new tile(true,"",true,100,false,"placeholder.png",null);
+      info = new tile(true,"", false, null, true,100,false,"placeholder.png",null);
       return info
       break;
     case 'fire':
-      info = new tile(false,"fire",false,100,false,"fire.png",null);
+      info = new tile(false,"fire", false, null, false,100,false,"fire.png",null);
       return info
       break;
     case 'ash':
-      info = new tile(false,"",false,null,false,"ash.png",null);
+      info = new tile(false,"",false, null, false,null,false,"ash.png",null);
       return info
       break;
     }
@@ -116,7 +117,7 @@ export class GameGrid {
 
   clearTile(x: number, y: number){
     if (this.isValidTile(x,y)){
-      this.tiles[x][y] = new tile(false,"",false,null,true,"",null);
+      this.tiles[x][y] = new tile(false,"",false, null, false,null,true,"",null);
     }
   }
 
@@ -145,9 +146,20 @@ export class GameGrid {
     this.tiles[x][y].item = item;
     this.tiles[x][y].sprite = item.sprite;
   }
-  RemoveItem(x: number, y: number) {
+  RemoveItem(x: number, y: number, effect?: string) {
+    let spriteAfterRemoval = "";
+    switch (effect) {
+      case "fire":
+        spriteAfterRemoval = "fire.png";
+        this.tiles[x][y].effect = "fire";
+        break;
+      case "glass_shards":
+        spriteAfterRemoval = "placeholder.png";
+        this.tiles[x][y].effect = "glass_shards";
+        break;  
+    }    
+    this.tiles[x][y].sprite = spriteAfterRemoval;
     this.tiles[x][y].hasItem = false;
     this.tiles[x][y].item = null;
-    this.tiles[x][y].sprite = "";
   }
 }

@@ -33,6 +33,7 @@ export class GameController {
     );
     await Assets.load('placeholder.png');
     await Assets.load('gun.png');
+    await Assets.load('biggun.png');
 
     // Create PIXI app
     this.app = new Application();
@@ -48,8 +49,11 @@ export class GameController {
     this.generateRoom();
     this.map.loadPlayer(1, 1, this.player1);
 
-    this.map.SpawnItem(1, 2, new Items().gun);
-    this.map.SpawnItem(2, 2, new Items().bigGun);
+    this.map.SpawnItem(1, 3, new Items().gun);
+    this.map.SpawnItem(2, 3, new Items().bigGun);
+
+    this.map.addTileEffect(2,2,"glass_shards")
+    this.map.tiles[2][2].sprite = 'placeholder.png';
 
     // Draw grid and player
     this.drawGrid();
@@ -326,9 +330,9 @@ export class GameController {
   checkTileForItem(player: Player) {
     if (this.map.tiles[player.PosX][player.PosY].hasItem) {
       const item = this.map.tiles[player.PosX][player.PosY].item;
-      if (item) {
+      if (item && confirm(`Pick up ${item.name}?`)) {
         this.inventory.pickUp(item.name, item.category, item.sprite);
-        this.map.RemoveItem(player.PosX, player.PosY);
+        this.map.RemoveItem(player.PosX, player.PosY, this.map.tiles[player.PosX][player.PosY].effect);
       }
     }
   }
@@ -345,6 +349,7 @@ export class GameController {
         return "fire"
       }
       return ""
+    
   }
 
   updateAllTiles(){
