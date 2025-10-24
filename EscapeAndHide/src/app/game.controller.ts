@@ -25,14 +25,10 @@ export class GameController {
 
   async init(container: HTMLDivElement): Promise<void> {
 
-    await Assets.load('placeholder.png');
-    await Assets.load('fire.png');
-    await Assets.load('ash.png');
-    await Assets.load(
-      'https://art.pixilart.com/sr24d0c9ad1eded.png'
-    );
-    await Assets.load('placeholder.png');
-    await Assets.load('gun.png');
+    const placeholderSprite = await Assets.load('placeholder.png');
+    const fireSprite = await Assets.load('fire.png');
+    const ashSprite = await Assets.load('ash.png');
+    const explosionSprite = await Assets.load('explosion.png');
 
     // Create PIXI app
     this.app = new Application();
@@ -361,19 +357,24 @@ export class GameController {
     switch (effect){
       case 'fire':
         this.map.tiles[x][y].health = this.map.tiles[x][y].health! - this.generateRandomNumber(20,40)
-        if (this.map.tiles[x][y].health <= 50){
+        var spreadchance = this.generateRandomNumber(1,5)
+        if (spreadchance==1){
 
           if(this.map.isValidTile(x+1,y) && this.map.tiles[x+1][y].hasCollision == false && this.map.tiles[x+1][y].flammable == true){
             this.map.createTile(x+1,y,"fire",true)
+            this.map.tiles[x+1][y].health! = 25;
           }
           if(this.map.isValidTile(x-1,y) && this.map.tiles[x-1][y].hasCollision == false && this.map.tiles[x-1][y].flammable == true){
             this.map.createTile(x-1,y,"fire",true)
+            this.map.tiles[x-1][y].health! = 25;
           }
           if(this.map.isValidTile(x,y+1) && this.map.tiles[x][y+1].hasCollision == false && this.map.tiles[x][y+1].flammable == true){
             this.map.createTile(x,y+1,"fire",true)
+            this.map.tiles[x][y+1].health! = 25;
           }
           if(this.map.isValidTile(x,y-1) && this.map.tiles[x][y-1].hasCollision == false && this.map.tiles[x][y-1].flammable == true){
             this.map.createTile(x,y-1,"fire",true)
+            this.map.tiles[x][y-1].health! = 25;
           }
 
         }
@@ -387,6 +388,41 @@ export class GameController {
     if (this.map.tiles[x][y].health! <= 0 && this.map.tiles[x][y].destroyable == true){
       this.map.clearTile(x,y)
     }
+
+  }
+
+  createExplosion(x: number, y: number, strength: number){
+
+      this.map.createTile(x,y,"explosion",true);
+
+      for(let a=0;a<=this.map.width;a++){
+        for(let b=0;b<=this.map.height;b++){
+          const distance = Math.sqrt(
+            Math.pow(a - x, 2) + Math.pow(b - y, 2)
+          )
+          if (distance <= strength) {
+            this.map.createTile(a,b,"explosion",true);
+            if(this.player1.PosX == a && this.player1.PosY == b){
+              this.player1.health.Damage(strength-distance/2,0)
+            }
+            var firechance=this.generateRandomNumber(1,10)
+            if (firechance==1){
+              this.map.createTile(a,b,"fire",true);
+            }
+          }
+        }
+      }
+
+      (async () => { 
+        await this.delay(100);
+        for(let a=0;a<=this.map.width;a++){
+          for(let b=0;b<=this.map.height;b++){
+            if(this.map.tiles[a][b].effect=="explosion"){
+              this.map.clearTile(a,b)
+            }
+          }
+        }
+      })();
 
   }
 
@@ -428,10 +464,15 @@ export class GameController {
       switch (event.key.toLowerCase()) {
         case 'x':
           this.endTurn()
+          this.createExplosion(player.PosX,player.PosY,3)
           break;
         default:
           return;
       }
     });
+  }
+
+  delay(ms: number) {
+    return new Promise( resolve => setTimeout(resolve, ms) );
   }
 }
