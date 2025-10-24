@@ -24,11 +24,11 @@ export class GameController {
   constructor() {}
 
   async init(container: HTMLDivElement): Promise<void> {
-    const texture_placeholder = await Assets.load(
+    await Assets.load(
       'https://art.pixilart.com/sr24d0c9ad1eded.png'
     );
-
-    const placeholderSprite = await Assets.load('placeholder.png');
+    await Assets.load('placeholder.png');
+    await Assets.load('gun.png');
 
     // Create PIXI app
     this.app = new Application();
@@ -331,7 +331,7 @@ export class GameController {
     if (this.map.tiles[player.PosX][player.PosY].hasItem) {
       const item = this.map.tiles[player.PosX][player.PosY].item;
       if (item) {
-        this.inventory.pickUp(item.name, item.category);
+        this.inventory.pickUp(item.name, item.category, item.sprite);
         this.map.RemoveItem(player.PosX, player.PosY);
       }
     }

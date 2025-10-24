@@ -6,9 +6,9 @@ export class Inventory {
   maxItems: number = 10;
   maxEquippedItems: number = 2;
 
-  addItem(itemName: string, itemCategory: string) {
+  addItem(itemName: string, itemCategory: string, itemSprite: String) {
     if (this.items.length < this.maxItems) {
-      this.items.push(new Item(itemName, itemCategory, false));
+      this.items.push(new Item(itemName, itemCategory, false, itemSprite));
     } else {
       alert('Inventory full');
     }

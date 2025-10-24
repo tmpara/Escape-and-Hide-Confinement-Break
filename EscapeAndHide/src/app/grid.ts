@@ -104,9 +104,11 @@ export class GameGrid {
   SpawnItem(x: number, y: number, item: Item) {
     this.tiles[x][y].hasItem = true;
     this.tiles[x][y].item = item;
+    this.tiles[x][y].sprite = item.sprite;
   }
   RemoveItem(x: number, y: number) {
     this.tiles[x][y].hasItem = false;
     this.tiles[x][y].item = null;
+    this.tiles[x][y].sprite = "";
   }
 }

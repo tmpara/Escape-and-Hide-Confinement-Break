@@ -108,8 +108,8 @@ export class inventoryRendering {
     this.displayEquipped();
   }
 
-  pickUp(itemName: string, itemCategory: string) {
-    this.inventory.addItem(itemName, itemCategory);
+  pickUp(itemName: string, itemCategory: string, itemSprite: String) {
+    this.inventory.addItem(itemName, itemCategory, itemSprite);
     this.displayInventory();
     this.displayEquipped();
   }
