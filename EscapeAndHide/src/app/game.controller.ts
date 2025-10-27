@@ -5,17 +5,21 @@ import { Health } from './health/health';
 import { Text, Sprite, Assets } from 'pixi.js';
 import * as PIXI from 'pixi.js';
 import { Energy } from './energy/energy';
-import { effect } from '@angular/core';
-import { Items } from './inventory/items';
+import { Items } from './items/items';
 import { inventoryRendering } from './inventory/inventoryRendering';
+import { WeaponFunctionality } from './items/weapon_functionality';
+import { Dummy } from './dummy';
 
 export class GameController {
   app!: Application;
   map!: GameGrid;
   inventory!: inventoryRendering;
+  weaponFunctionality = new WeaponFunctionality();
   player1 = new Player(1, 1, '1', new Health(5.0, 4.0), new Energy(100, 100));
+  dummy1 = new Dummy(5, 2, '1', 10.0);
   gridContainer = new Container();
   playerSprite = new Graphics();
+  dummySprite = new Graphics();
   healthBar = new Graphics();
   energyBar = new Graphics();
   tile = new Graphics();
@@ -24,13 +28,10 @@ export class GameController {
   constructor() {}
 
   async init(container: HTMLDivElement): Promise<void> {
-
     await Assets.load('placeholder.png');
     await Assets.load('fire.png');
     await Assets.load('ash.png');
-    await Assets.load(
-      'https://art.pixilart.com/sr24d0c9ad1eded.png'
-    );
+    await Assets.load('https://art.pixilart.com/sr24d0c9ad1eded.png');
     await Assets.load('placeholder.png');
     await Assets.load('gun.png');
     await Assets.load('biggun.png');
@@ -48,20 +49,23 @@ export class GameController {
     // Create map and player
     this.generateRoom();
     this.map.loadPlayer(1, 1, this.player1);
+    this.map.loadDummy(5, 2, this.dummy1);
 
     this.map.SpawnItem(1, 3, new Items().gun);
     this.map.SpawnItem(2, 3, new Items().bigGun);
 
-    this.map.addTileEffect(2,2,"glass_shards")
+    this.map.addTileEffect(2, 2, 'glass_shards');
     this.map.tiles[2][2].sprite = 'placeholder.png';
 
-    // Draw grid and player
+    // Draw grid, player and dummy
     this.drawGrid();
     this.drawPlayer();
+    this.drawDummy();
 
     // Add containers to stage
     this.app.stage.addChild(this.gridContainer);
     this.app.stage.addChild(this.playerSprite);
+    this.app.stage.addChild(this.dummySprite);
     this.app.stage.addChild(this.healthBar);
     this.app.stage.addChild(this.energyBar);
 
@@ -90,13 +94,13 @@ export class GameController {
     this.gameLoop();
   }
 
-  generateRoom(){
-    this.map = new GameGrid(28,28);
-    this.map.createEmptyMap()
-    this.map.createMap()
+  generateRoom() {
+    this.map = new GameGrid(28, 28);
+    this.map.createEmptyMap();
+    this.map.createMap();
   }
 
-  generateRandomNumber(min: number, max: number){
+  generateRandomNumber(min: number, max: number) {
     return Math.floor(Math.random() * (max - min + 1) + min);
   }
 
@@ -124,8 +128,14 @@ export class GameController {
     this.healthBar.beginFill(0x555555);
     this.healthBar.endFill();
 
-    const dotPercentage = Math.min(this.player1.health.Dot / this.player1.health.maxHealth, 1);
-    const regenPercentage = Math.min(this.player1.health.Regeneration / this.player1.health.maxHealth, 1);
+    const dotPercentage = Math.min(
+      this.player1.health.Dot / this.player1.health.maxHealth,
+      1
+    );
+    const regenPercentage = Math.min(
+      this.player1.health.Regeneration / this.player1.health.maxHealth,
+      1
+    );
 
     // Health
     const healthPercentage =
@@ -150,8 +160,10 @@ export class GameController {
     }
 
     // Regeneration
-    if (this.player1.health.Regeneration > 0 && this.player1.health.currentHealth < this.player1.health.maxHealth) {
-      
+    if (
+      this.player1.health.Regeneration > 0 &&
+      this.player1.health.currentHealth < this.player1.health.maxHealth
+    ) {
       if (this.player1.health.Dot > 0) {
         this.healthBar.beginFill(0x00ff00);
         this.healthBar.drawRect(
@@ -190,7 +202,6 @@ export class GameController {
   }
 
   drawEnergyBar() {
-
     this.energyBar.removeChildren();
     this.energyBar.clear();
     const barWidth = 200;
@@ -204,7 +215,8 @@ export class GameController {
     this.energyBar.endFill();
 
     // Energy
-    const energyPercentage = this.player1.energy.currentEnergy / this.player1.energy.maxEnergy;
+    const energyPercentage =
+      this.player1.energy.currentEnergy / this.player1.energy.maxEnergy;
     this.energyBar.beginFill(0xffff00);
     this.energyBar.drawRect(x, y, barWidth * energyPercentage, barHeight);
     this.energyBar.endFill();
@@ -221,11 +233,11 @@ export class GameController {
         if (this.map.tiles[x][y].sprite != '') {
           let texture = Assets.get(this.map.tiles[x][y].sprite.toString());
           let sprite = new PIXI.Sprite(texture);
-          sprite.x = x * this.tileSize
-          sprite.y = y * this.tileSize
-          sprite.width = this.tileSize
-          sprite.height = this.tileSize
-          sprite._zIndex = 1
+          sprite.x = x * this.tileSize;
+          sprite.y = y * this.tileSize;
+          sprite.width = this.tileSize;
+          sprite.height = this.tileSize;
+          sprite._zIndex = 1;
           this.gridContainer.addChild(sprite);
         }
 
@@ -237,9 +249,9 @@ export class GameController {
           this.tileSize,
           this.tileSize
         );
-        this.tile._zIndex = 0
+        this.tile._zIndex = 0;
         this.tile.endFill();
-        this.gridContainer.addChild(this.tile);  
+        this.gridContainer.addChild(this.tile);
       }
     }
   }
@@ -254,6 +266,18 @@ export class GameController {
       this.tileSize / 3
     );
     this.playerSprite.endFill();
+  }
+
+  drawDummy() {
+    this.dummySprite.removeChildren();
+    this.dummySprite.clear();
+    this.dummySprite.beginFill(0xff0000);
+    this.dummySprite.drawCircle(
+      this.dummy1.renderX * this.tileSize + this.tileSize / 2,
+      this.dummy1.renderY * this.tileSize + this.tileSize / 2,
+      this.tileSize / 3
+    );
+    this.dummySprite.endFill();
   }
 
   animatePlayerMove(
@@ -293,10 +317,9 @@ export class GameController {
   }
 
   tryToMovePlayer(player: Player, targetX: number, targetY: number) {
-
-    if(this.player1.energy.currentEnergy < 10){
-      console.log("Not enough energy");
-      return
+    if (this.player1.energy.currentEnergy < 10) {
+      console.log('Not enough energy');
+      return;
     }
 
     let playerPosX = player.PosX;
@@ -332,72 +355,92 @@ export class GameController {
       const item = this.map.tiles[player.PosX][player.PosY].item;
       if (item && confirm(`Pick up ${item.name}?`)) {
         this.inventory.pickUp(item.name, item.category, item.sprite);
-        this.map.RemoveItem(player.PosX, player.PosY, this.map.tiles[player.PosX][player.PosY].effect);
+        this.map.RemoveItem(
+          player.PosX,
+          player.PosY,
+          this.map.tiles[player.PosX][player.PosY].effect
+        );
       }
     }
   }
 
   checkUnderPlayer(player: Player) {
     let tileEffect = this.map.tiles[player.PosX][player.PosY].effect;
-    console.log("Tile effect: " + tileEffect);
-    switch (tileEffect){
+    console.log('Tile effect: ' + tileEffect);
+    switch (tileEffect) {
       case 'glass_shards':
-        player.health.Damage(0, 1.0)
-        return "glass_shards"
+        player.health.Damage(0, 1.0);
+        return 'glass_shards';
       case 'fire':
-        player.health.Damage(0, 2.0)
-        return "fire"
-      }
-      return ""
-    
+        player.health.Damage(0, 2.0);
+        return 'fire';
+    }
+    return '';
   }
 
-  updateAllTiles(){
-    for(let x=0;x<=this.map.width;x++){
-      for(let y=0;y<=this.map.height;y++){
-        this.updateTile(x,y)
+  updateAllTiles() {
+    for (let x = 0; x <= this.map.width; x++) {
+      for (let y = 0; y <= this.map.height; y++) {
+        this.updateTile(x, y);
       }
     }
   }
 
-  updateTile(x: number, y: number){
-    var effect = this.map.tiles[x][y].effect
+  updateTile(x: number, y: number) {
+    var effect = this.map.tiles[x][y].effect;
 
-    switch (effect){
+    switch (effect) {
       case 'fire':
-        this.map.tiles[x][y].health = this.map.tiles[x][y].health! - this.generateRandomNumber(20,40)
-        if (this.map.tiles[x][y].health <= 50){
-
-          if(this.map.isValidTile(x+1,y) && this.map.tiles[x+1][y].hasCollision == false && this.map.tiles[x+1][y].flammable == true){
-            this.map.createTile(x+1,y,"fire",true)
+        this.map.tiles[x][y].health =
+          this.map.tiles[x][y].health! - this.generateRandomNumber(20, 40);
+        if (this.map.tiles[x][y].health <= 50) {
+          if (
+            this.map.isValidTile(x + 1, y) &&
+            this.map.tiles[x + 1][y].hasCollision == false &&
+            this.map.tiles[x + 1][y].flammable == true
+          ) {
+            this.map.createTile(x + 1, y, 'fire', true);
           }
-          if(this.map.isValidTile(x-1,y) && this.map.tiles[x-1][y].hasCollision == false && this.map.tiles[x-1][y].flammable == true){
-            this.map.createTile(x-1,y,"fire",true)
+          if (
+            this.map.isValidTile(x - 1, y) &&
+            this.map.tiles[x - 1][y].hasCollision == false &&
+            this.map.tiles[x - 1][y].flammable == true
+          ) {
+            this.map.createTile(x - 1, y, 'fire', true);
           }
-          if(this.map.isValidTile(x,y+1) && this.map.tiles[x][y+1].hasCollision == false && this.map.tiles[x][y+1].flammable == true){
-            this.map.createTile(x,y+1,"fire",true)
+          if (
+            this.map.isValidTile(x, y + 1) &&
+            this.map.tiles[x][y + 1].hasCollision == false &&
+            this.map.tiles[x][y + 1].flammable == true
+          ) {
+            this.map.createTile(x, y + 1, 'fire', true);
           }
-          if(this.map.isValidTile(x,y-1) && this.map.tiles[x][y-1].hasCollision == false && this.map.tiles[x][y-1].flammable == true){
-            this.map.createTile(x,y-1,"fire",true)
+          if (
+            this.map.isValidTile(x, y - 1) &&
+            this.map.tiles[x][y - 1].hasCollision == false &&
+            this.map.tiles[x][y - 1].flammable == true
+          ) {
+            this.map.createTile(x, y - 1, 'fire', true);
           }
-
         }
 
-        if (this.map.tiles[x][y].health <= 0){
-          this.map.createTile(x,y,"ash",true)
+        if (this.map.tiles[x][y].health <= 0) {
+          this.map.createTile(x, y, 'ash', true);
         }
         break;
     }
 
-    if (this.map.tiles[x][y].health! <= 0 && this.map.tiles[x][y].destroyable == true){
-      this.map.clearTile(x,y)
+    if (
+      this.map.tiles[x][y].health! <= 0 &&
+      this.map.tiles[x][y].destroyable == true
+    ) {
+      this.map.clearTile(x, y);
     }
-
   }
 
-  endTurn(){
-    this.updateAllTiles()
-    this.checkUnderPlayer(this.player1)
+  endTurn() {
+    this.updateAllTiles();
+    this.checkUnderPlayer(this.player1);
     this.player1.energy.setEnergy(100);
     this.player1.playerAction(0);
   }
@@ -432,11 +475,16 @@ export class GameController {
     window.addEventListener('keydown', (event) => {
       switch (event.key.toLowerCase()) {
         case 'x':
-          this.endTurn()
+          this.endTurn();
           break;
         default:
           return;
       }
+    });
+    window.addEventListener('click', (event) => {
+      this.weaponFunctionality.attack(
+        this.map.getTileCoords(event.clientX, event.clientY, this.tileSize)
+      );
     });
   }
 }

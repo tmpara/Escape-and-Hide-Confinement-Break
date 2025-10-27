@@ -3,7 +3,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { InventoryComponent } from './inventory.component';
 import { inventoryRendering } from './inventoryRendering';
 import { Inventory } from './inventory';
-import { Item } from './item';
+import { Item } from '../items/item';
 
 describe('InventoryComponent', () => {
   let component: InventoryComponent;
