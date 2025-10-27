@@ -315,8 +315,9 @@ export class GameController {
       if (this.playerWorldX - 1  >= 0){
         this.map = this.world.rooms[this.playerWorldX-1][this.playerWorldY];
         this.playerWorldX -= 1;
-        this.TeleportPlayer(this.player1, this.map.width-1, Math.floor(this.map.height/2));
+        this.TeleportPlayer(this.player1, this.map.width-2, Math.floor(this.map.height/2));
         console.log("Moved to left room");
+        console.log("World coordinates: " + this.playerWorldX + ", " + this.playerWorldY);
       }
     }
     else if(playerPosX == mapX-1 && playerPosY < mapY){
@@ -324,7 +325,9 @@ export class GameController {
       if (this.playerWorldX + 1  <= 10){
         this.map = this.world.rooms[this.playerWorldX+1][this.playerWorldY];
         this.playerWorldX += 1;
+        this.TeleportPlayer(this.player1, 1, Math.floor(this.map.height/2));
         console.log("Moved to right room");
+        console.log("World coordinates: " + this.playerWorldX + ", " + this.playerWorldY);
       }
     }
     else if(playerPosY == 0 && playerPosX < mapX){
@@ -334,6 +337,7 @@ export class GameController {
         this.playerWorldY += 1;
         this.TeleportPlayer(this.player1, Math.floor(this.map.width/2), this.map.height-2);
         console.log("Moved to up room");
+        console.log("World coordinates: " + this.playerWorldX + ", " + this.playerWorldY);
       }
     }
     else if(playerPosY == mapY-1 && playerPosX < mapX){
@@ -343,6 +347,7 @@ export class GameController {
         this.playerWorldY -= 1;
         this.TeleportPlayer(this.player1, Math.floor(this.map.width/2), 1);
         console.log("Moved to down room");
+        console.log("World coordinates: " + this.playerWorldX + ", " + this.playerWorldY);
       }
     }
    

@@ -21,20 +21,39 @@ export class World {
             this.rooms[x] = new Array();
             this.roomsIDs[x] = new Array();
             for(let y=0;y<this.height;y++){
-                
-              //  this.roomsIDs[x][y] = this.data.roomList[Math.floor(Math.random() * this.data.roomList.length)];
+                let roomID = this.data.actualRoomList[Math.floor(Math.random()*this.data.actualRoomList.length)];
+                //if(this.rooms[x-1][y] != null && this.getRoomById(roomID as keyof RoomsData).entrances.includes("left") && this.getRoomById(this.roomsIDs[x-1][y] as keyof RoomsData).entrances.includes("right")){
+                    
+                    
+
+                //}
+                this.loadRoomWithId(x,y,roomID as keyof RoomsData);
+              
             }
         }
 
-        this.rooms[5][5] = new GameGrid(9,9);
-        this.rooms[5][5].CreateEmptyMap();
-        this.rooms[5][5].LoadMap(9,9,this.data.startingRoom);
 
-        this.rooms[5][6] = new GameGrid(11,11);
-        this.rooms[5][6].CreateEmptyMap();
-        this.rooms[5][6].LoadMap(11,11,this.data.testRoomUp);
+
+        this.loadRoomWithId(5,5,"startingRoom");
+
+        this.loadRoomWithId(5,6,"testRoomUp");
+    
             
 
     }
+
+    getRoomById(id: keyof RoomsData){
+        return this.data[id] as any;
+    }
+
+    loadRoomWithId(worldX:number,worldY:number,id: keyof RoomsData){
+        let x = (this.data[id] as any).width;
+        let y = (this.data[id] as any).height;
+        this.rooms[worldX][worldY] = new GameGrid(x,y);
+        this.rooms[worldX][worldY].CreateEmptyMap();
+        this.rooms[worldX][worldY].LoadMap((this.data[id] as any).layout);
+    }
+
+   
 }
 

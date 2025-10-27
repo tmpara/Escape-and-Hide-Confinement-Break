@@ -42,13 +42,18 @@ export class GameGrid {
     this.tiles[1][6] = this.getTileData("room_entrance")
   }
 
-  LoadMap(x:number,y:number,map: string[][]){
+  LoadMap(map: string[][]){
     for(let i=0;i<map.length;i++){
       for(let j=0;j<map[i].length;j++){
-        if(this.emptyTile == this.getTileData(map[i][j])){
+        if(i==0 || j==0 || i==map.length-1 || j==map[i].length-1){
+          this.tiles[i][j] = this.getTileData("wall_basic")
+        }
+        
+        if(map[i][j] == "floor_basic"){
           
         }else{
           this.tiles[i][j] = this.getTileData(map[i][j])
+          
         }
         
     }
@@ -59,7 +64,7 @@ export class GameGrid {
   
   getTileData(name: String){
 
-    let info = new tile(false,"",false,100,"",null);
+    let info = new tile(false,"",false,null,"",null);
 
     
     switch (name){
