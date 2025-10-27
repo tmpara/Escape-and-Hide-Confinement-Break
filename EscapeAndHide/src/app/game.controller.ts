@@ -15,6 +15,7 @@ export class GameController {
   inventory!: inventoryRendering;
   player1 = new Player(1, 1, '1', new Health(5.0, 4.0), new Energy(100, 100));
   gridContainer = new Container();
+  effectContainer = new Container();
   playerSprite = new Graphics();
   healthBar = new Graphics();
   energyBar = new Graphics();
@@ -26,9 +27,12 @@ export class GameController {
   async init(container: HTMLDivElement): Promise<void> {
 
     const placeholderSprite = await Assets.load('placeholder.png');
-    const fireSprite = await Assets.load('fire.png');
     const ashSprite = await Assets.load('ash.png');
     const explosionSprite = await Assets.load('explosion.png');
+    const fireSpriteLegacy = await Assets.load('fire_legacy.png');
+    const fireLargeSprite = await Assets.load('fire_large.png');
+    const fireMediumSprite = await Assets.load('fire_medium.png');
+    const fireSmallSprite = await Assets.load('fire_small.png');
 
     // Create PIXI app
     this.app = new Application();
@@ -44,15 +48,13 @@ export class GameController {
     this.generateRoom();
     this.map.loadPlayer(1, 1, this.player1);
 
-    this.map.SpawnItem(1, 2, new Items().gun);
-    this.map.SpawnItem(2, 2, new Items().bigGun);
-
     // Draw grid and player
     this.drawGrid();
     this.drawPlayer();
 
     // Add containers to stage
     this.app.stage.addChild(this.gridContainer);
+    this.app.stage.addChild(this.effectContainer);
     this.app.stage.addChild(this.playerSprite);
     this.app.stage.addChild(this.healthBar);
     this.app.stage.addChild(this.energyBar);
@@ -92,6 +94,15 @@ export class GameController {
     return Math.floor(Math.random() * (max - min + 1) + min);
   }
 
+  clampNumber(number: number, min: number, max: number){
+    if(number < min){
+      return min
+    }else if(number > max){
+      return max
+    }
+    return number
+  }
+
   drawHealthBar() {
     const myText = new Text({
       text: Math.round(this.player1.health.currentHealth * 100) / 100 + ' L',
@@ -121,7 +132,7 @@ export class GameController {
 
     // Health
     const healthPercentage =
-      this.player1.health.currentHealth / this.player1.health.maxHealth;
+    this.player1.health.currentHealth / this.player1.health.maxHealth;
     this.healthBar.beginFill(0xff0000);
     this.healthBar.drawRect(x, y, barWidth * healthPercentage, barHeight);
     this.healthBar.addChild(myText);
@@ -210,6 +221,7 @@ export class GameController {
 
     for (let x = 0; x < this.map.width; x++) {
       for (let y = 0; y < this.map.height; y++) {
+
         if (this.map.tiles[x][y].sprite != '') {
           let texture = Assets.get(this.map.tiles[x][y].sprite.toString());
           let sprite = new PIXI.Sprite(texture);
@@ -217,8 +229,26 @@ export class GameController {
           sprite.y = y * this.tileSize
           sprite.width = this.tileSize
           sprite.height = this.tileSize
-          sprite._zIndex = 1
+          sprite._zIndex = 2
           this.gridContainer.addChild(sprite);
+        }
+
+        let firevalue = this.map.tiles[x][y].fireValue
+        if (firevalue>0) {
+          let fireTexture = Assets.get("fire_small.png");
+          if (firevalue > 66){
+            fireTexture = Assets.get("fire_large.png");
+          }
+          else if(firevalue > 33){
+            fireTexture = Assets.get("fire_medium.png");
+          }
+          let fireSprite = new PIXI.Sprite(fireTexture);
+          fireSprite.x = (x * this.tileSize)
+          fireSprite.y = (y * this.tileSize)
+          fireSprite.width = this.tileSize
+          fireSprite.height = this.tileSize
+          fireSprite._zIndex = 3
+          this.gridContainer.addChild(fireSprite);
         }
 
         this.tile.lineStyle(1, 0x888888);
@@ -229,7 +259,7 @@ export class GameController {
           this.tileSize,
           this.tileSize
         );
-        this.tile._zIndex = 0
+        this.tile._zIndex = 1
         this.tile.endFill();
         this.gridContainer.addChild(this.tile);  
       }
@@ -315,17 +345,6 @@ export class GameController {
       this.animatePlayerMove(player, targetX, targetY);
       this.player1.playerAction(10);
       this.checkUnderPlayer(player);
-      this.checkTileForItem(player);
-    }
-  }
-
-  checkTileForItem(player: Player) {
-    if (this.map.tiles[player.PosX][player.PosY].hasItem) {
-      const item = this.map.tiles[player.PosX][player.PosY].item;
-      if (item) {
-        this.inventory.pickUp(item.name, item.category, item.sprite);
-        this.map.RemoveItem(player.PosX, player.PosY);
-      }
     }
   }
 
@@ -352,62 +371,55 @@ export class GameController {
   }
 
   updateTile(x: number, y: number){
-    var effect = this.map.tiles[x][y].effect
 
-    switch (effect){
-      case 'fire':
-        this.map.tiles[x][y].health = this.map.tiles[x][y].health! - this.generateRandomNumber(20,40)
-        var spreadchance = this.generateRandomNumber(1,5)
-        if (spreadchance==1){
+    if (this.map.tiles[x][y].fireValue > 0){ 
+      this.map.damageTile(x,y,this.generateRandomNumber(10,20))
+      this.map.tiles[x][y].fireValue = this.map.tiles[x][y].fireValue - 10
+      var spreadchance = this.generateRandomNumber(1,10)
+      if (spreadchance==1){
 
-          if(this.map.isValidTile(x+1,y) && this.map.tiles[x+1][y].hasCollision == false && this.map.tiles[x+1][y].flammable == true){
-            this.map.createTile(x+1,y,"fire",true)
-            this.map.tiles[x+1][y].health! = 25;
-          }
-          if(this.map.isValidTile(x-1,y) && this.map.tiles[x-1][y].hasCollision == false && this.map.tiles[x-1][y].flammable == true){
-            this.map.createTile(x-1,y,"fire",true)
-            this.map.tiles[x-1][y].health! = 25;
-          }
-          if(this.map.isValidTile(x,y+1) && this.map.tiles[x][y+1].hasCollision == false && this.map.tiles[x][y+1].flammable == true){
-            this.map.createTile(x,y+1,"fire",true)
-            this.map.tiles[x][y+1].health! = 25;
-          }
-          if(this.map.isValidTile(x,y-1) && this.map.tiles[x][y-1].hasCollision == false && this.map.tiles[x][y-1].flammable == true){
-            this.map.createTile(x,y-1,"fire",true)
-            this.map.tiles[x][y-1].health! = 25;
-          }
-
+        if(this.map.isValidTile(x+1,y) && this.map.tiles[x+1][y].flammable == true){
+          this.map.tiles[x+1][y].fireValue = this.map.tiles[x+1][y].fireValue + 30;
+        }
+        if(this.map.isValidTile(x-1,y) && this.map.tiles[x-1][y].flammable == true){
+          this.map.tiles[x-1][y].fireValue = this.map.tiles[x-1][y].fireValue + 30;
+        }
+        if(this.map.isValidTile(x,y+1) && this.map.tiles[x][y+1].flammable == true){
+          this.map.tiles[x][y+1].fireValue = this.map.tiles[x][y+1].fireValue + 30;
+        }
+        if(this.map.isValidTile(x,y-1) && this.map.tiles[x][y-1].flammable == true){
+          this.map.tiles[x][y-1].fireValue = this.map.tiles[x][y-1].fireValue + 30;
         }
 
-        if (this.map.tiles[x][y].health <= 0){
-          this.map.createTile(x,y,"ash",true)
-        }
-        break;
-    }
+      }
 
-    if (this.map.tiles[x][y].health! <= 0 && this.map.tiles[x][y].destroyable == true){
-      this.map.clearTile(x,y)
     }
 
   }
 
-  createExplosion(x: number, y: number, strength: number){
-
-      this.map.createTile(x,y,"explosion",true);
+  createExplosion(x: number, y: number, size: number, strength: number){
 
       for(let a=0;a<=this.map.width;a++){
         for(let b=0;b<=this.map.height;b++){
           const distance = Math.sqrt(
             Math.pow(a - x, 2) + Math.pow(b - y, 2)
           )
-          if (distance <= strength) {
-            this.map.createTile(a,b,"explosion",true);
+          if (distance <= size) {
+            let texture = Assets.get("explosion.png");
+            let sprite = new PIXI.Sprite(texture);
+            sprite.x = a * this.tileSize
+            sprite.y = b * this.tileSize
+            sprite.width = this.tileSize
+            sprite.height = this.tileSize
+            sprite._zIndex = 0
+            this.effectContainer.addChild(sprite);
+            this.map.damageTile(a,b,strength/(distance+1))
             if(this.player1.PosX == a && this.player1.PosY == b){
-              this.player1.health.Damage(strength-distance/2,0)
+              this.player1.health.Damage(strength/(distance+1),0)
             }
             var firechance=this.generateRandomNumber(1,10)
-            if (firechance==1){
-              this.map.createTile(a,b,"fire",true);
+            if (firechance==1 && this.map.tiles[a][b].flammable==true){
+              this.map.tiles[a][b].fireValue = 100
             }
           }
         }
@@ -415,13 +427,7 @@ export class GameController {
 
       (async () => { 
         await this.delay(100);
-        for(let a=0;a<=this.map.width;a++){
-          for(let b=0;b<=this.map.height;b++){
-            if(this.map.tiles[a][b].effect=="explosion"){
-              this.map.clearTile(a,b)
-            }
-          }
-        }
+        this.effectContainer.removeChildren();
       })();
 
   }
@@ -464,7 +470,7 @@ export class GameController {
       switch (event.key.toLowerCase()) {
         case 'x':
           this.endTurn()
-          this.createExplosion(player.PosX,player.PosY,3)
+          this.createExplosion(player.PosX,player.PosY,4,200)
           break;
         default:
           return;

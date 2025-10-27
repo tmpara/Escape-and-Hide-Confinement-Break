@@ -19,40 +19,37 @@ export class GameGrid {
     for(let x=0;x<=this.width;x++){
       this.tiles[x] = new Array();
       for(let y=0;y<=this.height;y++){
-        this.tiles[x][y] = new tile(null,false,"",false,null,true,"",null);
+        this.tiles[x][y] = new tile(null,false,"",false,null,true,0,null,"",null);
       }
     }
   }
   
   createMap(){
+    this.createTile(10,10,"wall_basic",true);
+    this.createTile(10,11,"wall_basic",true);
+    this.createTile(10,12,"wall_basic",true);
+    this.createTile(10,13,"wall_basic",true);
+    this.createTile(10,14,"wall_basic",true);
+    this.createTile(10,15,"wall_basic",true);
   }
   
   getTileData(name: String){
 
-    let info = new tile(null,false,"",false,null,true,"",null);
+    let info = new tile(null,false,"",false,null,true,0,null,"",null);
 
-    
     switch (name){
     case 'glass_shards':
-      info = new tile("glass_shards",false,"glass_shards",true,5,true,"placeholder.png",null);
+      info = new tile("glass_shards",false,"glass_shards",true,5,true,0,null,"placeholder.png",null);
       return info
       break;
     case 'wall_basic':
-      info = new tile("wall_basic",true,"",true,100,false,"placeholder.png",null);
-      return info
-      break;
-    case 'fire':
-      info = new tile("fire",false,"fire",false,100,false,"fire.png",null);
+      info = new tile("wall_basic",true,"",true,100,true,0,null,"placeholder.png",null);
       return info
       break;
     case 'ash':
-      info = new tile("ash",false,"",false,null,false,"ash.png",null);
+      info = new tile("ash",false,"",false,null,false,0,null,"ash.png",null);
       return info
       break;
-    case 'explosion':
-      info = new tile("explosion",false,"explosion",false,3,false,"explosion.png",null);
-      return info
-      break;  
     }
     return info;
   }
@@ -65,7 +62,7 @@ export class GameGrid {
 
   clearTile(x: number, y: number){
     if (this.isValidTile(x,y)){
-      this.tiles[x][y] = new tile(null,false,"",false,null,true,"",null);
+      this.tiles[x][y] = new tile(null,false,"",false,null,true,0,null,"",null);
     }
   }
 
@@ -74,6 +71,27 @@ export class GameGrid {
       return false
     }else{
       return true
+    }
+  }
+
+  damageTile(x:number,y:number,damage:number){
+    if (this.tiles[x][y].health!=null && this.tiles[x][y].destroyable==true){
+      this.tiles[x][y].health = this.tiles[x][y].health! - damage;
+      if (this.tiles[x][y].health<=0){
+        this.destroyTile(x,y)
+      }
+    }
+  }
+
+  destroyTile(x:number,y:number){
+    if (this.tiles[x][y].brokenTile!=null && this.tiles[x][y].fireValue>0){
+      this.createTile(x,y,"ash",true);
+    }
+    else if (this.tiles[x][y].brokenTile!=null){
+      this.createTile(x,y,this.tiles[x][y].brokenTile,true);
+    }
+    else{
+      this.clearTile(x,y)
     }
   }
 
@@ -88,4 +106,5 @@ export class GameGrid {
   loadPlayer(x: number, y:number, player: Player){
     this.tiles[x][y].entity = player;
   }
+  
 }
