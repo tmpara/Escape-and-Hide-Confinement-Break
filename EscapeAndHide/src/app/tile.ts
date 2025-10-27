@@ -1,7 +1,9 @@
 import * as PIXI from 'pixi.js';
-import { entity } from "./entity";
+import { entity } from './entity';
+import { Item } from './inventory/item';
 export class tile {
 
+    name: string | null;
     hasCollision: boolean;
     effect?: string;
     destroyable: boolean;
@@ -10,7 +12,8 @@ export class tile {
     sprite: String;
     entity: entity | null; //placeholder for entity object
 
-     constructor(hasCollision: boolean, effect: string, destroyable: boolean, health: number|null, flammable: boolean, sprite: String, entity: entity|null){
+     constructor(name: string|null, hasCollision: boolean, effect: string, destroyable: boolean, health: number|null, flammable: boolean, sprite: String, entity: entity|null){
+        this.name = name
         this.hasCollision = hasCollision
         this.effect = effect
         this.destroyable = destroyable
