@@ -50,8 +50,8 @@ export class World {
         let x = (this.data[id] as any).width;
         let y = (this.data[id] as any).height;
         this.rooms[worldX][worldY] = new GameGrid(x,y);
-        this.rooms[worldX][worldY].CreateEmptyMap();
-        this.rooms[worldX][worldY].LoadMap((this.data[id] as any).layout);
+        this.rooms[worldX][worldY].createEmptyMap();
+        this.rooms[worldX][worldY].loadMap((this.data[id] as any).layout);
     }
 
    

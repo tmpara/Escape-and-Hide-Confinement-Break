@@ -37,7 +37,7 @@ export class RoomsData {
         this.startingRoom.layout[4][8] = "room_entrance";
         this.startingRoom.layout[8][4] = "room_entrance";
         
-        this.testRoomUp = new Room(11, 11, ["down"], []);
+        this.testRoomUp = new Room(11, 11, ["up", "left", "right", "down"], []);
         this.testRoomUp.layout = Array.from({ length: this.testRoomUp.height }, () => Array.from({ length: this.testRoomUp.width }, () => "floor_basic"));
         this.testRoomUp.layout[0][5] = "room_entrance";
         this.testRoomUp.layout[5][0] = "room_entrance";

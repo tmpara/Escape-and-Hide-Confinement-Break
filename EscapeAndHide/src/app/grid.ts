@@ -24,34 +24,17 @@ export class GameGrid {
     }
   }
   
-  CreateMap(){
-    this.tiles[4][1] = this.getTileData("wall_basic")
-    this.tiles[4][2] = this.getTileData("wall_basic")
-    this.tiles[4][3] = this.getTileData("wall_basic")
-    this.tiles[4][4] = this.getTileData("wall_basic")
-    this.tiles[4][5] = this.getTileData("wall_basic")
-    this.tiles[4][6] = this.getTileData("wall_basic")
-    this.tiles[4][7] = this.getTileData("wall_basic")
-    this.tiles[4][8] = this.getTileData("wall_basic")
-    this.tiles[4][9] = this.getTileData("wall_basic")
-    this.tiles[4][10] = this.getTileData("wall_basic")
-    this.tiles[4][11] = this.getTileData("wall_basic")
-    this.tiles[4][12] = this.getTileData("wall_basic")
-    this.tiles[1][6] = this.getTileData("room_entrance")
-  }
+  
 
-  LoadMap(map: string[][]){
+  loadMap(map: string[][]){
     for(let i=0;i<map.length;i++){
       for(let j=0;j<map[i].length;j++){
         if(i==0 || j==0 || i==map.length-1 || j==map[i].length-1){
-          this.tiles[i][j] = this.getTileData("wall_basic")
+          this.tiles[i][j] = this.getTileData("wall_corner")
         }
         
-        if(map[i][j] == "floor_basic"){
-          
-        }else{
+        if(map[i][j] != "floor_basic"){
           this.tiles[i][j] = this.getTileData(map[i][j])
-          
         }
         
     }
@@ -70,17 +53,21 @@ export class GameGrid {
     case 'glass_shards':
       info = new tile("glass_shards",false,"glass_shards",true,5,true,0,null,"placeholder.png",null);
       return info
-      
+    
+    case 'wall_corner':
+      info = new tile("wall_corner",true,"",false,null,false,0,null,"placeholder.png",null);
+      return info
+
     case 'wall_basic':
       info = new tile("wall_basic",true,"",true,100,true,0,null,"placeholder.png",null);
       return info
-      break;
+      
     case 'ash':
       info = new tile("ash",false,"",false,null,false,0,null,"ash.png",null);
       return info
 
     case 'room_entrance':
-      info = new tile(false,"entrance",false,null,"door1.png",null);
+      info = new tile("door",false,"entrance",false,null,false,0,null,"door1.png",null);
       return info
       
     }
