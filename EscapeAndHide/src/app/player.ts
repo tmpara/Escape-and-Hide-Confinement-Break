@@ -3,9 +3,7 @@ import { entity } from './entity';
 import { Health } from './health/health';
 import { Energy } from './energy/energy';
 
-
-export class Player extends entity{
-  
+export class Player extends entity {
   PosX: number;
   PosY: number;
   renderX: number;
@@ -14,7 +12,13 @@ export class Player extends entity{
   health: Health;
   energy: Energy;
 
-  constructor( PosX: number, PosY: number, id: string, health: Health, energy: Energy){ 
+  constructor(
+    PosX: number,
+    PosY: number,
+    id: string,
+    health: Health,
+    energy: Energy
+  ) {
     super();
     this.id = id;
     this.PosX = PosX;
@@ -25,11 +29,8 @@ export class Player extends entity{
     this.energy = energy;
   }
 
-  playerAction(energyCost: number){
-
+  playerAction(energyCost: number) {
     this.health.TriggerDot();
     this.energy.loseEnergy(energyCost);
-
   }
-
 }
