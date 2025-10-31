@@ -49,7 +49,7 @@ export class GameController {
     this.map = this.world.rooms[5][5];
     
     console.log(this.map.width + " " + this.map.height);
-    this.map.LoadPlayer(1, 1, this.player1);
+    this.map.loadPlayer(1, 1, this.player1);
 
        // Create PIXI app
     this.app = new Application();
@@ -64,9 +64,7 @@ export class GameController {
     
     container.appendChild(this.app.canvas as HTMLCanvasElement);
 
-    // Create map and player
-    this.generateRoom();
-    this.map.loadPlayer(1, 1, this.player1);
+  
 
     // Draw grid and player
     this.drawGrid();
@@ -104,11 +102,11 @@ export class GameController {
     this.gameLoop();
   }
 
-    async GenerateRoom(x: number, y: number)  {
+    async generateRoom(x: number, y: number)  {
     this.map = new GameGrid(x,y);
-    this.map.CreateEmptyMap()
-    this.map.CreateMap()
-    this.map.LoadPlayer(1, 1, this.player1);
+    this.map.createEmptyMap()
+    
+    this.map.loadPlayer(1, 1, this.player1);
 
  
     
@@ -338,7 +336,7 @@ export class GameController {
     requestAnimationFrame(() => this.gameLoop());
   }
 
-  TeleportPlayer(player: Player, targetX: number, targetY: number) {
+  teleportPlayer(player: Player, targetX: number, targetY: number) {
     let playerPosX = player.PosX;
     let playerPosY = player.PosY;
     if(playerPosX < this.map.width && playerPosY < this.map.height){
@@ -354,7 +352,7 @@ export class GameController {
     console.log("Player teleported to: " + player.PosX + ", " + player.PosY);
   }
 
-  TryToMovePlayer(player: Player, targetX: number, targetY: number) {
+  tryToMovePlayer(player: Player, targetX: number, targetY: number) {
 
     if(this.player1.energy.currentEnergy < 10){
       console.log("Not enough energy");
@@ -400,7 +398,7 @@ export class GameController {
       if (this.playerWorldX - 1  >= 0){
         this.map = this.world.rooms[this.playerWorldX-1][this.playerWorldY];
         this.playerWorldX -= 1;
-        this.TeleportPlayer(this.player1, this.map.width-2, Math.floor(this.map.height/2));
+        this.teleportPlayer(this.player1, this.map.width-2, Math.floor(this.map.height/2));
         console.log("Moved to left room");
         console.log("World coordinates: " + this.playerWorldX + ", " + this.playerWorldY);
       }
@@ -410,7 +408,7 @@ export class GameController {
       if (this.playerWorldX + 1  <= 10){
         this.map = this.world.rooms[this.playerWorldX+1][this.playerWorldY];
         this.playerWorldX += 1;
-        this.TeleportPlayer(this.player1, 1, Math.floor(this.map.height/2));
+        this.teleportPlayer(this.player1, 1, Math.floor(this.map.height/2));
         console.log("Moved to right room");
         console.log("World coordinates: " + this.playerWorldX + ", " + this.playerWorldY);
       }
@@ -420,7 +418,7 @@ export class GameController {
       if (this.playerWorldY + 1  <= 10){
         this.map = this.world.rooms[this.playerWorldX][this.playerWorldY+1];
         this.playerWorldY += 1;
-        this.TeleportPlayer(this.player1, Math.floor(this.map.width/2), this.map.height-2);
+        this.teleportPlayer(this.player1, Math.floor(this.map.width/2), this.map.height-2);
         console.log("Moved to up room");
         console.log("World coordinates: " + this.playerWorldX + ", " + this.playerWorldY);
       }
@@ -430,7 +428,7 @@ export class GameController {
       if (this.playerWorldY - 1  >= 0){
         this.map = this.world.rooms[this.playerWorldX][this.playerWorldY-1];
         this.playerWorldY -= 1;
-        this.TeleportPlayer(this.player1, Math.floor(this.map.width/2), 1);
+        this.teleportPlayer(this.player1, Math.floor(this.map.width/2), 1);
         console.log("Moved to down room");
         console.log("World coordinates: " + this.playerWorldX + ", " + this.playerWorldY);
       }
@@ -448,7 +446,11 @@ export class GameController {
       case 'fire':
         player.health.Damage(0, 2.0)
         return "fire"
+      case 'entrance':
+        this.findRoom(player);
+        return "entrance"
       }
+
       return ""
   }
 
@@ -563,6 +565,8 @@ export class GameController {
       switch (event.key.toLowerCase()) {
         case 'x':
           this.endTurn()
+          break;
+        case 'p':
           this.createExplosion(player.PosX,player.PosY,4,200)
           break;
         default:
