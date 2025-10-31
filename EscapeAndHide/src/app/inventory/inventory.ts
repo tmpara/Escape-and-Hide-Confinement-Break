@@ -1,4 +1,4 @@
-import { Item } from './item';
+import { Item } from '../items/item';
 
 export class Inventory {
   items: Item[] = [];
@@ -6,7 +6,7 @@ export class Inventory {
   maxItems: number = 10;
   maxEquippedItems: number = 2;
 
-  addItem(itemName: string, itemCategory: string, itemSprite: String) {
+  addItem(itemName: string, itemCategory: string, itemSprite: string) {
     if (this.items.length < this.maxItems) {
       this.items.push(new Item(itemName, itemCategory, false, itemSprite));
     } else {
