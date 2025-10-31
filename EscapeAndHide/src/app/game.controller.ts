@@ -373,22 +373,25 @@ export class GameController {
   updateTile(x: number, y: number){
 
     if (this.map.tiles[x][y].fireValue > 0){ 
-      this.map.damageTile(x,y,this.generateRandomNumber(10,20))
-      this.map.tiles[x][y].fireValue = this.map.tiles[x][y].fireValue - 10
-      var spreadchance = this.generateRandomNumber(1,10)
+      this.map.damageTile(x,y,this.map.tiles[x][y].fireValue/5)
+      this.map.tiles[x][y].fireValue = this.map.tiles[x][y].fireValue - this.generateRandomNumber(10,20)
+      if (this.map.tiles[x][y].name=="empty"){
+        this.map.createTile(x,y,"ash",true);
+      }
+      var spreadchance = this.generateRandomNumber(1,5)
       if (spreadchance==1){
 
         if(this.map.isValidTile(x+1,y) && this.map.tiles[x+1][y].flammable == true){
-          this.map.tiles[x+1][y].fireValue = this.map.tiles[x+1][y].fireValue + 30;
+          this.map.tiles[x+1][y].fireValue = this.map.tiles[x][y].fireValue + 40;
         }
         if(this.map.isValidTile(x-1,y) && this.map.tiles[x-1][y].flammable == true){
-          this.map.tiles[x-1][y].fireValue = this.map.tiles[x-1][y].fireValue + 30;
+          this.map.tiles[x-1][y].fireValue = this.map.tiles[x-1][y].fireValue + 40;
         }
         if(this.map.isValidTile(x,y+1) && this.map.tiles[x][y+1].flammable == true){
-          this.map.tiles[x][y+1].fireValue = this.map.tiles[x][y+1].fireValue + 30;
+          this.map.tiles[x][y+1].fireValue = this.map.tiles[x][y+1].fireValue + 40;
         }
         if(this.map.isValidTile(x,y-1) && this.map.tiles[x][y-1].flammable == true){
-          this.map.tiles[x][y-1].fireValue = this.map.tiles[x][y-1].fireValue + 30;
+          this.map.tiles[x][y-1].fireValue = this.map.tiles[x][y-1].fireValue + 40;
         }
 
       }

@@ -19,7 +19,7 @@ export class GameGrid {
     for(let x=0;x<=this.width;x++){
       this.tiles[x] = new Array();
       for(let y=0;y<=this.height;y++){
-        this.tiles[x][y] = new tile(null,false,"",false,null,true,0,null,"",null);
+        this.tiles[x][y] = new tile("empty",false,"",false,null,true,0,null,"",null);
       }
     }
   }
@@ -35,7 +35,7 @@ export class GameGrid {
   
   getTileData(name: String){
 
-    let info = new tile(null,false,"",false,null,true,0,null,"",null);
+    let info = new tile("empty",false,"",false,null,true,0,null,"",null);
 
     switch (name){
     case 'glass_shards':
@@ -56,13 +56,17 @@ export class GameGrid {
 
   createTile(x: number, y: number, name: String, replace: boolean){
     if (this.isValidTile(x,y)==true){
+      let firevalue = this.tiles[x][y].fireValue
       this.tiles[x][y] = this.getTileData(name)
+      if (this.tiles[x][y].flammable==true || name=="ash"){
+        this.tiles[x][y].fireValue = firevalue
+      }
     }
   }
 
   clearTile(x: number, y: number){
     if (this.isValidTile(x,y)){
-      this.tiles[x][y] = new tile(null,false,"",false,null,true,0,null,"",null);
+      this.tiles[x][y] = new tile("empty",false,"",false,null,true,0,null,"",null);
     }
   }
 
@@ -84,7 +88,7 @@ export class GameGrid {
   }
 
   destroyTile(x:number,y:number){
-    if (this.tiles[x][y].brokenTile!=null && this.tiles[x][y].fireValue>0){
+    if (this.tiles[x][y].brokenTile==null && this.tiles[x][y].fireValue>0){
       this.createTile(x,y,"ash",true);
     }
     else if (this.tiles[x][y].brokenTile!=null){
