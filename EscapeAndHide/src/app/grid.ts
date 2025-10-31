@@ -24,13 +24,40 @@ export class GameGrid {
     }
   }
   
-  createMap(){
-    this.createTile(10,10,"wall_basic",true);
-    this.createTile(10,11,"wall_basic",true);
-    this.createTile(10,12,"wall_basic",true);
-    this.createTile(10,13,"wall_basic",true);
-    this.createTile(10,14,"wall_basic",true);
-    this.createTile(10,15,"wall_basic",true);
+  CreateMap(){
+    this.tiles[4][1] = this.getTileData("wall_basic")
+    this.tiles[4][2] = this.getTileData("wall_basic")
+    this.tiles[4][3] = this.getTileData("wall_basic")
+    this.tiles[4][4] = this.getTileData("wall_basic")
+    this.tiles[4][5] = this.getTileData("wall_basic")
+    this.tiles[4][6] = this.getTileData("wall_basic")
+    this.tiles[4][7] = this.getTileData("wall_basic")
+    this.tiles[4][8] = this.getTileData("wall_basic")
+    this.tiles[4][9] = this.getTileData("wall_basic")
+    this.tiles[4][10] = this.getTileData("wall_basic")
+    this.tiles[4][11] = this.getTileData("wall_basic")
+    this.tiles[4][12] = this.getTileData("wall_basic")
+    this.tiles[1][6] = this.getTileData("room_entrance")
+  }
+
+  LoadMap(map: string[][]){
+    for(let i=0;i<map.length;i++){
+      for(let j=0;j<map[i].length;j++){
+        if(i==0 || j==0 || i==map.length-1 || j==map[i].length-1){
+          this.tiles[i][j] = this.getTileData("wall_basic")
+        }
+        
+        if(map[i][j] == "floor_basic"){
+          
+        }else{
+          this.tiles[i][j] = this.getTileData(map[i][j])
+          
+        }
+        
+    }
+  }
+
+
   }
   
   getTileData(name: String){
@@ -38,10 +65,12 @@ export class GameGrid {
     let info = new tile("empty",false,"",false,null,true,0,null,"",null);
 
     switch (name){
+
+    
     case 'glass_shards':
       info = new tile("glass_shards",false,"glass_shards",true,5,true,0,null,"placeholder.png",null);
       return info
-      break;
+      
     case 'wall_basic':
       info = new tile("wall_basic",true,"",true,100,true,0,null,"placeholder.png",null);
       return info
@@ -49,7 +78,11 @@ export class GameGrid {
     case 'ash':
       info = new tile("ash",false,"",false,null,false,0,null,"ash.png",null);
       return info
-      break;
+
+    case 'room_entrance':
+      info = new tile(false,"entrance",false,null,"door1.png",null);
+      return info
+      
     }
     return info;
   }

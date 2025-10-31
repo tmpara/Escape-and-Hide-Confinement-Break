@@ -8,18 +8,23 @@ import { Energy } from './energy/energy';
 import { effect } from '@angular/core';
 import { Items } from './inventory/items';
 import { inventoryRendering } from './inventory/inventoryRendering';
+import { World } from './world';
 
 export class GameController {
   app!: Application;
   map!: GameGrid;
   inventory!: inventoryRendering;
   player1 = new Player(1, 1, '1', new Health(5.0, 4.0), new Energy(100, 100));
+  world = new World();
+
   gridContainer = new Container();
   effectContainer = new Container();
   playerSprite = new Graphics();
   healthBar = new Graphics();
   energyBar = new Graphics();
   tile = new Graphics();
+  playerWorldX = 5;
+  playerWorldY = 5;
   tileSize = 32; // Size of each tile in pixels
 
   constructor() {}
@@ -33,15 +38,30 @@ export class GameController {
     const fireLargeSprite = await Assets.load('fire_large.png');
     const fireMediumSprite = await Assets.load('fire_medium.png');
     const fireSmallSprite = await Assets.load('fire_small.png');
+    await Assets.load('placeholder.png');
+    await Assets.load('door1.png');
+    
 
-    // Create PIXI app
+ 
+    this.world.CreateWorld();
+    // Create map and player
+
+    this.map = this.world.rooms[5][5];
+    
+    console.log(this.map.width + " " + this.map.height);
+    this.map.LoadPlayer(1, 1, this.player1);
+
+       // Create PIXI app
     this.app = new Application();
     await this.app.init({
-      width: 896,
-      height: 896,
+      width: this.tileSize * 30,
+      height: this.tileSize * 30,
       backgroundColor: 0x222222,
       antialias: true,
+      resizeTo: window
+      
     });
+    
     container.appendChild(this.app.canvas as HTMLCanvasElement);
 
     // Create map and player
@@ -84,10 +104,14 @@ export class GameController {
     this.gameLoop();
   }
 
-  generateRoom(){
-    this.map = new GameGrid(28,28);
-    this.map.createEmptyMap()
-    this.map.createMap()
+    async GenerateRoom(x: number, y: number)  {
+    this.map = new GameGrid(x,y);
+    this.map.CreateEmptyMap()
+    this.map.CreateMap()
+    this.map.LoadPlayer(1, 1, this.player1);
+
+ 
+    
   }
 
   generateRandomNumber(min: number, max: number){
@@ -314,7 +338,23 @@ export class GameController {
     requestAnimationFrame(() => this.gameLoop());
   }
 
-  tryToMovePlayer(player: Player, targetX: number, targetY: number) {
+  TeleportPlayer(player: Player, targetX: number, targetY: number) {
+    let playerPosX = player.PosX;
+    let playerPosY = player.PosY;
+    if(playerPosX < this.map.width && playerPosY < this.map.height){
+      this.map.tiles[playerPosX][playerPosY].entity = null;
+    }
+    
+    player.PosX = targetX;
+    player.PosY = targetY;
+    this.map.tiles[targetX][targetY].entity = player;
+    this.animatePlayerMove(player, targetX, targetY);
+    //player.playerAction(10);
+    this.checkUnderPlayer(player);
+    console.log("Player teleported to: " + player.PosX + ", " + player.PosY);
+  }
+
+  TryToMovePlayer(player: Player, targetX: number, targetY: number) {
 
     if(this.player1.energy.currentEnergy < 10){
       console.log("Not enough energy");
@@ -346,6 +386,56 @@ export class GameController {
       this.player1.playerAction(10);
       this.checkUnderPlayer(player);
     }
+  }
+
+  findRoom(player: Player){
+    let playerPosX = player.PosX;
+    let playerPosY = player.PosY;
+
+    let mapX = this.map.width;
+    let mapY = this.map.height;
+
+    if(playerPosX == 0 && playerPosY < mapY){
+      //left
+      if (this.playerWorldX - 1  >= 0){
+        this.map = this.world.rooms[this.playerWorldX-1][this.playerWorldY];
+        this.playerWorldX -= 1;
+        this.TeleportPlayer(this.player1, this.map.width-2, Math.floor(this.map.height/2));
+        console.log("Moved to left room");
+        console.log("World coordinates: " + this.playerWorldX + ", " + this.playerWorldY);
+      }
+    }
+    else if(playerPosX == mapX-1 && playerPosY < mapY){
+      //right
+      if (this.playerWorldX + 1  <= 10){
+        this.map = this.world.rooms[this.playerWorldX+1][this.playerWorldY];
+        this.playerWorldX += 1;
+        this.TeleportPlayer(this.player1, 1, Math.floor(this.map.height/2));
+        console.log("Moved to right room");
+        console.log("World coordinates: " + this.playerWorldX + ", " + this.playerWorldY);
+      }
+    }
+    else if(playerPosY == 0 && playerPosX < mapX){
+      //up
+      if (this.playerWorldY + 1  <= 10){
+        this.map = this.world.rooms[this.playerWorldX][this.playerWorldY+1];
+        this.playerWorldY += 1;
+        this.TeleportPlayer(this.player1, Math.floor(this.map.width/2), this.map.height-2);
+        console.log("Moved to up room");
+        console.log("World coordinates: " + this.playerWorldX + ", " + this.playerWorldY);
+      }
+    }
+    else if(playerPosY == mapY-1 && playerPosX < mapX){
+      //down
+      if (this.playerWorldY - 1  >= 0){
+        this.map = this.world.rooms[this.playerWorldX][this.playerWorldY-1];
+        this.playerWorldY -= 1;
+        this.TeleportPlayer(this.player1, Math.floor(this.map.width/2), 1);
+        console.log("Moved to down room");
+        console.log("World coordinates: " + this.playerWorldX + ", " + this.playerWorldY);
+      }
+    }
+   
   }
 
   checkUnderPlayer(player: Player) {

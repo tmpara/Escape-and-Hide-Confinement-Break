@@ -5,6 +5,8 @@ import { inventoryRendering } from './inventoryRendering';
 import { Inventory } from './inventory';
 import { Item } from './item';
 
+
+
 describe('InventoryComponent', () => {
   let component: InventoryComponent;
   let fixture: ComponentFixture<InventoryComponent>;
