@@ -22,8 +22,9 @@ export class GameController {
   dummy1 = new Dummy(5, 2, '1', 10.0);
   gridContainer = new Container();
   effectContainer = new Container();
+  entityContainer = new Container();
   playerSprite = new Graphics();
-  dummySprite = new Graphics();
+
   healthBar = new Graphics();
   energyBar = new Graphics();
   tile = new Graphics();
@@ -46,6 +47,8 @@ export class GameController {
     await Assets.load('ash.png');
     await Assets.load('gun.png');
     await Assets.load('biggun.png');
+    await Assets.load('enemy1.png');
+    await Assets.load('glass_shards.png');
 
  
     this.world.CreateWorld();
@@ -77,19 +80,19 @@ export class GameController {
     this.map.SpawnItem(1, 3, new Items().gun);
     this.map.SpawnItem(2, 3, new Items().bigGun);
 
-    this.map.addTileEffect(2, 2, 'glass_shards');
-    this.map.tiles[2][2].sprite = 'placeholder.png';
+    this.map.tiles[3][3] = this.map.getTileData("glass_shards");
+    
 
     // Draw grid, player and dummy
     this.drawGrid();
     this.drawPlayer();
-    this.drawDummy();
+    
 
     // Add containers to stage
     this.app.stage.addChild(this.gridContainer);
     this.app.stage.addChild(this.effectContainer);
+    this.app.stage.addChild(this.entityContainer);
     this.app.stage.addChild(this.playerSprite);
-    this.app.stage.addChild(this.dummySprite);
     this.app.stage.addChild(this.healthBar);
     this.app.stage.addChild(this.energyBar);
 
@@ -117,6 +120,8 @@ export class GameController {
     // Start game loop
     this.gameLoop();
   }
+
+
 
     async generateRoom(x: number, y: number)  {
     this.map = new GameGrid(x,y);
@@ -263,9 +268,25 @@ export class GameController {
   drawGrid() {
     this.gridContainer.removeChildren();
     this.tile.clear();
+    this.entityContainer.removeChildren();
+    
 
     for (let x = 0; x < this.map.width; x++) {
       for (let y = 0; y < this.map.height; y++) {
+
+        if (this.map.tiles[x][y].entity != null){
+          if(this.map.tiles[x][y].entity instanceof Player){
+          }else{
+          let texture = Assets.get("enemy1.png");
+          let sprite = new PIXI.Sprite(texture);
+          sprite.x = x * this.tileSize;
+          sprite.y = y * this.tileSize;
+          sprite.width = this.tileSize;
+          sprite.height = this.tileSize;
+          sprite._zIndex = 1;
+          this.entityContainer.addChild(sprite);
+          }
+        }
 
         if (this.map.tiles[x][y].sprite != '') {
           let texture = Assets.get(this.map.tiles[x][y].sprite.toString());
@@ -323,18 +344,9 @@ export class GameController {
     this.playerSprite.endFill();
   }
 
-  drawDummy() {
-    this.dummySprite.removeChildren();
-    this.dummySprite.clear();
-    this.dummySprite.beginFill(0xff0000);
-    this.dummySprite.drawCircle(
-      this.dummy1.renderX * this.tileSize + this.tileSize / 2,
-      this.dummy1.renderY * this.tileSize + this.tileSize / 2,
-      this.tileSize / 3
-    );
-    this.dummySprite.endFill();
-  }
+ 
 
+ 
   animatePlayerMove(
     player: Player,
     targetX: number,
@@ -406,6 +418,7 @@ export class GameController {
       targetX >= this.map.width ||
       targetY >= this.map.height ||
       this.map.tiles[targetX][targetY].hasCollision ||
+      this.map.tiles[targetX][targetY].entity ||
       deltaX + deltaY > 1
     ) {
       console.log('Collision detected or too far away or out of bounds');
@@ -417,11 +430,13 @@ export class GameController {
       this.animatePlayerMove(player, targetX, targetY);
       this.player1.playerAction(10);
       this.checkUnderPlayer(player);
+      this.checkTileForItem(player);
     }
   }
 
  checkTileForItem(player: Player) {
-    if (this.map.tiles[player.PosX][player.PosY].hasItem) {
+    if (this.map.tiles[player.PosX][player.PosY].item != null) {
+      console.log("truly")
       const item = this.map.tiles[player.PosX][player.PosY].item;
       if (item && confirm(`Pick up ${item.name}?`)) {
         this.inventory.pickUp(item.name, item.category, item.sprite);
@@ -432,6 +447,7 @@ export class GameController {
         );
       }
     }
+ }
 findRoom(player: Player){
     let playerPosX = player.PosX;
     let playerPosY = player.PosY;
@@ -619,9 +635,7 @@ findRoom(player: Player){
       }
     });
     window.addEventListener('click', (event) => {
-      this.weaponFunctionality.attack(
-        this.map.getTileCoords(event.clientX, event.clientY, this.tileSize)
-      );
+      this.weaponFunctionality.attack(this.map.getTileCoords(event.clientX, event.clientY, this.tileSize),this.map);
     });
   }
 
