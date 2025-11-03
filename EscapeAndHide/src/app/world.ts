@@ -23,7 +23,7 @@ export class World {
                 
 
 
-                let roomID = this.data.actualRoomList[Math.floor(Math.random()*this.data.actualRoomList.length)];
+                let roomID = this.data.roomList[Math.floor(Math.random()*this.data.roomList.length)];
                 this.roomsIDs[x][y] = roomID;
                 
                 if(this.isValidRoom(x-1,y) ){
@@ -38,7 +38,7 @@ export class World {
                         else{
                             console.log(roomID + " does not have left entrance,starting change " +x+","+y);
                             while(!this.getRoomEntrances(roomID as keyof RoomsData).includes("left")){
-                                roomID = this.data.actualRoomList[Math.floor(Math.random()*this.data.actualRoomList.length)];
+                                roomID = this.data.roomList[Math.floor(Math.random()*this.data.roomList.length)];
                                 this.roomsIDs[x][y] = roomID;
                                 console.log("1:Changed roomID to "+roomID + " at "+x+","+y);
                             }
@@ -51,7 +51,7 @@ export class World {
                         if(this.getRoomEntrances(roomID as keyof RoomsData).includes("left")){
                             console.log(roomID+ " has left entrance,starting change" +x+","+y);
                             while(this.getRoomEntrances(roomID as keyof RoomsData).includes("left")){
-                                roomID = this.data.actualRoomList[Math.floor(Math.random()*this.data.actualRoomList.length)];
+                                roomID = this.data.roomList[Math.floor(Math.random()*this.data.roomList.length)];
                                 this.roomsIDs[x][y] = roomID;
                                 console.log("2:Changed roomID to "+roomID + " at "+x+","+y);
                                 

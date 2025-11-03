@@ -15,13 +15,9 @@ export class RoomsData {
         "testRoomUp",
         "crossHall1",
         "verticalHall",
-<<<<<<< HEAD
        "horizontalHall",
          "cornerRoom",
         "cornerRoomInverted",
-=======
-        "horizontalHall"
->>>>>>> b2a1c0a545f671c9d56a038d9dd3b482520e1f75
     ]
 
     constructor() {
