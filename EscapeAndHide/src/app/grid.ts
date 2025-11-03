@@ -128,6 +128,9 @@ export class GameGrid {
   getTileCoords(worldX: number, worldY: number, tileSize: number) {
     const tileX = Math.floor(worldX / tileSize);
     const tileY = Math.floor(worldY / tileSize);
+    if (!this.isValidTile(tileX, tileY)) {
+      return null;
+    }
     return { x: tileX, y: tileY };
   }
 

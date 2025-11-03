@@ -1,6 +1,8 @@
 import { Item } from './item';
 
 export class Weapon extends Item {
+  damage: number;
+  range: number;
   constructor(
     name: string,
     category: string,
@@ -10,5 +12,7 @@ export class Weapon extends Item {
     range: number
   ) {
     super(name, category, displayed, sprite);
+    this.damage = damage;
+    this.range = range;
   }
 }
