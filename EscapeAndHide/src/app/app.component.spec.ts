@@ -2,8 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { GameComponent } from './app.component';
 import { entity } from './entity';
 import { Player } from './player';
-import { Item } from './inventory/item';
-import { Tile } from './Tile';
+import { Item } from './items/item';
 import { GameGrid } from './grid';
 
 describe('AppComponent', () => {

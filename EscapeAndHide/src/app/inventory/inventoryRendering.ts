@@ -1,4 +1,4 @@
-import { Items } from './items';
+import { Items } from '../items/items';
 import { Inventory } from './inventory';
 import * as PIXI from 'pixi.js';
 
@@ -50,6 +50,13 @@ export class inventoryRendering {
     for (let i = 0; i < this.inventory.items.length; i++) {
       if (!this.inventory.items[i].displayed) {
         this.inventory.items[i].displayed = true;
+        const texture = PIXI.Assets.get(
+          this.inventory.items[i].sprite as string
+        ) as PIXI.Texture;
+        const sprite = new PIXI.Sprite(texture);
+        sprite.x = 0;
+        sprite.y = 0;
+
         const text = new PIXI.Text({
           text: this.inventory.items[i].name,
           style: {
@@ -59,12 +66,18 @@ export class inventoryRendering {
           },
         });
         text.anchor.set(0);
-        text.x = 10;
-        text.y = 10 + i * 35;
+        text.x = sprite.width + 10;
+        text.y = 0;
         text.eventMode = 'static';
         text.onpointerupoutside = () => this.drop(i);
         text.onclick = () => this.equip(i);
-        this.app.stage.addChild(text);
+
+        const itemContainer = new PIXI.Container();
+        itemContainer.x = 10;
+        itemContainer.y = 10 + i * 35;
+        itemContainer.addChild(sprite);
+        itemContainer.addChild(text);
+        this.app.stage.addChild(itemContainer);
       }
     }
   }
@@ -78,6 +91,13 @@ export class inventoryRendering {
     for (let i = 0; i < this.inventory.equippedItems.length; i++) {
       if (!this.inventory.equippedItems[i].displayed) {
         this.inventory.equippedItems[i].displayed = true;
+        const texture = PIXI.Assets.get(
+          this.inventory.equippedItems[i].sprite as string
+        ) as PIXI.Texture;
+        const sprite = new PIXI.Sprite(texture);
+        sprite.x = 0;
+        sprite.y = 0;
+
         const text = new PIXI.Text({
           text: this.inventory.equippedItems[i].name,
           style: {
@@ -87,11 +107,17 @@ export class inventoryRendering {
           },
         });
         text.anchor.set(0);
-        text.x = 10;
-        text.y = 10 + i * 40;
-        text.onclick = () => this.unequip(i);
+        text.x = sprite.width + 10;
+        text.y = 0;
         text.eventMode = 'static';
-        this.equippedApp.stage.addChild(text);
+        text.onclick = () => this.unequip(i);
+
+        const itemContainer = new PIXI.Container();
+        itemContainer.x = 10;
+        itemContainer.y = 10 + i * 40;
+        itemContainer.addChild(sprite);
+        itemContainer.addChild(text);
+        this.equippedApp.stage.addChild(itemContainer);
       }
     }
   }
@@ -108,7 +134,7 @@ export class inventoryRendering {
     this.displayEquipped();
   }
 
-  pickUp(itemName: string, itemCategory: string, itemSprite: String) {
+  pickUp(itemName: string, itemCategory: string, itemSprite: string) {
     this.inventory.addItem(itemName, itemCategory, itemSprite);
     this.displayInventory();
     this.displayEquipped();
