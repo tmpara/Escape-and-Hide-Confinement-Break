@@ -13,7 +13,6 @@ export class World {
         this.roomsIDs = new Array();
         this.width = 10;
         this.height = 10;
-
     }
 
     CreateWorld(){
@@ -34,18 +33,10 @@ export class World {
                 
                 
                 this.loadRoomWithId(x,y,roomID as keyof RoomsData);
-              
             }
         }
-
-
-
         this.loadRoomWithId(5,5,"startingRoom");
-
         this.loadRoomWithId(5,6,"testRoomUp");
-    
-            
-
     }
 
     isValidRoom(x:number,y:number){
