@@ -20,163 +20,78 @@ export class GameGrid {
   createEmptyMap() {
     for (let x = 0; x <= this.width; x++) {
       this.tiles[x] = new Array();
-      for (let y = 0; y <= this.height; y++) {
-        this.tiles[x][y] = new tile(
-          false,
-          '',
-          false,
-          null,
-          false,
-          null,
-          true,
-          '',
-          null
-        );
+      for(let y=0;y<=this.height;y++){
+        this.tiles[x][y] = new tile("empty",false,"",false,null,true,0,null,"",false,null,null);
       }
     }
   }
+  
+  
 
-  createMap() {
-    this.tiles[12][12] = this.getTileData('fire');
-
-    this.tiles[10][1] = this.getTileData('wall_basic');
-    this.tiles[10][2] = this.getTileData('wall_basic');
-    this.tiles[10][3] = this.getTileData('wall_basic');
-    this.tiles[10][4] = this.getTileData('wall_basic');
-    this.tiles[10][5] = this.getTileData('wall_basic');
-    this.tiles[10][6] = this.getTileData('wall_basic');
-    this.tiles[10][7] = this.getTileData('wall_basic');
-    this.tiles[10][8] = this.getTileData('wall_basic');
-    this.tiles[10][9] = this.getTileData('wall_basic');
-    this.tiles[10][10] = this.getTileData('wall_basic');
-    this.tiles[10][11] = this.getTileData('wall_basic');
-    this.tiles[10][12] = this.getTileData('wall_basic');
-    this.tiles[10][13] = this.getTileData('wall_basic');
-    this.tiles[10][14] = this.getTileData('wall_basic');
-    this.tiles[10][15] = this.getTileData('wall_basic');
-    this.tiles[10][16] = this.getTileData('wall_basic');
-    this.tiles[10][17] = this.getTileData('wall_basic');
-    this.tiles[10][18] = this.getTileData('wall_basic');
-    this.tiles[10][19] = this.getTileData('wall_basic');
-    this.tiles[10][20] = this.getTileData('wall_basic');
-    this.tiles[10][21] = this.getTileData('wall_basic');
-    this.tiles[10][22] = this.getTileData('wall_basic');
-    this.tiles[10][23] = this.getTileData('wall_basic');
-    this.tiles[10][24] = this.getTileData('wall_basic');
-    this.tiles[10][25] = this.getTileData('wall_basic');
-    this.tiles[10][26] = this.getTileData('wall_basic');
-
-    this.tiles[14][1] = this.getTileData('wall_basic');
-    this.tiles[14][2] = this.getTileData('wall_basic');
-    this.tiles[14][3] = this.getTileData('wall_basic');
-    this.tiles[14][4] = this.getTileData('wall_basic');
-    this.tiles[14][5] = this.getTileData('wall_basic');
-    this.tiles[14][6] = this.getTileData('wall_basic');
-    this.tiles[14][7] = this.getTileData('wall_basic');
-    this.tiles[14][8] = this.getTileData('wall_basic');
-    this.tiles[14][9] = this.getTileData('wall_basic');
-    this.tiles[14][10] = this.getTileData('wall_basic');
-    this.tiles[14][11] = this.getTileData('wall_basic');
-    this.tiles[14][12] = this.getTileData('wall_basic');
-    this.tiles[14][13] = this.getTileData('wall_basic');
-    this.tiles[14][14] = this.getTileData('wall_basic');
-    this.tiles[14][15] = this.getTileData('wall_basic');
-    this.tiles[14][16] = this.getTileData('wall_basic');
-    this.tiles[14][17] = this.getTileData('wall_basic');
-    this.tiles[14][18] = this.getTileData('wall_basic');
-    this.tiles[14][19] = this.getTileData('wall_basic');
-    this.tiles[14][20] = this.getTileData('wall_basic');
-    this.tiles[14][21] = this.getTileData('wall_basic');
-    this.tiles[14][22] = this.getTileData('wall_basic');
-    this.tiles[14][23] = this.getTileData('wall_basic');
-    this.tiles[14][24] = this.getTileData('wall_basic');
-    this.tiles[14][25] = this.getTileData('wall_basic');
-    this.tiles[14][26] = this.getTileData('wall_basic');
+  loadMap(map: string[][]){
+    for(let i=0;i<map.length;i++){
+      for(let j=0;j<map[i].length;j++){
+        if(i==0 || j==0 || i==map.length-1 || j==map[i].length-1){
+          this.tiles[i][j] = this.getTileData("wall_corner")
+        }
+        
+        if(map[i][j] != "floor_basic"){
+          this.tiles[i][j] = this.getTileData(map[i][j])
+        }
+        
+    }
   }
 
-  getTileData(name: String) {
-    let info = new tile(false, '', false, null, false, null, true, '', null);
 
-    switch (name) {
-      case 'glass_shards':
-        info = new tile(
-          false,
-          'glass_shards',
-          false,
-          null,
-          true,
-          5,
-          true,
-          'placeholder.png',
-          null
-        );
-        return info;
-        break;
-      case 'wall_basic':
-        info = new tile(
-          true,
-          '',
-          false,
-          null,
-          true,
-          100,
-          false,
-          'placeholder.png',
-          null
-        );
-        return info;
-        break;
-      case 'fire':
-        info = new tile(
-          false,
-          'fire',
-          false,
-          null,
-          false,
-          100,
-          false,
-          'fire.png',
-          null
-        );
-        return info;
-        break;
-      case 'ash':
-        info = new tile(
-          false,
-          '',
-          false,
-          null,
-          false,
-          null,
-          false,
-          'ash.png',
-          null
-        );
-        return info;
-        break;
+  }
+  
+  getTileData(name: String){
+
+    let info = new tile("empty",false,"",false,null,true,0,null,"",false,null,null);
+
+    switch (name){
+
+    
+    case 'glass_shards':
+      info = new tile("glass_shards",false,"glass_shards",true,5,true,0,null,"glass_shards.png",false,null,null);
+      return info
+    
+    case 'wall_corner':
+      info = new tile("wall_corner",true,"",false,null,false,0,null,"placeholder.png",false,null,null);
+      return info
+
+    case 'wall_basic':
+      info = new tile("wall_basic",true,"",true,100,true,0,null,"placeholder.png",false,null,null);
+      return info
+      
+    case 'ash':
+      info = new tile("ash",false,"",false,null,false,0,null,"ash.png",false,null,null);
+      return info
+
+    case 'room_entrance':
+      info = new tile("door",false,"entrance",false,null,false,0,null,"door1.png",false,null,null);
+      return info
+      
     }
     return info;
   }
 
-  createTile(x: number, y: number, name: String, replace: boolean) {
-    if (this.isValidTile(x, y) == true) {
-      this.tiles[x][y] = this.getTileData(name);
+  createTile(x: number, y: number, name: String, replace: boolean){
+    if (this.isValidTile(x,y)==true){
+      let firevalue = this.tiles[x][y].fireValue
+      let entity = this.tiles[x][y].entity
+      this.tiles[x][y] = this.getTileData(name)
+      if (this.tiles[x][y].flammable==true || name=="ash"){
+        this.tiles[x][y].fireValue = firevalue
+        
+      }
+      this.tiles[x][y].entity = entity
     }
   }
 
-  clearTile(x: number, y: number) {
-    if (this.isValidTile(x, y)) {
-      this.tiles[x][y] = new tile(
-        false,
-        '',
-        false,
-        null,
-        false,
-        null,
-        true,
-        '',
-        null
-      );
+  clearTile(x: number, y: number){
+    if (this.isValidTile(x,y)){
+      this.tiles[x][y] = new tile("empty",false,"",false,null,true,0,null,"",false,null,null);
     }
   }
 
@@ -188,6 +103,28 @@ export class GameGrid {
     }
   }
 
+  damageTile(x:number,y:number,damage:number){
+    if (this.tiles[x][y].health!=null && this.tiles[x][y].destroyable==true){
+      this.tiles[x][y].health = this.tiles[x][y].health! - damage;
+      if (this.tiles[x][y].health<=0){
+        this.destroyTile(x,y)
+      }
+    }
+  }
+
+  destroyTile(x:number,y:number){
+    if (this.tiles[x][y].brokenTile==null && this.tiles[x][y].fireValue>0){
+      this.createTile(x,y,"ash",true);
+    }
+    else if (this.tiles[x][y].brokenTile!=null){
+      this.createTile(x,y,this.tiles[x][y].brokenTile,true);
+    }
+    else{
+      this.clearTile(x,y)
+    }
+  }
+
+  
   getTileCoords(worldX: number, worldY: number, tileSize: number) {
     const tileX = Math.floor(worldX / tileSize);
     const tileY = Math.floor(worldY / tileSize);
