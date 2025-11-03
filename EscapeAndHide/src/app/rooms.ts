@@ -1,35 +1,27 @@
 import { Room } from "./room";
 
 export class RoomsData {
-    roomList: string[] = [
-        "starting_room",
-        "laboratory_room1", 
-        "office_room1", 
-        "hallway_room1",
-        "storage_room1", 
-        "security_room1",
-        "cafeteria_room1",
-        "laboratory_room_destroyed1",
-        "office_room_destroyed1", 
-        "hallway_room_destroyed1",
-        "storage_room_destroyed1", 
-        "security_room_destroyed1",
-        "cafeteria_room_destroyed1",
-    ];
+
     startingRoom: Room;
     testRoomUp: Room;
+    crossHall1: Room;
     verticalHall: Room;
     horizontalHall: Room;
     cornerRoom: Room;
     cornerRoomInverted: Room;
     
-    actualRoomList: string[] = [
+    roomList: string[] = [
         "startingRoom",
         "testRoomUp",
+        "crossHall1",
         "verticalHall",
+<<<<<<< HEAD
        "horizontalHall",
          "cornerRoom",
         "cornerRoomInverted",
+=======
+        "horizontalHall"
+>>>>>>> b2a1c0a545f671c9d56a038d9dd3b482520e1f75
     ]
 
     constructor() {
@@ -41,12 +33,19 @@ export class RoomsData {
         this.startingRoom.layout[4][8] = "room_entrance";
         this.startingRoom.layout[8][4] = "room_entrance";
         
-        this.testRoomUp = new Room(11, 11, ["up", "left", "right", "down"], []);
+        this.testRoomUp = new Room(15, 15, ["up", "left", "right", "down"], []);
         this.testRoomUp.layout = Array.from({ length: this.testRoomUp.height }, () => Array.from({ length: this.testRoomUp.width }, () => "floor_basic"));
-        this.testRoomUp.layout[0][5] = "room_entrance";
-        this.testRoomUp.layout[5][0] = "room_entrance";
-        this.testRoomUp.layout[5][10] = "room_entrance";
-        this.testRoomUp.layout[10][5] = "room_entrance";
+        this.testRoomUp.layout[0][7] = "room_entrance";
+        this.testRoomUp.layout[7][0] = "room_entrance";
+        this.testRoomUp.layout[7][14] = "room_entrance";
+        this.testRoomUp.layout[14][7] = "room_entrance";
+
+        this.crossHall1 = new Room(15, 15, ["up", "left", "right", "down"], []);
+        this.crossHall1.layout = Array.from({ length: this.testRoomUp.height }, () => Array.from({ length: this.testRoomUp.width }, () => "floor_basic"));
+        this.crossHall1.layout[0][7] = "room_entrance";
+        this.crossHall1.layout[7][0] = "room_entrance";
+        this.crossHall1.layout[7][14] = "room_entrance";
+        this.crossHall1.layout[14][7] = "room_entrance";
 
         this.verticalHall = new Room(5, 15, ["up", "down"], []);
         this.verticalHall.layout = Array.from({ length: this.verticalHall.width }, () => Array.from({ length: this.verticalHall.height }, () => "floor_basic"));

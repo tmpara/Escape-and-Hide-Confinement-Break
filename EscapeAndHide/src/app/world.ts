@@ -13,7 +13,6 @@ export class World {
         this.roomsIDs = new Array();
         this.width = 10;
         this.height = 10;
-
     }
 
     CreateWorld(){
@@ -71,20 +70,11 @@ export class World {
                 
               
               console.log("Loaded room "+roomID + " at "+x+","+y);
+                this.loadRoomWithId(x,y,roomID as keyof RoomsData);
             }
         }
-
-
-
         this.loadRoomWithId(5,5,"startingRoom");
-
         this.loadRoomWithId(5,6,"testRoomUp");
-
-        //this.loadRoomWithId(6,5,"verticalHall");
-    
-        
-            
-
     }
 
     isValidRoom(x: number, y: number) {

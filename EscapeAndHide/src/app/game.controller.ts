@@ -559,8 +559,8 @@ findRoom(player: Player){
 
   createExplosion(x: number, y: number, size: number, strength: number){
 
-      for(let a=0;a<=this.map.width;a++){
-        for(let b=0;b<=this.map.height;b++){
+      for(let a=0;a<=this.map.width-1;a++){
+        for(let b=0;b<=this.map.height-1;b++){
           const distance = Math.sqrt(
             Math.pow(a - x, 2) + Math.pow(b - y, 2)
           )
@@ -632,7 +632,8 @@ findRoom(player: Player){
           this.endTurn();
           break;
         case 'p':
-          this.createExplosion(player.PosX,player.PosY,4,200)
+          this.createExplosion(player.PosX,player.PosY,2,200)
+          this.endTurn()
           break;
         default:
           return;
