@@ -20,12 +20,16 @@ export class RoomsData {
     testRoomUp: Room;
     verticalHall: Room;
     horizontalHall: Room;
+    cornerRoom: Room;
+    cornerRoomInverted: Room;
     
     actualRoomList: string[] = [
         "startingRoom",
         "testRoomUp",
         "verticalHall",
-       "horizontalHall"
+       "horizontalHall",
+         "cornerRoom",
+        "cornerRoomInverted",
     ]
 
     constructor() {
@@ -53,6 +57,16 @@ export class RoomsData {
         this.horizontalHall.layout = Array.from({ length: this.horizontalHall.width }, () => Array.from({ length: this.horizontalHall.height }, () => "floor_basic"));
         this.horizontalHall.layout[0][2] = "room_entrance";
         this.horizontalHall.layout[14][2] = "room_entrance"; 
+        
+        this.cornerRoom = new Room(7, 7, ["left", "up"], []);
+        this.cornerRoom.layout = Array.from({ length: this.cornerRoom.height }, () => Array.from({ length: this.cornerRoom.width }, () => "floor_basic"));
+        this.cornerRoom.layout[0][3] = "room_entrance";
+        this.cornerRoom.layout[3][0] = "room_entrance";
+
+        this.cornerRoomInverted = new Room(7, 7, ["right", "down"], []); 
+        this.cornerRoomInverted.layout = Array.from({ length: this.cornerRoomInverted.height }, () => Array.from({ length: this.cornerRoomInverted.width }, () => "floor_basic"));
+        this.cornerRoomInverted.layout[3][6] = "room_entrance";
+        this.cornerRoomInverted.layout[6][3] = "room_entrance";
     }
  
     

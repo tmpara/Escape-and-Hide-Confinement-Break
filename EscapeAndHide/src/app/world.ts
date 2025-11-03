@@ -21,20 +21,56 @@ export class World {
             this.rooms[x] = new Array();
             this.roomsIDs[x] = new Array();
             for(let y=0;y<this.height;y++){
-              
+                
 
 
                 let roomID = this.data.actualRoomList[Math.floor(Math.random()*this.data.actualRoomList.length)];
-             
-                   // if(this.rooms[x-1][y] != null && this.getRoomById(roomID as keyof RoomsData).entrances.includes("left") && this.getRoomById(this.roomsIDs[x][y] as keyof RoomsData).entrances.includes("right")){
-                    
-                    
-
-                   // }
+                this.roomsIDs[x][y] = roomID;
+                
+                if(this.isValidRoom(x-1,y) ){
+                  //  let leftRoom = this.getRoomById(this.roomsIDs[x-1][y] as keyof RoomsData);
+                    if(this.getRoomEntrances((this.roomsIDs[x-1][y] as keyof RoomsData)).includes("right")){
+                        console.log(this.roomsIDs[x-1][y]+" has right entrance !!!left " + (x-1)+","+y);
+                        if(this.getRoomEntrances(roomID as keyof RoomsData).includes("left")){
+                            console.log(roomID+ " has left entrance"  +x+","+y);
+                            this.loadRoomWithId(x,y,roomID as keyof RoomsData);
+                        
+                        } 
+                        else{
+                            console.log(roomID + " does not have left entrance,starting change " +x+","+y);
+                            while(!this.getRoomEntrances(roomID as keyof RoomsData).includes("left")){
+                                roomID = this.data.actualRoomList[Math.floor(Math.random()*this.data.actualRoomList.length)];
+                                this.roomsIDs[x][y] = roomID;
+                                console.log("1:Changed roomID to "+roomID + " at "+x+","+y);
+                            }
+                            console.log("Now "+roomID+ " does have left entrance" +x+","+y);
+                            this.loadRoomWithId(x,y,roomID as keyof RoomsData);
+                        }
+                    }
+                    else{
+                        console.log(this.roomsIDs[x-1][y]+" does not have right entrance !!!left" + (x-1)+","+y);
+                        if(this.getRoomEntrances(roomID as keyof RoomsData).includes("left")){
+                            console.log(roomID+ " has left entrance,starting change" +x+","+y);
+                            while(this.getRoomEntrances(roomID as keyof RoomsData).includes("left")){
+                                roomID = this.data.actualRoomList[Math.floor(Math.random()*this.data.actualRoomList.length)];
+                                this.roomsIDs[x][y] = roomID;
+                                console.log("2:Changed roomID to "+roomID + " at "+x+","+y);
+                                
+                            }
+                            console.log("Now "+roomID+ " does not have left entrance" +x+","+y );
+                        }
+                    }
+                    this.loadRoomWithId(x,y,roomID as keyof RoomsData);
+                }
+                else{
+                   // console.log("room not valid");
+                    this.loadRoomWithId(x,y,roomID as keyof RoomsData);
+                }
                 
                 
-                this.loadRoomWithId(x,y,roomID as keyof RoomsData);
+                
               
+              console.log("Loaded room "+roomID + " at "+x+","+y);
             }
         }
 
@@ -43,14 +79,21 @@ export class World {
         this.loadRoomWithId(5,5,"startingRoom");
 
         this.loadRoomWithId(5,6,"testRoomUp");
+
+        //this.loadRoomWithId(6,5,"verticalHall");
     
+        
             
 
     }
 
-    isValidRoom(x:number,y:number){
-       
+    isValidRoom(x: number, y: number) {
+    if (x < 0 || y < 0 || x >= this.width || y >= this.height) {
+      return false;
+    } else {
+      return true;
     }
+  }
 
     getRoomById(id: keyof RoomsData){
         return this.data[id] as any;
@@ -64,6 +107,14 @@ export class World {
         this.rooms[worldX][worldY].loadMap((this.data[id] as any).layout);
     }
 
+    getRoomEntrances(roomId: keyof RoomsData){
+       // console.log((this.data[roomId] as any).entrances);
+        return (this.data[roomId] as any).entrances;
+    }
+
    
 }
+
+
+
 

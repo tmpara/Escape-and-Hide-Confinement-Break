@@ -28,8 +28,8 @@ export class GameController {
   healthBar = new Graphics();
   energyBar = new Graphics();
   tile = new Graphics();
-  playerWorldX = 5;
-  playerWorldY = 5;
+  playerWorldX = 8;
+  playerWorldY = 9;
   tileSize = 32; // Size of each tile in pixels
 
   constructor() {}
@@ -54,7 +54,7 @@ export class GameController {
     this.world.CreateWorld();
     // Create map and player
 
-    this.map = this.world.rooms[5][5];
+    this.map = this.world.rooms[8][9];
     
     console.log(this.map.width + " " + this.map.height);
     this.map.loadPlayer(1, 1, this.player1);
@@ -77,7 +77,7 @@ export class GameController {
     this.map.loadPlayer(1, 1, this.player1);
     this.map.loadDummy(5, 2, this.dummy1);
 
-    this.map.SpawnItem(1, 3, new Items().gun);
+    this.map.SpawnItem(5, 3, new Items().gun);
     this.map.SpawnItem(2, 3, new Items().bigGun);
 
     this.map.tiles[3][3] = this.map.getTileData("glass_shards");
@@ -386,9 +386,9 @@ export class GameController {
   teleportPlayer(player: Player, targetX: number, targetY: number) {
     let playerPosX = player.PosX;
     let playerPosY = player.PosY;
-    if(playerPosX < this.map.width && playerPosY < this.map.height){
+    if(playerPosX <= this.map.width && playerPosY <= this.map.height){
       this.map.tiles[playerPosX][playerPosY].entity = null;
-    }
+   }
     
     player.PosX = targetX;
     player.PosY = targetY;
@@ -428,7 +428,7 @@ export class GameController {
       player.PosY = targetY;
       this.map.tiles[targetX][targetY].entity = player;
       this.animatePlayerMove(player, targetX, targetY);
-      this.player1.playerAction(10);
+      this.player1.playerAction(0);
       this.checkUnderPlayer(player);
       this.checkTileForItem(player);
     }
@@ -458,6 +458,7 @@ findRoom(player: Player){
     if(playerPosX == 0 && playerPosY < mapY){
       //left
       if (this.playerWorldX - 1  >= 0){
+        this.map.tiles[playerPosX][playerPosY].entity = null;
         this.map = this.world.rooms[this.playerWorldX-1][this.playerWorldY];
         this.playerWorldX -= 1;
         this.teleportPlayer(this.player1, this.map.width-2, Math.floor(this.map.height/2));
@@ -468,6 +469,7 @@ findRoom(player: Player){
     else if(playerPosX == mapX-1 && playerPosY < mapY){
       //right
       if (this.playerWorldX + 1  <= 10){
+        this.map.tiles[playerPosX][playerPosY].entity = null;
         this.map = this.world.rooms[this.playerWorldX+1][this.playerWorldY];
         this.playerWorldX += 1;
         this.teleportPlayer(this.player1, 1, Math.floor(this.map.height/2));
@@ -478,6 +480,7 @@ findRoom(player: Player){
     else if(playerPosY == 0 && playerPosX < mapX){
       //up
       if (this.playerWorldY + 1  <= 10){
+        this.map.tiles[playerPosX][playerPosY].entity = null;
         this.map = this.world.rooms[this.playerWorldX][this.playerWorldY+1];
         this.playerWorldY += 1;
         this.teleportPlayer(this.player1, Math.floor(this.map.width/2), this.map.height-2);
@@ -488,6 +491,7 @@ findRoom(player: Player){
     else if(playerPosY == mapY-1 && playerPosX < mapX){
       //down
       if (this.playerWorldY - 1  >= 0){
+        this.map.tiles[playerPosX][playerPosY].entity = null;
         this.map = this.world.rooms[this.playerWorldX][this.playerWorldY-1];
         this.playerWorldY -= 1;
         this.teleportPlayer(this.player1, Math.floor(this.map.width/2), 1);
