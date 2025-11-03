@@ -121,15 +121,11 @@ export class GameController {
     this.gameLoop();
   }
 
-
-
     async generateRoom(x: number, y: number)  {
     this.map = new GameGrid(x,y);
     this.map.createEmptyMap()
     this.map.loadPlayer(1, 1, this.player1);
 
- 
-    
   }
 
   generateRandomNumber(min: number, max: number) {
@@ -143,6 +139,58 @@ export class GameController {
       return max
     }
     return number
+  }
+
+  castRay(x1: number, y1: number, x2: number, y2: number, stopOnCollision: boolean = true): [number, number][] {
+    const hitTiles: [number, number][] = [];
+
+    // Guard: map must exist
+    if (!this.map || !this.map.tiles) return hitTiles;
+
+    let x = Math.round(x1);
+    let y = Math.round(y1);
+    const xEnd = Math.round(x2);
+    const yEnd = Math.round(y2);
+
+    const width = this.map.width;
+    const height = this.map.height;
+
+    const inBounds = (tx: number, ty: number) => tx >= 0 && ty >= 0 && tx < width && ty < height;
+
+    // Add starting tile if it's inside the map
+    if (inBounds(x, y)) {
+      hitTiles.push([x, y]);
+      if (stopOnCollision && this.map.tiles[x][y].hasCollision) return hitTiles;
+    }
+
+    // Degenerate case: start == end
+    if (x === xEnd && y === yEnd) return hitTiles;
+
+    let dx = Math.abs(xEnd - x);
+    let sx = x < xEnd ? 1 : -1;
+    let dy = -Math.abs(yEnd - y);
+    let sy = y < yEnd ? 1 : -1;
+    let err = dx + dy;
+
+    // Bresenham iteration
+    while (!(x === xEnd && y === yEnd)) {
+      const e2 = 2 * err;
+      if (e2 >= dy) {
+        err += dy;
+        x += sx;
+      }
+      if (e2 <= dx) {
+        err += dx;
+        y += sy;
+      }
+
+      if (!inBounds(x, y)) break;
+      hitTiles.push([x, y]);
+      // If requested, stop the ray when we hit a tile that blocks (collision)
+      if (stopOnCollision && this.map.tiles[x][y].hasCollision) break;
+    }
+
+    return hitTiles;
   }
 
   drawHealthBar() {
@@ -257,7 +305,7 @@ export class GameController {
 
     // Energy
     const energyPercentage =
-      this.player1.energy.currentEnergy / this.player1.energy.maxEnergy;
+    this.player1.energy.currentEnergy / this.player1.energy.maxEnergy;
     this.energyBar.beginFill(0xffff00);
     this.energyBar.drawRect(x, y, barWidth * energyPercentage, barHeight);
     this.energyBar.endFill();
@@ -270,7 +318,6 @@ export class GameController {
     this.tile.clear();
     this.entityContainer.removeChildren();
     
-
     for (let x = 0; x < this.map.width; x++) {
       for (let y = 0; y < this.map.height; y++) {
 
@@ -283,7 +330,7 @@ export class GameController {
           sprite.y = y * this.tileSize;
           sprite.width = this.tileSize;
           sprite.height = this.tileSize;
-          sprite._zIndex = 1;
+          sprite._zIndex = 2;
           this.entityContainer.addChild(sprite);
           }
         }
@@ -313,7 +360,7 @@ export class GameController {
           fireSprite.y = (y * this.tileSize)
           fireSprite.width = this.tileSize
           fireSprite.height = this.tileSize
-          fireSprite._zIndex = 3
+          fireSprite._zIndex = 5
           this.gridContainer.addChild(fireSprite);
         }
 
@@ -344,9 +391,6 @@ export class GameController {
     this.playerSprite.endFill();
   }
 
- 
-
- 
   animatePlayerMove(
     player: Player,
     targetX: number,
@@ -448,6 +492,7 @@ export class GameController {
       }
     }
  }
+
 findRoom(player: Player){
     let playerPosX = player.PosX;
     let playerPosY = player.PosY;
@@ -528,28 +573,27 @@ findRoom(player: Player){
 
     if (this.map.tiles[x][y].fireValue > 0){ 
       this.map.damageTile(x,y,this.map.tiles[x][y].fireValue/5)
-      this.map.tiles[x][y].fireValue = this.map.tiles[x][y].fireValue - this.generateRandomNumber(10,20)
+      this.map.tiles[x][y].fireValue = this.clampNumber(this.map.tiles[x][y].fireValue - this.generateRandomNumber(10,20),0,100,)
       if (this.map.tiles[x][y].name=="empty"){
         this.map.createTile(x,y,"ash",true);
       }
       var spreadchance = this.generateRandomNumber(1,5)
       if (spreadchance==1){
 
-        if(this.map.isValidTile(x+1,y) && this.map.tiles[x+1][y].flammable == true){
-          this.map.tiles[x+1][y].fireValue = this.map.tiles[x][y].fireValue + 40;
-        }
-        if(this.map.isValidTile(x-1,y) && this.map.tiles[x-1][y].flammable == true){
-          this.map.tiles[x-1][y].fireValue = this.map.tiles[x-1][y].fireValue + 40;
-        }
-        if(this.map.isValidTile(x,y+1) && this.map.tiles[x][y+1].flammable == true){
-          this.map.tiles[x][y+1].fireValue = this.map.tiles[x][y+1].fireValue + 40;
-        }
-        if(this.map.isValidTile(x,y-1) && this.map.tiles[x][y-1].flammable == true){
-          this.map.tiles[x][y-1].fireValue = this.map.tiles[x][y-1].fireValue + 40;
-        }
+        this.ignite(x+1,y,this.map.tiles[x+1][y].fireValue+40,false)
+        this.ignite(x-1,y,this.map.tiles[x-1][y].fireValue+40,false)
+        this.ignite(x,y+1,this.map.tiles[x][y+1].fireValue+40,false)
+        this.ignite(x,y-1,this.map.tiles[x][y-1].fireValue+40,false)
 
       }
+    }
+  }
 
+  ignite(x: number, y:number, fireValue: number, additive: boolean){
+    if(this.map.isValidTile(x,y) && this.map.tiles[x][y].flammable == true){
+      if (this.map.tiles[x][y].fireValue <= 0 || additive == false){
+        this.map.tiles[x][y].fireValue += fireValue;
+      }
     }
   }
 
@@ -575,7 +619,7 @@ findRoom(player: Player){
             }
             var firechance=this.generateRandomNumber(1,10)
             if (firechance==1 && this.map.tiles[a][b].flammable==true){
-              this.map.tiles[a][b].fireValue = 100
+              this.ignite(a,b,strength,true)
             }
           }
         }
@@ -637,7 +681,13 @@ findRoom(player: Player){
     });
     window.addEventListener('click', (event) => {
       this.weaponFunctionality.attack(this.map.getTileCoords(event.clientX, event.clientY, this.tileSize),this.map);
-    });
+      let x = this.map.getTileCoords(event.clientX, event.clientY, this.tileSize).x
+      let y = this.map.getTileCoords(event.clientX, event.clientY, this.tileSize).y
+      let tiles = this.castRay(player.PosX,player.PosY,x,y,true)
+      tiles.forEach((tile) => {
+        this.ignite(tile[0],tile[1],100,true)
+      })
+    })
   }
 
   delay(ms: number) {

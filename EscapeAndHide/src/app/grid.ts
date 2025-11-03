@@ -21,12 +21,10 @@ export class GameGrid {
     for (let x = 0; x <= this.width; x++) {
       this.tiles[x] = new Array();
       for(let y=0;y<=this.height;y++){
-        this.tiles[x][y] = new tile("empty",false,"",false,null,true,0,null,"",false,null,null);
+        this.tiles[x][y] = this.getTileData("empty")
       }
     }
   }
-  
-  
 
   loadMap(map: string[][]){
     for(let i=0;i<map.length;i++){
@@ -39,41 +37,8 @@ export class GameGrid {
           this.tiles[i][j] = this.getTileData(map[i][j])
         }
         
+      }
     }
-  }
-
-
-  }
-  
-  getTileData(name: String){
-
-    let info = new tile("empty",false,"",false,null,true,0,null,"",false,null,null);
-
-    switch (name){
-
-    
-    case 'glass_shards':
-      info = new tile("glass_shards",false,"glass_shards",true,5,true,0,null,"glass_shards.png",false,null,null);
-      return info
-    
-    case 'wall_corner':
-      info = new tile("wall_corner",true,"",false,null,false,0,null,"placeholder.png",false,null,null);
-      return info
-
-    case 'wall_basic':
-      info = new tile("wall_basic",true,"",true,100,true,0,null,"placeholder.png",false,null,null);
-      return info
-      
-    case 'ash':
-      info = new tile("ash",false,"",false,null,false,0,null,"ash.png",false,null,null);
-      return info
-
-    case 'room_entrance':
-      info = new tile("door",false,"entrance",false,null,false,0,null,"door1.png",false,null,null);
-      return info
-      
-    }
-    return info;
   }
 
   createTile(x: number, y: number, name: String, replace: boolean){
@@ -91,7 +56,7 @@ export class GameGrid {
 
   clearTile(x: number, y: number){
     if (this.isValidTile(x,y)){
-      this.tiles[x][y] = new tile("empty",false,"",false,null,true,0,null,"",false,null,null);
+      this.tiles[x][y] = this.getTileData("empty")
     }
   }
 
@@ -123,7 +88,6 @@ export class GameGrid {
       this.clearTile(x,y)
     }
   }
-
   
   getTileCoords(worldX: number, worldY: number, tileSize: number) {
     const tileX = Math.floor(worldX / tileSize);
@@ -162,6 +126,7 @@ export class GameGrid {
     this.tiles[x][y].item = item;
     this.tiles[x][y].sprite = item.sprite;
   }
+
   RemoveItem(x: number, y: number, effect?: string) {
     let spriteAfterRemoval = '';
     switch (effect) {
@@ -178,4 +143,90 @@ export class GameGrid {
     this.tiles[x][y].hasItem = false;
     this.tiles[x][y].item = null;
   }
+
+  getTileData(name: String){
+
+    let tileName = ""
+    let hasCollision = false
+    let effect = ""
+    let destroyable = false
+    let health = null
+    let flammable = false
+    let brokenTile = null
+    let sprite = ""
+
+    switch (name){
+
+    case 'empty':
+      tileName="empty"
+      hasCollision=false
+      effect=""
+      destroyable=false
+      health=null
+      flammable=true
+      brokenTile=null
+      sprite=""
+      break;
+
+    case 'glass_shards':
+      tileName="glass_shards"
+      hasCollision=false
+      effect="glass_shards"
+      destroyable=true
+      health=5
+      flammable=true
+      brokenTile=null
+      sprite="glass_shards.png"
+      break;
+    
+    case 'wall_corner':
+      tileName="wall_corner"
+      hasCollision=true
+      effect=""
+      destroyable=false
+      health=null
+      flammable=false
+      brokenTile=null
+      sprite="placeholder.png"
+      break;
+
+    case 'wall_basic':
+      tileName="wall_basic"
+      hasCollision=true
+      effect=""
+      destroyable=true
+      health=100
+      flammable=true
+      brokenTile=null
+      sprite="placeholder.png"
+      break;
+      
+    case 'ash':
+      tileName="ash"
+      hasCollision=false
+      effect=""
+      destroyable=false
+      health=null
+      flammable=false
+      brokenTile=null
+      sprite="ash.png"
+      break;
+
+    case 'room_entrance':
+      tileName="door"
+      hasCollision=false
+      effect="entrance"
+      destroyable=false
+      health=null
+      flammable=false
+      brokenTile=null
+      sprite="door1.png"
+      break;
+      
+    }
+
+    let info = new tile(tileName,hasCollision,effect,destroyable,health,flammable,brokenTile,sprite,0,false,null,null);
+    return info;
+  }
+
 }

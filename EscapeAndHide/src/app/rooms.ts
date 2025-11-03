@@ -19,11 +19,17 @@ export class RoomsData {
     constructor() {
         this.startingRoom = new Room(9, 9, ["up", "left", "right", "down"], []);
         this.startingRoom.layout = Array.from({ length: this.startingRoom.height }, () => Array.from({ length: this.startingRoom.width }, () => "floor_basic"));
-        this.startingRoom.layout[0][0] = "floor_basic";
         this.startingRoom.layout[0][4] = "room_entrance";
         this.startingRoom.layout[4][0] = "room_entrance";
         this.startingRoom.layout[4][8] = "room_entrance";
         this.startingRoom.layout[8][4] = "room_entrance";
+        this.startingRoom.layout[4][1] = "wall_basic";
+        this.startingRoom.layout[4][2] = "wall_basic";
+        this.startingRoom.layout[4][3] = "wall_basic";
+        this.startingRoom.layout[4][4] = "wall_basic";
+        this.startingRoom.layout[4][5] = "wall_basic";
+        this.startingRoom.layout[4][6] = "wall_basic";
+        this.startingRoom.layout[4][7] = "wall_basic";
         
         this.testRoomUp = new Room(15, 15, ["up", "left", "right", "down"], []);
         this.testRoomUp.layout = Array.from({ length: this.testRoomUp.height }, () => Array.from({ length: this.testRoomUp.width }, () => "floor_basic"));
