@@ -5,7 +5,8 @@ import { tile } from './tile';
 import { Item } from './items/item';
 import * as PIXI from 'pixi.js';
 import { Assets } from 'pixi.js';
-import { Dummy } from './dummy';
+import { Dummy, HeavyDummy } from './enemyTypes';
+import { entity } from './entity';
 export class GameGrid {
   width: number;
   height: number;
@@ -34,15 +35,11 @@ export class GameGrid {
         if(i==0 || j==0 || i==map.length-1 || j==map[i].length-1){
           this.tiles[i][j] = this.getTileData("wall_corner")
         }
-        
         if(map[i][j] != "floor_basic"){
           this.tiles[i][j] = this.getTileData(map[i][j])
         }
-        
+      }
     }
-  }
-
-
   }
   
   getTileData(name: String){
@@ -152,12 +149,8 @@ export class GameGrid {
     this.tiles[x][y].entity = player;
   }
 
-  createDummy(x: number, y: number, id: string) {
-    this.tiles[x][y].entity = new Dummy(x, y, id, 10, false);
-  }
-
-  loadDummy(x: number, y: number, dummy: any) {
-    this.tiles[x][y].entity = dummy;
+  loadEnemy(x: number, y: number, entity: any) {
+    this.tiles[x][y].entity = entity;
   }
 
   SpawnItem(x: number, y: number, item: Item) {

@@ -1,3 +1,5 @@
+import { Assets } from 'pixi.js';
+import { Dummy, HeavyDummy } from '../enemyTypes';
 import { Item } from '../items/item';
 import { Weapon } from '../items/weapon';
 import * as PIXI from 'pixi.js';
@@ -13,6 +15,7 @@ export class Inventory {
   inventoryContainer: HTMLDivElement;
   equippedContainer: HTMLDivElement;
   pickUpOverlay: HTMLDivElement | null = null;
+  lootOverlay: HTMLDivElement | null = null;
 
   constructor(container: HTMLDivElement, equippedContainer: HTMLDivElement) {
     this.inventoryContainer = container;
@@ -43,122 +46,6 @@ export class Inventory {
       this.equippedApp.canvas as HTMLCanvasElement
     );
     this.displayEquipped();
-  }
-
-  hidePickUpPrompt() {
-    if (this.pickUpOverlay) {
-      this.pickUpOverlay.remove();
-      this.pickUpOverlay = null;
-    }
-  }
-
-  showPickUpPrompt(item: Item | Weapon): Promise<boolean> {
-    if (this.pickUpOverlay) {
-      return Promise.resolve(false);
-    }
-    this.ensurePopupStyles();
-
-    const overlay = document.createElement('div');
-    overlay.className = 'pickup-overlay';
-
-    const box = document.createElement('div');
-    box.className = 'pickup-box';
-
-    const title = document.createElement('div');
-    title.className = 'prompt-title';
-    title.textContent = 'Pick up ' + item.name + '?';
-
-    // const name = document.createElement('div');
-    // name.className = 'prompt-item-name';
-    // name.textContent = item.name;
-
-    const msg = document.createElement('div');
-    msg.className = 'prompt-msg';
-    msg.textContent = ''; // used for errors like "Inventory full"
-
-    const buttons = document.createElement('div');
-    buttons.className = 'prompt-buttons';
-
-    const confirm = document.createElement('button');
-    confirm.className = 'prompt-btn confirm';
-    confirm.textContent = 'Yes';
-
-    const cancel = document.createElement('button');
-    cancel.className = 'prompt-btn cancel';
-    cancel.textContent = 'No';
-
-    buttons.appendChild(confirm);
-    buttons.appendChild(cancel);
-
-    box.appendChild(title);
-    // box.appendChild(name);
-    box.appendChild(msg);
-    box.appendChild(buttons);
-    overlay.appendChild(box);
-
-    document.body.appendChild(overlay);
-    this.pickUpOverlay = overlay;
-
-    return new Promise<boolean>((resolve) => {
-      confirm.onclick = () => {
-        this.hidePickUpPrompt();
-        resolve(true);
-      };
-      cancel.onclick = () => {
-        this.hidePickUpPrompt();
-        resolve(false);
-      };
-
-      overlay.onclick = (e) => {
-        if (e.target === overlay) {
-          this.hidePickUpPrompt();
-          resolve(false);
-        }
-      };
-    });
-  }
-
-
-  ensurePopupStyles() {
-    const style = document.createElement('style');
-    style.id = 'inventory-prompt-styles';
-    style.textContent = `
-      .pickup-overlay {
-        position: fixed;
-        left: 0; top: 0; right: 0; bottom: 0;
-        background: rgba(0,0,0,0.6);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 999;
-      }
-      .pickup-box {
-        background: #121212;
-        color: #fff;
-        padding: 18px;
-        border-radius: 8px;
-        width: 320px;
-        max-width: calc(100% - 40px);
-        box-shadow: 0 6px 20px rgba(0,0,0,0.5);
-        text-align: center;
-        font-family: Arial, Helvetica, sans-serif;
-      }
-      .prompt-title { font-weight: 700; margin-bottom: 8px; font-size: 18px; }
-      .prompt-item-name { margin: 6px 0 12px; font-size: 16px; }
-      .prompt-sprite img { max-width: 64px; max-height: 64px; display:block; margin: 0 auto 8px; }
-      .prompt-msg { min-height: 18px; margin-bottom: 8px; font-size: 14px; }
-      .prompt-buttons { display:flex; gap: 8px; justify-content:center; }
-      .prompt-btn {
-        padding: 8px 12px;
-        border-radius: 6px;
-        border: none;
-        cursor: pointer;
-        font-size: 14px;
-      }
-      .prompt-btn.confirm { background: #2e8b57; color: white; }
-      .prompt-btn.cancel { background: #444; color: white; }
-    `;
-    document.head.appendChild(style);
   }
 
   displayInventory() {
@@ -240,6 +127,231 @@ export class Inventory {
         this.equippedApp.stage.addChild(itemContainer);
       }
     }
+  }
+
+  hidePickUpPrompt() {
+    if (this.pickUpOverlay) {
+      this.pickUpOverlay.remove();
+      this.pickUpOverlay = null;
+    }
+  }
+
+  showPickUpPrompt(item: Item | Weapon): Promise<boolean> {
+    if (this.pickUpOverlay) {
+      return Promise.resolve(false);
+    }
+    this.pickUpPopupStyles();
+
+    const overlay = document.createElement('div');
+    overlay.className = 'pickup-overlay';
+
+    const box = document.createElement('div');
+    box.className = 'pickup-box';
+
+    const title = document.createElement('div');
+    title.className = 'prompt-title';
+    title.textContent = 'Pick up ' + item.name + '?';
+
+    // const name = document.createElement('div');
+    // name.className = 'prompt-item-name';
+    // name.textContent = item.name;
+
+    // const msg = document.createElement('div');
+    // msg.className = 'prompt-msg';
+    // msg.textContent = ''; used for errors like "Inventory full"
+
+    const buttons = document.createElement('div');
+    buttons.className = 'prompt-buttons';
+
+    const confirm = document.createElement('button');
+    confirm.className = 'prompt-btn confirm';
+    confirm.textContent = 'Yes';
+
+    const cancel = document.createElement('button');
+    cancel.className = 'prompt-btn cancel';
+    cancel.textContent = 'No';
+
+    buttons.appendChild(confirm);
+    buttons.appendChild(cancel);
+
+    box.appendChild(title);
+    // box.appendChild(name);
+    // box.appendChild(msg);
+    box.appendChild(buttons);
+    overlay.appendChild(box);
+
+    document.body.appendChild(overlay);
+    this.pickUpOverlay = overlay;
+
+    return new Promise<boolean>((resolve) => {
+      confirm.onclick = () => {
+        this.hidePickUpPrompt();
+        resolve(true);
+      };
+      cancel.onclick = () => {
+        this.hidePickUpPrompt();
+        resolve(false);
+      };
+
+      overlay.onclick = (e) => {
+        if (e.target === overlay) {
+          this.hidePickUpPrompt();
+          resolve(false);
+        }
+      };
+    });
+  }
+
+
+  pickUpPopupStyles() {
+    const style = document.createElement('style');
+    style.id = 'inventory-prompt-styles';
+    style.textContent = `
+      .pickup-overlay {
+        position: fixed;
+        left: 0; top: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 999;
+      }
+      .pickup-box {
+        background: #121212;
+        color: #fff;
+        padding: 18px;
+        border-radius: 8px;
+        width: 320px;
+        max-width: calc(100% - 40px);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+        text-align: center;
+        font-family: Arial, Helvetica, sans-serif;
+      }
+      .prompt-title { font-weight: 700; margin-bottom: 8px; font-size: 18px; }
+      .prompt-item-name { margin: 6px 0 12px; font-size: 16px; }
+      .prompt-sprite img { max-width: 64px; max-height: 64px; display:block; margin: 0 auto 8px; }
+      .prompt-msg { min-height: 18px; margin-bottom: 8px; font-size: 14px; }
+      .prompt-buttons { display:flex; gap: 8px; justify-content:center; }
+      .prompt-btn {
+        padding: 8px 12px;
+        border-radius: 6px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+      }
+      .prompt-btn.confirm { background: #2e8b57; color: white; }
+      .prompt-btn.cancel { background: #444; color: white; }
+    `;
+    document.head.appendChild(style);
+  }
+
+  hideLootPopup(){
+    if (this.lootOverlay) {
+      this.lootOverlay.remove();
+      this.lootOverlay = null;
+    }
+  }
+
+  showLootPopup(entity: Dummy | HeavyDummy){
+    if (this.lootOverlay) {
+      return Promise.resolve(false);
+    }
+    this.lootPopupStyles();
+
+    const overlay = document.createElement('div');
+    overlay.className = 'loot-overlay';
+
+    const box = document.createElement('div');
+    box.className = 'loot-box';
+
+    const title = document.createElement('div');
+    title.className = 'loot-title';
+    title.textContent = entity.displayName;
+
+    const itemLootBox = document.createElement('div');
+    itemLootBox.className = 'item-loot box';
+
+    for(let i=0; i<entity.lootTable.length; i++){
+      const item = entity.lootTable[i];
+      const itemButton = document.createElement('button');
+      itemButton.className = 'loot-item-btn';
+      itemButton.textContent = item.name;
+      itemButton.onclick = () => {
+        this.pickUp(item);
+        itemButton.disabled = true;
+      };
+      itemLootBox.appendChild(itemButton);
+    }
+
+    const buttons = document.createElement('div');
+    buttons.className = 'loot-buttons';
+
+    const close = document.createElement('button');
+    close.className = 'loot-btn close';
+    close.textContent = 'Close';
+
+    buttons.appendChild(close);
+
+    box.appendChild(title);
+    box.appendChild(itemLootBox);
+    box.appendChild(buttons);
+    overlay.appendChild(box);
+
+    document.body.appendChild(overlay);
+    this.lootOverlay = overlay;
+
+    return new Promise<boolean>((resolve) => {
+      close.onclick = () => {
+        this.hideLootPopup();
+        resolve(true);
+      };
+
+      overlay.onclick = (e) => {
+        if (e.target === overlay) {
+          this.hideLootPopup();
+          resolve(false);
+        }
+      };
+    });
+  }
+
+  lootPopupStyles(){
+    const style = document.createElement('style');
+    style.id = 'inventory-prompt-styles';
+    style.textContent = `
+      .loot-overlay {
+        position: fixed;
+        left: 0; top: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 999;
+      }
+      .loot-box {
+        background: #121212;
+        color: #fff;
+        padding: 18px;
+        border-radius: 8px;
+        width: 320px;
+        max-width: calc(100% - 40px);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+        text-align: center;
+        font-family: Arial, Helvetica, sans-serif;
+      }
+      .loot-title { font-weight: 700; margin-bottom: 8px; font-size: 18px; }
+      .loot-item-btn { height: 32px; margin-top: 4px; margin-bottom: 8px;}
+      .loot-buttons { display:flex; gap: 8px; justify-content:center; }
+      .loot-btn {
+        padding: 8px 12px;
+        border-radius: 6px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+      }
+      .loot-btn.close { background: #2e8b57; color: white; }
+    `;
+    document.head.appendChild(style);
   }
 
   equip(itemIndex: number) {

@@ -1,4 +1,5 @@
-import { Dummy } from '../dummy';
+import { Dummy, HeavyDummy } from '../enemyTypes';
+import { entity } from '../entity';
 import { GameGrid } from '../grid';
 import { Inventory } from '../inventory/inventory';
 
@@ -6,21 +7,29 @@ export class WeaponFunctionality {
   attack(
     tileCoords: { x: number; y: number },
     map: GameGrid,
-    inventory: Inventory
+    inventory: Inventory,
+    target: entity
   ) {
     if (map.tiles[tileCoords.x][tileCoords.y].entity) {
-      const targetEntity = map.tiles[tileCoords.x][tileCoords.y].entity;
-      if (targetEntity instanceof Dummy && !targetEntity.isDead) {
-        let damage = 1;
+      let damage = 1;
         if (inventory.equippedWeapon) {
           damage = inventory.equippedWeapon.damage;
         }
         console.log(damage);
-        targetEntity.health -= damage;
-        console.log('HP: ' + targetEntity.health);
-        if (targetEntity.health <= 0) {
-          targetEntity.isDead = true;
-          map.tiles[tileCoords.x][tileCoords.y].corpseSprite = 'enemy1dead.png';
+      if (target instanceof Dummy && !target.isDead) {
+        target.health -= damage;
+        console.log('HP: ' + target.health);
+        if (target.health <= 0) {
+          target.isDead = true;
+          map.tiles[tileCoords.x][tileCoords.y].corpseSprite = 'dummyDead.png';
+          console.log('Target is dead.');
+        }
+      } else if(target instanceof HeavyDummy && !target.isDead) {
+        target.health -= damage;
+        console.log('HP: ' + target.health);
+        if (target.health <= 0) {
+          target.isDead = true;
+          map.tiles[tileCoords.x][tileCoords.y].corpseSprite = 'heavyDummyDead.png';
           console.log('Target is dead.');
         }
       }

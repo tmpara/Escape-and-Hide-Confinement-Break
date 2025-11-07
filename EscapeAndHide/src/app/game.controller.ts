@@ -8,24 +8,24 @@ import { Energy } from './energy/energy';
 import { Items } from './items/items';
 import { World } from './world';
 import { WeaponFunctionality } from './items/weapon_functionality';
-import { Dummy } from './dummy';
+import { Dummy, HeavyDummy} from './enemyTypes'
 import { Inventory } from './inventory/inventory';
 
 export class GameController {
   app!: Application;
   map!: GameGrid;
+  items = new Items();
   inventory!: Inventory;
   weaponFunctionality = new WeaponFunctionality();
   player1 = new Player(1, 1, '1', new Health(5.0, 4.0), new Energy(100, 100));
+  dummy1 = new Dummy(5, 2, '1', 1.0);
+  heavyDummy1 = new HeavyDummy(5, 3, '1', 20.0);
   world = new World();
-
-  dummy1 = new Dummy(5, 2, '1', 10.0, false);
   gridContainer = new Container();
   effectContainer = new Container();
   entityContainer = new Container();
   pickUpPopUp = new Container();
   playerSprite = new Graphics();
-
   healthBar = new Graphics();
   energyBar = new Graphics();
   tile = new Graphics();
@@ -46,8 +46,12 @@ export class GameController {
     await Assets.load('ash.png');
     await Assets.load('gun.png');
     await Assets.load('biggun.png');
-    await Assets.load('enemy1.png');
-    await Assets.load('enemy1dead.png');
+    await Assets.load('dummy.png');
+    await Assets.load('dummyDead.png');
+    await Assets.load('heavyDummy.png');
+    await Assets.load('heavyDummyDead.png');
+    await Assets.load('medkit.png');
+    await Assets.load('bandage.png');
     await Assets.load('glass_shards.png');
 
     this.world.CreateWorld();
@@ -73,14 +77,15 @@ export class GameController {
     // Create map and player
 
     this.map.loadPlayer(1, 1, this.player1);
-    this.map.loadDummy(5, 2, this.dummy1);
+    this.map.loadEnemy(5, 2, this.dummy1);
+    this.map.loadEnemy(5,3, this.heavyDummy1);
 
     this.map.SpawnItem(1, 3, new Items().gun);
     this.map.SpawnItem(2, 3, new Items().bigGun);
 
     this.map.tiles[3][3] = this.map.getTileData('glass_shards');
 
-    // Draw grid, player and dummy
+    // Draw grid, player
     this.drawGrid();
     this.drawPlayer();
 
@@ -280,7 +285,7 @@ export class GameController {
         if (entity != null) {
           if (!(entity instanceof Player)) {
             if(entity instanceof Dummy && !entity.isDead){
-              let texture = Assets.get('enemy1.png');
+              let texture = Assets.get('dummy.png');
               let sprite = new PIXI.Sprite(texture);
               sprite.x = x * this.tileSize;
               sprite.y = y * this.tileSize;
@@ -288,7 +293,16 @@ export class GameController {
               sprite.height = this.tileSize;
               sprite._zIndex = 2;
               this.entityContainer.addChild(sprite);
-            }  
+            } else if(entity instanceof HeavyDummy && !entity.isDead){
+              let texture = Assets.get('heavyDummy.png');
+              let sprite = new PIXI.Sprite(texture);
+              sprite.x = x * this.tileSize;
+              sprite.y = y * this.tileSize;
+              sprite.width = this.tileSize;
+              sprite.height = this.tileSize;
+              sprite._zIndex = 2;
+              this.entityContainer.addChild(sprite);
+            }
           }
         }
 
@@ -455,6 +469,7 @@ export class GameController {
       }
     }
   }
+  
   findRoom(player: Player) {
     let playerPosX = player.PosX;
     let playerPosY = player.PosY;
@@ -673,7 +688,13 @@ export class GameController {
         this.tileSize
       );
       if (coords) {
-        this.weaponFunctionality.attack(coords, this.map, this.inventory);
+        const targetEntity = this.map.tiles[coords.x][coords.y].entity
+        if (targetEntity instanceof Dummy || targetEntity instanceof HeavyDummy)
+          if(!targetEntity.isDead){
+            this.weaponFunctionality.attack(coords, this.map, this.inventory, targetEntity);
+          } else{
+            this.inventory.showLootPopup(targetEntity);
+          }   
       }
     });
   }
