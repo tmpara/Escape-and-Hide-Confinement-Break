@@ -11,6 +11,7 @@ export class tile {
     fireValue: number;
     brokenTile: String | null;
     sprite: String;
+    corpseSprite: String | null;
     hasItem: boolean;
     item: Item | null;
     entity: entity | null;
@@ -25,6 +26,7 @@ export class tile {
         this.fireValue = fireValue
         this.brokenTile = brokenTile
         this.sprite = sprite
+        this.corpseSprite = null
         this.hasItem = hasItem;
         this.item = item;
         this.entity = entity

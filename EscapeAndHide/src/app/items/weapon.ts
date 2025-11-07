@@ -8,10 +8,11 @@ export class Weapon extends Item {
     category: string,
     displayed: boolean,
     sprite: string,
+    equippedSprite: string|null,
     damage: number,
     range: number
   ) {
-    super(name, category, displayed, sprite);
+    super(name, category, displayed, sprite, equippedSprite);
     this.damage = damage;
     this.range = range;
   }

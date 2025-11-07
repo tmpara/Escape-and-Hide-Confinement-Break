@@ -153,7 +153,7 @@ export class GameGrid {
   }
 
   createDummy(x: number, y: number, id: string) {
-    this.tiles[x][y].entity = new Dummy(x, y, id, 10);
+    this.tiles[x][y].entity = new Dummy(x, y, id, 10, false);
   }
 
   loadDummy(x: number, y: number, dummy: any) {

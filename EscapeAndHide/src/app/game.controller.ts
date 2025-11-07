@@ -2,11 +2,10 @@ import { Application, Graphics, Container } from 'pixi.js';
 import { GameGrid } from './grid';
 import { Player } from './player';
 import { Health } from './health/health';
-import { Text, Sprite, Assets } from 'pixi.js';
+import { Text, Assets } from 'pixi.js';
 import * as PIXI from 'pixi.js';
 import { Energy } from './energy/energy';
 import { Items } from './items/items';
-// import { inventoryRendering } from './inventory/inventoryRendering';
 import { World } from './world';
 import { WeaponFunctionality } from './items/weapon_functionality';
 import { Dummy } from './dummy';
@@ -20,7 +19,7 @@ export class GameController {
   player1 = new Player(1, 1, '1', new Health(5.0, 4.0), new Energy(100, 100));
   world = new World();
 
-  dummy1 = new Dummy(5, 2, '1', 10.0);
+  dummy1 = new Dummy(5, 2, '1', 10.0, false);
   gridContainer = new Container();
   effectContainer = new Container();
   entityContainer = new Container();
@@ -48,6 +47,7 @@ export class GameController {
     await Assets.load('gun.png');
     await Assets.load('biggun.png');
     await Assets.load('enemy1.png');
+    await Assets.load('enemy1dead.png');
     await Assets.load('glass_shards.png');
 
     this.world.CreateWorld();
@@ -248,7 +248,7 @@ export class GameController {
 
     // Energy
     const energyPercentage =
-      this.player1.energy.currentEnergy / this.player1.energy.maxEnergy;
+    this.player1.energy.currentEnergy / this.player1.energy.maxEnergy;
     this.energyBar.beginFill(0xffff00);
     this.energyBar.drawRect(x, y, barWidth * energyPercentage, barHeight);
     this.energyBar.endFill();
@@ -263,20 +263,7 @@ export class GameController {
 
     for (let x = 0; x < this.map.width; x++) {
       for (let y = 0; y < this.map.height; y++) {
-        if (this.map.tiles[x][y].entity != null) {
-          if (this.map.tiles[x][y].entity instanceof Player) {
-          } else {
-            let texture = Assets.get('enemy1.png');
-            let sprite = new PIXI.Sprite(texture);
-            sprite.x = x * this.tileSize;
-            sprite.y = y * this.tileSize;
-            sprite.width = this.tileSize;
-            sprite.height = this.tileSize;
-            sprite._zIndex = 1;
-            this.entityContainer.addChild(sprite);
-          }
-        }
-
+        // Draw base tile sprite
         if (this.map.tiles[x][y].sprite != '') {
           let texture = Assets.get(this.map.tiles[x][y].sprite.toString());
           let sprite = new PIXI.Sprite(texture);
@@ -286,6 +273,36 @@ export class GameController {
           sprite.height = this.tileSize;
           sprite._zIndex = 1;
           this.gridContainer.addChild(sprite);
+        }
+
+        // Draw entities (except player)
+        const entity = this.map.tiles[x][y].entity;
+        if (entity != null) {
+          if (!(entity instanceof Player)) {
+            if(entity instanceof Dummy && !entity.isDead){
+              let texture = Assets.get('enemy1.png');
+              let sprite = new PIXI.Sprite(texture);
+              sprite.x = x * this.tileSize;
+              sprite.y = y * this.tileSize;
+              sprite.width = this.tileSize;
+              sprite.height = this.tileSize;
+              sprite._zIndex = 2;
+              this.entityContainer.addChild(sprite);
+            }  
+          }
+        }
+
+        // Draw corpse sprites (on top of base tile, below effects)
+        const corpseSprite = this.map.tiles[x][y].corpseSprite;
+        if (corpseSprite != null) {
+          let texture = Assets.get(corpseSprite.toString());
+          let sprite = new PIXI.Sprite(texture);
+          sprite.x = x * this.tileSize;
+          sprite.y = y * this.tileSize;
+          sprite.width = this.tileSize;
+          sprite.height = this.tileSize;
+          sprite._zIndex = 2;
+          this.entityContainer.addChild(sprite);
         }
 
         let firevalue = this.map.tiles[x][y].fireValue;
@@ -397,13 +414,19 @@ export class GameController {
     let deltaY = Math.abs(targetY - playerPosY);
 
     // Bounds and collision check
+    const targetTile = this.map.tiles[targetX][targetY];
+    // Treat living entities as blocking, but allow movement onto dead Dummies
+    const targetEntity = targetTile.entity;
+    const entityBlocking =
+      targetEntity != null && !(targetEntity instanceof Dummy && targetEntity.isDead);
+
     if (
       targetX < 0 ||
       targetY < 0 ||
       targetX >= this.map.width ||
       targetY >= this.map.height ||
-      this.map.tiles[targetX][targetY].hasCollision ||
-      this.map.tiles[targetX][targetY].entity ||
+      targetTile.hasCollision ||
+      entityBlocking ||
       deltaX + deltaY > 1
     ) {
       console.log('Collision detected or too far away or out of bounds');
@@ -419,12 +442,16 @@ export class GameController {
     }
   }
 
-  checkTileForItem(player: Player) {
+  async checkTileForItem(player: Player) {
     if (this.map.tiles[player.PosX][player.PosY].item != null) {
       console.log('truly');
       const item = this.map.tiles[player.PosX][player.PosY].item;
       if (item) {
-        this.inventory.showPickUpPrompt(item);
+        const pickedUp = await this.inventory.showPickUpPrompt(item);
+        if (pickedUp) {
+          this.inventory.pickUp(item);
+          this.map.RemoveItem(player.PosX, player.PosY, this.map.tiles[player.PosX][player.PosY].effect);
+        }
       }
     }
   }

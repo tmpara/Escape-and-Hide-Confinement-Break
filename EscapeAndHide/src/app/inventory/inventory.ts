@@ -53,74 +53,75 @@ export class Inventory {
   }
 
   showPickUpPrompt(item: Item | Weapon): Promise<boolean> {
-    if (!this.pickUpOverlay) {
-      this.ensurePopupStyles();
-
-      const overlay = document.createElement('div');
-      overlay.className = 'pickup-overlay';
-
-      const box = document.createElement('div');
-      box.className = 'pickup-box';
-
-      const title = document.createElement('div');
-      title.className = 'popup-title';
-      title.textContent = 'Pick up item?';
-
-      const name = document.createElement('div');
-      name.className = 'popup-item-name';
-      name.textContent = item.name;
-
-      const msg = document.createElement('div');
-      msg.className = 'popup-msg';
-      msg.textContent = ''; // used for errors like "Inventory full"
-
-      const buttons = document.createElement('div');
-      buttons.className = 'popup-buttons';
-
-      const confirm = document.createElement('button');
-      confirm.className = 'popup-btn confirm';
-      confirm.textContent = 'Confirm';
-
-      const cancel = document.createElement('button');
-      cancel.className = 'popup-btn cancel';
-      cancel.textContent = 'Cancel';
-
-      buttons.appendChild(confirm);
-      buttons.appendChild(cancel);
-
-      box.appendChild(title);
-      box.appendChild(name);
-      box.appendChild(msg);
-      box.appendChild(buttons);
-      overlay.appendChild(box);
-
-      document.body.appendChild(overlay);
-      this.pickUpOverlay = overlay;
-
-      return new Promise<boolean>((resolve) => {
-+      confirm.onclick = () => {
-+        this.hidePickUpPrompt();
-+        resolve(true);
-+      };
-+      cancel.onclick = () => {
-+        this.hidePickUpPrompt();
-+        resolve(false);
-+      };
-+      // If desired, clicking outside box cancels:
-+      overlay.onclick = (e) => {
-+        if (e.target === overlay) {
-+          this.hidePickUpPrompt();
-+          resolve(false);
-+        }
-+      };
-+    });
+    if (this.pickUpOverlay) {
+      return Promise.resolve(false);
     }
+    this.ensurePopupStyles();
+
+    const overlay = document.createElement('div');
+    overlay.className = 'pickup-overlay';
+
+    const box = document.createElement('div');
+    box.className = 'pickup-box';
+
+    const title = document.createElement('div');
+    title.className = 'prompt-title';
+    title.textContent = 'Pick up ' + item.name + '?';
+
+    // const name = document.createElement('div');
+    // name.className = 'prompt-item-name';
+    // name.textContent = item.name;
+
+    const msg = document.createElement('div');
+    msg.className = 'prompt-msg';
+    msg.textContent = ''; // used for errors like "Inventory full"
+
+    const buttons = document.createElement('div');
+    buttons.className = 'prompt-buttons';
+
+    const confirm = document.createElement('button');
+    confirm.className = 'prompt-btn confirm';
+    confirm.textContent = 'Yes';
+
+    const cancel = document.createElement('button');
+    cancel.className = 'prompt-btn cancel';
+    cancel.textContent = 'No';
+
+    buttons.appendChild(confirm);
+    buttons.appendChild(cancel);
+
+    box.appendChild(title);
+    // box.appendChild(name);
+    box.appendChild(msg);
+    box.appendChild(buttons);
+    overlay.appendChild(box);
+
+    document.body.appendChild(overlay);
+    this.pickUpOverlay = overlay;
+
+    return new Promise<boolean>((resolve) => {
+      confirm.onclick = () => {
+        this.hidePickUpPrompt();
+        resolve(true);
+      };
+      cancel.onclick = () => {
+        this.hidePickUpPrompt();
+        resolve(false);
+      };
+
+      overlay.onclick = (e) => {
+        if (e.target === overlay) {
+          this.hidePickUpPrompt();
+          resolve(false);
+        }
+      };
+    });
   }
 
-  private ensurePopupStyles() {
-    if (document.getElementById('inventory-popup-styles')) return;
+
+  ensurePopupStyles() {
     const style = document.createElement('style');
-    style.id = 'inventory-popup-styles';
+    style.id = 'inventory-prompt-styles';
     style.textContent = `
       .pickup-overlay {
         position: fixed;
@@ -142,20 +143,20 @@ export class Inventory {
         text-align: center;
         font-family: Arial, Helvetica, sans-serif;
       }
-      .popup-title { font-weight: 700; margin-bottom: 8px; font-size: 18px; }
-      .popup-item-name { margin: 6px 0 12px; font-size: 16px; }
-      .popup-sprite img { max-width: 64px; max-height: 64px; display:block; margin: 0 auto 8px; }
-      .popup-msg { min-height: 18px; margin-bottom: 8px; font-size: 14px; }
-      .popup-buttons { display:flex; gap: 8px; justify-content:center; }
-      .popup-btn {
+      .prompt-title { font-weight: 700; margin-bottom: 8px; font-size: 18px; }
+      .prompt-item-name { margin: 6px 0 12px; font-size: 16px; }
+      .prompt-sprite img { max-width: 64px; max-height: 64px; display:block; margin: 0 auto 8px; }
+      .prompt-msg { min-height: 18px; margin-bottom: 8px; font-size: 14px; }
+      .prompt-buttons { display:flex; gap: 8px; justify-content:center; }
+      .prompt-btn {
         padding: 8px 12px;
         border-radius: 6px;
         border: none;
         cursor: pointer;
         font-size: 14px;
       }
-      .popup-btn.confirm { background: #2e8b57; color: white; }
-      .popup-btn.cancel { background: #444; color: white; }
+      .prompt-btn.confirm { background: #2e8b57; color: white; }
+      .prompt-btn.cancel { background: #444; color: white; }
     `;
     document.head.appendChild(style);
   }
@@ -254,14 +255,12 @@ export class Inventory {
     this.displayEquipped();
   }
 
-  pickUp(item: Item | Weapon, action: boolean) {
-    if (action) {
-      if (this.items.length < this.inventorySize) {
-        this.items.push(item);
-      }
-      this.displayInventory();
-      this.displayEquipped();
+  pickUp(item: Item | Weapon) {
+    if (this.items.length < this.inventorySize) {
+      this.items.push(item);
     }
+    this.displayInventory();
+    this.displayEquipped();
   }
 
   drop(itemIndex: number) {
@@ -301,8 +300,4 @@ export class Inventory {
   getItems(): Item[] {
     return this.items;
   }
-
-  // getEquippedItems(): Item[] {
-  //   return this.equippedItems;
-  // }
 }

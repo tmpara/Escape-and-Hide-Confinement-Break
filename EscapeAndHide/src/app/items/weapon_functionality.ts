@@ -10,7 +10,7 @@ export class WeaponFunctionality {
   ) {
     if (map.tiles[tileCoords.x][tileCoords.y].entity) {
       const targetEntity = map.tiles[tileCoords.x][tileCoords.y].entity;
-      if (targetEntity instanceof Dummy) {
+      if (targetEntity instanceof Dummy && !targetEntity.isDead) {
         let damage = 1;
         if (inventory.equippedWeapon) {
           damage = inventory.equippedWeapon.damage;
@@ -19,10 +19,19 @@ export class WeaponFunctionality {
         targetEntity.health -= damage;
         console.log('HP: ' + targetEntity.health);
         if (targetEntity.health <= 0) {
-          console.log('Dummy dead');
-          map.tiles[tileCoords.x][tileCoords.y].entity = null;
+          targetEntity.isDead = true;
+          map.tiles[tileCoords.x][tileCoords.y].corpseSprite = 'enemy1dead.png';
+          console.log('Target is dead.');
         }
       }
     }
   }
+
+  isDead(tileCoords: { x: number; y: number }, map: GameGrid){
+    const entity = map.tiles[tileCoords.x][tileCoords.y].entity;
+    if (entity instanceof Dummy) {
+      return entity.isDead;
+    }
+    return;
+  }  
 }
