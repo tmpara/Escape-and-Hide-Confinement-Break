@@ -59,7 +59,7 @@ export class GameController {
     console.log(this.map.width + " " + this.map.height);
     this.map.loadPlayer(1, 1, this.player1);
 
-       // Create PIXI app
+    // Create PIXI app
     this.app = new Application();
     await this.app.init({
       width: this.tileSize * 30,
@@ -67,7 +67,6 @@ export class GameController {
       backgroundColor: 0x222222,
       antialias: true,
       resizeTo: window
-      
     });
     
     container.appendChild(this.app.canvas as HTMLCanvasElement);
@@ -82,7 +81,6 @@ export class GameController {
 
     this.map.tiles[3][3] = this.map.getTileData("glass_shards");
     
-
     // Draw grid, player and dummy
     this.drawGrid();
     this.drawPlayer();
@@ -141,10 +139,10 @@ export class GameController {
     return number
   }
 
-  castRay(x1: number, y1: number, x2: number, y2: number, stopOnCollision: boolean = true): [number, number][] {
+  castRay(x1: number, y1: number, x2: number, y2: number, stopOnCollision: boolean): [number, number][] {
     const hitTiles: [number, number][] = [];
 
-    // Guard: map must exist
+    // map must exist
     if (!this.map || !this.map.tiles) return hitTiles;
 
     let x = Math.round(x1);
@@ -186,10 +184,93 @@ export class GameController {
 
       if (!inBounds(x, y)) break;
       hitTiles.push([x, y]);
-      // If requested, stop the ray when we hit a tile that blocks (collision)
+      // If requested, stop the ray when we hit a tile that has collision
       if (stopOnCollision && this.map.tiles[x][y].hasCollision) break;
     }
 
+    return hitTiles;
+  }
+
+  isLineObstructed(x1: number, y1: number, x2: number, y2: number, ignoreStart: boolean = true, ignoreEnd: boolean = false): boolean {
+
+    const tiles = this.castRay(x1, y1, x2, y2, false);
+    if (tiles.length === 0) return false;
+
+    const startIndex = ignoreStart ? 1 : 0;
+    const endIndex = tiles.length - 1 - (ignoreEnd ? 1 : 0);
+    if (endIndex < startIndex) return false;
+
+    for (let i = startIndex; i <= endIndex; i++) {
+      const [tx, ty] = tiles[i];
+      if (!this.map.isValidTile(tx, ty)) continue;
+      const t = this.map.tiles[tx][ty];
+      if (t.hasCollision || t.entity) return true;
+    }
+
+    return false;
+  }
+
+  getTilesInCircle(centerX: number, centerY: number, radius: number) {
+    const hitTiles: [number, number][] = [];
+    if (radius < 0) return hitTiles;
+
+    // Special-case radius 0: return the center tile if valid
+    if (radius === 0) {
+      const cx = Math.round(centerX);
+      const cy = Math.round(centerY);
+      if (this.map.isValidTile(cx, cy)) hitTiles.push([cx, cy]);
+      return hitTiles;
+    }
+
+    // We want only the edge tiles: include tiles whose center lies close to the
+    // circle circumference. Use a quarter-tile tolerance
+    const radiusMinus = Math.max(0, radius - 0.25);
+    const radiusPlus = radius + 0.25;
+    const minDistSq = radiusMinus * radiusMinus;
+    const maxDistSq = radiusPlus * radiusPlus;
+
+    const minX = Math.max(0, Math.floor(centerX - radius));
+    const maxX = Math.min(this.map.width - 1, Math.ceil(centerX + radius));
+    const minY = Math.max(0, Math.floor(centerY - radius));
+    const maxY = Math.min(this.map.height - 1, Math.ceil(centerY + radius));
+
+    for (let x = minX; x <= maxX; x++) {
+      for (let y = minY; y <= maxY; y++) {
+        const dx = x - centerX;
+        const dy = y - centerY;
+        const distSq = dx * dx + dy * dy;
+        if (distSq >= minDistSq && distSq <= maxDistSq) {
+          if (this.map.isValidTile(x, y)) {
+            hitTiles.push([x, y]);
+          }
+        }
+      }
+    }
+
+    return hitTiles;
+  }
+
+  getTilesInSphere(centerX: number, centerY: number, radius: number) {
+    const hitTiles: [number, number][] = [];
+    if (radius < 0) return hitTiles;
+  
+    const rSq = radius * radius;
+    const minX = Math.max(0, Math.floor(centerX - radius));
+    const maxX = Math.min(this.map.width - 1, Math.ceil(centerX + radius));
+    const minY = Math.max(0, Math.floor(centerY - radius));
+    const maxY = Math.min(this.map.height - 1, Math.ceil(centerY + radius));
+  
+    for (let x = minX; x <= maxX; x++) {
+      for (let y = minY; y <= maxY; y++) {
+        const dx = x - centerX;
+        const dy = y - centerY;
+        if (dx * dx + dy * dy <= rSq) {
+          if (this.map.isValidTile(x, y)) {
+            hitTiles.push([x, y]);
+          }
+        }
+      }
+    }
     return hitTiles;
   }
 
@@ -321,6 +402,18 @@ export class GameController {
     for (let x = 0; x < this.map.width; x++) {
       for (let y = 0; y < this.map.height; y++) {
 
+        this.tile.lineStyle(1, 0x888888);
+        this.tile.beginFill(0xcccccc);
+        this.tile.drawRect(
+          x * this.tileSize,
+          y * this.tileSize,
+          this.tileSize,
+          this.tileSize
+        );
+        this.tile._zIndex = 0;
+        this.tile.endFill();
+        this.gridContainer.addChild(this.tile);
+
         if (this.map.tiles[x][y].entity != null){
           if(this.map.tiles[x][y].entity instanceof Player){
           }else{
@@ -332,6 +425,12 @@ export class GameController {
           sprite.height = this.tileSize;
           sprite._zIndex = 2;
           this.entityContainer.addChild(sprite);
+          if (this.isLineObstructed(this.player1.PosX, this.player1.PosY, x, y,true,true)==true){
+           sprite.alpha = 0
+          }
+          else if(this.isLineObstructed(this.player1.PosX, this.player1.PosY, x, y,true,true)==false){
+            sprite.alpha = 1
+          }
           }
         }
 
@@ -344,6 +443,15 @@ export class GameController {
           sprite.height = this.tileSize;
           sprite._zIndex = 1;
           this.gridContainer.addChild(sprite);
+          if (this.map.tiles[x][y].hiddenOutsideLOS==true && this.isLineObstructed(this.player1.PosX, this.player1.PosY, x, y,true,true)==true){
+           sprite.alpha = 0
+          }
+          /*else if(this.map.tiles[x][y].hiddenOutsideLOS==false && this.isLineObstructed(this.player1.PosX, this.player1.PosY, x, y,true,true)==true){
+            sprite.alpha = 0.5
+          }*/
+          else if(this.isLineObstructed(this.player1.PosX, this.player1.PosY, x, y,true,true)==false){
+            sprite.alpha = 1
+          }
         }
 
         let firevalue = this.map.tiles[x][y].fireValue
@@ -362,19 +470,13 @@ export class GameController {
           fireSprite.height = this.tileSize
           fireSprite._zIndex = 5
           this.gridContainer.addChild(fireSprite);
+          if (this.map.tiles[x][y].hiddenOutsideLOS==true && this.isLineObstructed(this.player1.PosX, this.player1.PosY, x, y,true,true)==true){
+           fireSprite.alpha = 0
+          }
+          else if(this.isLineObstructed(this.player1.PosX, this.player1.PosY, x, y,true,true)==false){
+            fireSprite.alpha = 1
+          }
         }
-
-        this.tile.lineStyle(1, 0x888888);
-        this.tile.beginFill(0xcccccc);
-        this.tile.drawRect(
-          x * this.tileSize,
-          y * this.tileSize,
-          this.tileSize,
-          this.tileSize
-        );
-        this.tile._zIndex = 0;
-        this.tile.endFill();
-        this.gridContainer.addChild(this.tile);
       }
     }
   }
@@ -597,38 +699,37 @@ findRoom(player: Player){
     }
   }
 
-  createExplosion(x: number, y: number, size: number, strength: number){
+  createExplosion(x: number, y: number, size: number, strength: number, startFires: boolean = false){
 
-      for(let a=0;a<=this.map.width-1;a++){
-        for(let b=0;b<=this.map.height-1;b++){
-          const distance = Math.sqrt(
-            Math.pow(a - x, 2) + Math.pow(b - y, 2)
-          )
-          if (distance <= size) {
+    (async () => { 
+
+      for(let i=0;i<size;i++){
+        let tiles = this.getTilesInSphere(x,y,i)
+        tiles.forEach((tile) => {
+          if (this.isLineObstructed(x,y,tile[0],tile[1],true,true)==false){
             let texture = Assets.get("explosion.png");
             let sprite = new PIXI.Sprite(texture);
-            sprite.x = a * this.tileSize
-            sprite.y = b * this.tileSize
+            sprite.x = tile[0] * this.tileSize
+            sprite.y = tile[1] * this.tileSize
             sprite.width = this.tileSize
             sprite.height = this.tileSize
             sprite._zIndex = 0
             this.effectContainer.addChild(sprite);
-            this.map.damageTile(a,b,strength/(distance+1))
-            if(this.player1.PosX == a && this.player1.PosY == b){
-              this.player1.health.Damage(strength/(distance+1),0)
+            this.map.damageTile(tile[0],tile[1],strength/size)
+            if(this.player1.PosX == tile[0] && this.player1.PosY == tile[1]){
+              this.player1.health.Damage(strength/size/10)
             }
             var firechance=this.generateRandomNumber(1,10)
-            if (firechance==1 && this.map.tiles[a][b].flammable==true){
-              this.ignite(a,b,strength,true)
+            if (firechance==1){
+              this.ignite(tile[0],tile[1],strength,true)
             }
           }
-        }
+        })
+        await this.delay(50);
       }
+      this.effectContainer.removeChildren();
 
-      (async () => { 
-        await this.delay(100);
-        this.effectContainer.removeChildren();
-      })();
+    })();
 
   }
 
@@ -672,7 +773,7 @@ findRoom(player: Player){
           this.endTurn();
           break;
         case 'p':
-          this.createExplosion(player.PosX,player.PosY,2,200)
+          this.createExplosion(player.PosX,player.PosY,4,50,true)
           this.endTurn()
           break;
         default:

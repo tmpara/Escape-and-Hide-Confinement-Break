@@ -32,7 +32,7 @@ export class World {
             }
         }
         this.loadRoomWithId(5,5,"startingRoom");
-        this.loadRoomWithId(5,6,"testRoomUp");
+        this.loadRoomWithId(5,6,"labComplex1");
     }
 
     isValidRoom(x:number,y:number){

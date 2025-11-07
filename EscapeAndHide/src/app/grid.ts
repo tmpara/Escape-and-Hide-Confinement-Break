@@ -154,6 +154,7 @@ export class GameGrid {
     let flammable = false
     let brokenTile = null
     let sprite = ""
+    let hiddenOutsideLOS = false
 
     switch (name){
 
@@ -166,6 +167,7 @@ export class GameGrid {
       flammable=true
       brokenTile=null
       sprite=""
+      hiddenOutsideLOS = false
       break;
 
     case 'glass_shards':
@@ -177,6 +179,7 @@ export class GameGrid {
       flammable=true
       brokenTile=null
       sprite="glass_shards.png"
+      hiddenOutsideLOS = true
       break;
     
     case 'wall_corner':
@@ -188,6 +191,7 @@ export class GameGrid {
       flammable=false
       brokenTile=null
       sprite="placeholder.png"
+      hiddenOutsideLOS = false
       break;
 
     case 'wall_basic':
@@ -199,6 +203,7 @@ export class GameGrid {
       flammable=true
       brokenTile=null
       sprite="placeholder.png"
+      hiddenOutsideLOS = false
       break;
       
     case 'ash':
@@ -210,6 +215,7 @@ export class GameGrid {
       flammable=false
       brokenTile=null
       sprite="ash.png"
+      hiddenOutsideLOS = true
       break;
 
     case 'room_entrance':
@@ -221,11 +227,12 @@ export class GameGrid {
       flammable=false
       brokenTile=null
       sprite="door1.png"
+      hiddenOutsideLOS = false
       break;
       
     }
 
-    let info = new tile(tileName,hasCollision,effect,destroyable,health,flammable,brokenTile,sprite,0,false,null,null);
+    let info = new tile(tileName,hasCollision,effect,destroyable,health,flammable,brokenTile,sprite,hiddenOutsideLOS,0,false,null,null);
     return info;
   }
 
