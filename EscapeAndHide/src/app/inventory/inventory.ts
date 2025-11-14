@@ -1,7 +1,7 @@
 import { Assets } from 'pixi.js';
 import { Dummy, HeavyDummy } from '../enemyTypes';
 import { Item } from '../items/item';
-import { Weapon } from '../items/weapon';
+import { Weapon } from '../items/items';
 import * as PIXI from 'pixi.js';
 
 export class Inventory {

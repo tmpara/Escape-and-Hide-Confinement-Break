@@ -22,6 +22,12 @@ export class Dummy extends entity {
     this.renderY = PosY;
     this.health = health;
   }
+
+  dealDamage(damage: number){
+    if(!this.isDead){
+      this.health -= damage;
+    }
+  }
 }
 
 export class HeavyDummy extends entity {

@@ -5,7 +5,7 @@ import { Health } from './health/health';
 import { Text, Assets } from 'pixi.js';
 import * as PIXI from 'pixi.js';
 import { Energy } from './energy/energy';
-import { Items } from './items/items';
+import { Items, Weapon } from './items/items';
 import { World } from './world';
 import { WeaponFunctionality } from './items/weapon_functionality';
 import { Dummy, HeavyDummy} from './enemyTypes'
@@ -280,43 +280,63 @@ export class GameController {
           this.gridContainer.addChild(sprite);
         }
 
-        // Draw entities (except player)
-        const entity = this.map.tiles[x][y].entity;
-        if (entity != null) {
-          if (!(entity instanceof Player)) {
-            if(entity instanceof Dummy && !entity.isDead){
-              let texture = Assets.get('dummy.png');
-              let sprite = new PIXI.Sprite(texture);
-              sprite.x = x * this.tileSize;
-              sprite.y = y * this.tileSize;
-              sprite.width = this.tileSize;
-              sprite.height = this.tileSize;
-              sprite._zIndex = 2;
-              this.entityContainer.addChild(sprite);
-            } else if(entity instanceof HeavyDummy && !entity.isDead){
-              let texture = Assets.get('heavyDummy.png');
-              let sprite = new PIXI.Sprite(texture);
-              sprite.x = x * this.tileSize;
-              sprite.y = y * this.tileSize;
-              sprite.width = this.tileSize;
-              sprite.height = this.tileSize;
-              sprite._zIndex = 2;
-              this.entityContainer.addChild(sprite);
-            }
+        const item = this.map.tiles[x][y].item;
+        if(item != null){
+          let texture;
+          switch(item.name){
+            case 'gun':
+              texture = Assets.get('gun.png');
+              break;
+            case 'bigGun':
+              texture = Assets.get('biggun.png');
+              break;
+            case 'bandage':
+              texture = Assets.get('bandage.png');
+              break;
+            case 'medkit':
+              texture = Assets.get('medkit.png');
+              break;
+            default:
+              break;
           }
-        }
-
-        // Draw corpse sprites (on top of base tile, below effects)
-        const corpseSprite = this.map.tiles[x][y].corpseSprite;
-        if (corpseSprite != null) {
-          let texture = Assets.get(corpseSprite.toString());
           let sprite = new PIXI.Sprite(texture);
           sprite.x = x * this.tileSize;
           sprite.y = y * this.tileSize;
           sprite.width = this.tileSize;
           sprite.height = this.tileSize;
-          sprite._zIndex = 2;
+          sprite._zIndex = 1;
           this.entityContainer.addChild(sprite);
+        }
+
+        // Draw entities (except player)
+        const entity = this.map.tiles[x][y].entity;
+        if (entity != null) {
+          if (!(entity instanceof Player)) {
+            let texture;
+            switch(true){
+              case entity instanceof Dummy:
+                if(!entity.isDead){
+                  texture = Assets.get('dummy.png');
+                } else{
+                  texture = Assets.get('dummyDead.png');
+                }
+                break;
+              case entity instanceof HeavyDummy:
+                if(!entity.isDead){
+                  texture = Assets.get('heavyDummy.png');
+                } else{
+                  texture = Assets.get('heavyDummyDead.png');
+                }
+              
+            }
+            let sprite = new PIXI.Sprite(texture);
+            sprite.x = x * this.tileSize;
+            sprite.y = y * this.tileSize;
+            sprite.width = this.tileSize;
+            sprite.height = this.tileSize;
+            sprite._zIndex = 2;
+            this.entityContainer.addChild(sprite);
+          }
         }
 
         let firevalue = this.map.tiles[x][y].fireValue;

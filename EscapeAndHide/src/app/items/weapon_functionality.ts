@@ -17,7 +17,7 @@ export class WeaponFunctionality {
         }
         console.log(damage);
       if (target instanceof Dummy && !target.isDead) {
-        target.health -= damage;
+        target.dealDamage(damage);
         console.log('HP: ' + target.health);
         if (target.health <= 0) {
           target.isDead = true;
@@ -35,12 +35,4 @@ export class WeaponFunctionality {
       }
     }
   }
-
-  isDead(tileCoords: { x: number; y: number }, map: GameGrid){
-    const entity = map.tiles[tileCoords.x][tileCoords.y].entity;
-    if (entity instanceof Dummy) {
-      return entity.isDead;
-    }
-    return;
-  }  
 }
