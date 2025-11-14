@@ -8,6 +8,7 @@ import { Energy } from './energy/energy';
 import { Items } from './items/items';
 import { inventoryRendering } from './inventory/inventoryRendering';
 import { World } from './world';
+import { WorldMapRenderer } from './worldMapRenderer';
 import { WeaponFunctionality } from './items/weapon_functionality';
 import { Dummy } from './dummy';
 
@@ -28,9 +29,11 @@ export class GameController {
   healthBar = new Graphics();
   energyBar = new Graphics();
   tile = new Graphics();
-  playerWorldX = 8;
-  playerWorldY = 9;
+  playerWorldX = 5;
+  playerWorldY = 5;
   tileSize = 32; // Size of each tile in pixels
+  mapContainer?: Container;
+  mapRenderer?: WorldMapRenderer;
 
   constructor() {}
 
@@ -54,7 +57,7 @@ export class GameController {
     this.world.CreateWorld();
     // Create map and player
 
-    this.map = this.world.rooms[8][9];
+    this.map = this.world.rooms[5][5];
     
     console.log(this.map.width + " " + this.map.height);
     this.map.loadPlayer(1, 1, this.player1);
@@ -70,7 +73,17 @@ export class GameController {
       
     });
     
-    container.appendChild(this.app.canvas as HTMLCanvasElement);
+  container.appendChild(this.app.canvas as HTMLCanvasElement);
+
+  // create and place the world map renderer
+  this.mapContainer = new Container();
+  const mapCellSize = 20; // pixels per world cell in minimap
+  // position at top-right with a small margin
+  this.mapContainer.x = this.app.screen.width - this.world.width * mapCellSize - 16;
+  this.mapContainer.y = 8;
+  this.app.stage.addChild(this.mapContainer);
+  this.mapRenderer = new WorldMapRenderer(this.mapContainer, this.world, mapCellSize, 2);
+  this.mapRenderer.draw();
 
     // Create map and player
     
@@ -376,6 +389,11 @@ export class GameController {
 
   gameLoop() {
     // Redraw player at new position
+    // update minimap if present (set player pos first)
+    if (this.mapRenderer) {
+      this.mapRenderer.setPlayer(this.playerWorldX, this.playerWorldY);
+      this.mapRenderer.update();
+    }
     this.drawGrid();
     this.drawPlayer();
     this.drawHealthBar();
