@@ -141,6 +141,141 @@ export class GameController {
     return number;
   }
 
+  castRay(x1: number, y1: number, x2: number, y2: number, stopOnCollision: boolean): [number, number][] {
+    const hitTiles: [number, number][] = [];
+
+    // map must exist
+    if (!this.map || !this.map.tiles) return hitTiles;
+
+    let x = Math.round(x1);
+    let y = Math.round(y1);
+    const xEnd = Math.round(x2);
+    const yEnd = Math.round(y2);
+
+    const width = this.map.width;
+    const height = this.map.height;
+
+    const inBounds = (tx: number, ty: number) => tx >= 0 && ty >= 0 && tx < width && ty < height;
+
+    // Add starting tile if it's inside the map
+    if (inBounds(x, y)) {
+      hitTiles.push([x, y]);
+      if (stopOnCollision && this.map.tiles[x][y].hasCollision) return hitTiles;
+    }
+
+    // Degenerate case: start == end
+    if (x === xEnd && y === yEnd) return hitTiles;
+
+    let dx = Math.abs(xEnd - x);
+    let sx = x < xEnd ? 1 : -1;
+    let dy = -Math.abs(yEnd - y);
+    let sy = y < yEnd ? 1 : -1;
+    let err = dx + dy;
+
+    // Bresenham iteration
+    while (!(x === xEnd && y === yEnd)) {
+      const e2 = 2 * err;
+      if (e2 >= dy) {
+        err += dy;
+        x += sx;
+      }
+      if (e2 <= dx) {
+        err += dx;
+        y += sy;
+      }
+
+      if (!inBounds(x, y)) break;
+      hitTiles.push([x, y]);
+      // If requested, stop the ray when we hit a tile that has collision
+      if (stopOnCollision && this.map.tiles[x][y].hasCollision) break;
+    }
+
+    return hitTiles;
+  }
+
+  isLineObstructed(x1: number, y1: number, x2: number, y2: number, ignoreStart: boolean = true, ignoreEnd: boolean = false): boolean {
+
+    const tiles = this.castRay(x1, y1, x2, y2, false);
+    if (tiles.length === 0) return false;
+
+    const startIndex = ignoreStart ? 1 : 0;
+    const endIndex = tiles.length - 1 - (ignoreEnd ? 1 : 0);
+    if (endIndex < startIndex) return false;
+
+    for (let i = startIndex; i <= endIndex; i++) {
+      const [tx, ty] = tiles[i];
+      if (!this.map.isValidTile(tx, ty)) continue;
+      const t = this.map.tiles[tx][ty];
+      if (t.hasCollision || t.entity) return true;
+    }
+
+    return false;
+  }
+
+  getTilesInCircle(centerX: number, centerY: number, radius: number) {
+    const hitTiles: [number, number][] = [];
+    if (radius < 0) return hitTiles;
+
+    // Special-case radius 0: return the center tile if valid
+    if (radius === 0) {
+      const cx = Math.round(centerX);
+      const cy = Math.round(centerY);
+      if (this.map.isValidTile(cx, cy)) hitTiles.push([cx, cy]);
+      return hitTiles;
+    }
+
+    // We want only the edge tiles: include tiles whose center lies close to the
+    // circle circumference. Use a quarter-tile tolerance
+    const radiusMinus = Math.max(0, radius - 0.25);
+    const radiusPlus = radius + 0.25;
+    const minDistSq = radiusMinus * radiusMinus;
+    const maxDistSq = radiusPlus * radiusPlus;
+
+    const minX = Math.max(0, Math.floor(centerX - radius));
+    const maxX = Math.min(this.map.width - 1, Math.ceil(centerX + radius));
+    const minY = Math.max(0, Math.floor(centerY - radius));
+    const maxY = Math.min(this.map.height - 1, Math.ceil(centerY + radius));
+
+    for (let x = minX; x <= maxX; x++) {
+      for (let y = minY; y <= maxY; y++) {
+        const dx = x - centerX;
+        const dy = y - centerY;
+        const distSq = dx * dx + dy * dy;
+        if (distSq >= minDistSq && distSq <= maxDistSq) {
+          if (this.map.isValidTile(x, y)) {
+            hitTiles.push([x, y]);
+          }
+        }
+      }
+    }
+
+    return hitTiles;
+  }
+
+  getTilesInSphere(centerX: number, centerY: number, radius: number) {
+    const hitTiles: [number, number][] = [];
+    if (radius < 0) return hitTiles;
+  
+    const rSq = radius * radius;
+    const minX = Math.max(0, Math.floor(centerX - radius));
+    const maxX = Math.min(this.map.width - 1, Math.ceil(centerX + radius));
+    const minY = Math.max(0, Math.floor(centerY - radius));
+    const maxY = Math.min(this.map.height - 1, Math.ceil(centerY + radius));
+  
+    for (let x = minX; x <= maxX; x++) {
+      for (let y = minY; y <= maxY; y++) {
+        const dx = x - centerX;
+        const dy = y - centerY;
+        if (dx * dx + dy * dy <= rSq) {
+          if (this.map.isValidTile(x, y)) {
+            hitTiles.push([x, y]);
+          }
+        }
+      }
+    }
+    return hitTiles;
+  }
+
   drawHealthBar() {
     const myText = new Text({
       text: Math.round(this.player1.health.currentHealth * 100) / 100 + ' L',
@@ -276,8 +411,14 @@ export class GameController {
           sprite.y = y * this.tileSize;
           sprite.width = this.tileSize;
           sprite.height = this.tileSize;
-          sprite._zIndex = 1;
-          this.gridContainer.addChild(sprite);
+          sprite._zIndex = 2;
+          this.entityContainer.addChild(sprite);
+          if (this.isLineObstructed(this.player1.PosX, this.player1.PosY, x, y,true,true)==true){
+           sprite.alpha = 0
+          }
+          else if(this.isLineObstructed(this.player1.PosX, this.player1.PosY, x, y,true,true)==false){
+            sprite.alpha = 1
+          }
         }
 
         const item = this.map.tiles[x][y].item;
@@ -305,7 +446,16 @@ export class GameController {
           sprite.width = this.tileSize;
           sprite.height = this.tileSize;
           sprite._zIndex = 1;
-          this.entityContainer.addChild(sprite);
+          this.gridContainer.addChild(sprite);
+          if (this.map.tiles[x][y].hiddenOutsideLOS==true && this.isLineObstructed(this.player1.PosX, this.player1.PosY, x, y,true,true)==true){
+           sprite.alpha = 0
+          }
+          /*else if(this.map.tiles[x][y].hiddenOutsideLOS==false && this.isLineObstructed(this.player1.PosX, this.player1.PosY, x, y,true,true)==true){
+            sprite.alpha = 0.5
+          }*/
+          else if(this.isLineObstructed(this.player1.PosX, this.player1.PosY, x, y,true,true)==false){
+            sprite.alpha = 1
+          }
         }
 
         // Draw entities (except player)
@@ -348,25 +498,19 @@ export class GameController {
             fireTexture = Assets.get('fire_medium.png');
           }
           let fireSprite = new PIXI.Sprite(fireTexture);
-          fireSprite.x = x * this.tileSize;
-          fireSprite.y = y * this.tileSize;
-          fireSprite.width = this.tileSize;
-          fireSprite.height = this.tileSize;
-          fireSprite._zIndex = 3;
+          fireSprite.x = (x * this.tileSize)
+          fireSprite.y = (y * this.tileSize)
+          fireSprite.width = this.tileSize
+          fireSprite.height = this.tileSize
+          fireSprite._zIndex = 5
           this.gridContainer.addChild(fireSprite);
+          if (this.map.tiles[x][y].hiddenOutsideLOS==true && this.isLineObstructed(this.player1.PosX, this.player1.PosY, x, y,true,true)==true){
+           fireSprite.alpha = 0
+          }
+          else if(this.isLineObstructed(this.player1.PosX, this.player1.PosY, x, y,true,true)==false){
+            fireSprite.alpha = 1
+          }
         }
-
-        this.tile.lineStyle(1, 0x888888);
-        this.tile.beginFill(0xcccccc);
-        this.tile.drawRect(
-          x * this.tileSize,
-          y * this.tileSize,
-          this.tileSize,
-          this.tileSize
-        );
-        this.tile._zIndex = 0;
-        this.tile.endFill();
-        this.gridContainer.addChild(this.tile);
       }
     }
   }
@@ -582,77 +726,66 @@ export class GameController {
     }
   }
 
-  updateTile(x: number, y: number) {
-    if (this.map.tiles[x][y].fireValue > 0) {
-      this.map.damageTile(x, y, this.map.tiles[x][y].fireValue / 5);
-      this.map.tiles[x][y].fireValue =
-        this.map.tiles[x][y].fireValue - this.generateRandomNumber(10, 20);
-      if (this.map.tiles[x][y].name == 'empty') {
-        this.map.createTile(x, y, 'ash', true);
+  updateTile(x: number, y: number){
+
+    if (this.map.tiles[x][y].fireValue > 0){ 
+      this.map.damageTile(x,y,this.map.tiles[x][y].fireValue/5)
+      this.map.tiles[x][y].fireValue = this.clampNumber(this.map.tiles[x][y].fireValue - this.generateRandomNumber(10,20),0,100,)
+      if (this.map.tiles[x][y].name=="empty"){
+        this.map.createTile(x,y,"ash",true);
       }
-      var spreadchance = this.generateRandomNumber(1, 5);
-      if (spreadchance == 1) {
-        if (
-          this.map.isValidTile(x + 1, y) &&
-          this.map.tiles[x + 1][y].flammable == true
-        ) {
-          this.map.tiles[x + 1][y].fireValue =
-            this.map.tiles[x][y].fireValue + 40;
-        }
-        if (
-          this.map.isValidTile(x - 1, y) &&
-          this.map.tiles[x - 1][y].flammable == true
-        ) {
-          this.map.tiles[x - 1][y].fireValue =
-            this.map.tiles[x - 1][y].fireValue + 40;
-        }
-        if (
-          this.map.isValidTile(x, y + 1) &&
-          this.map.tiles[x][y + 1].flammable == true
-        ) {
-          this.map.tiles[x][y + 1].fireValue =
-            this.map.tiles[x][y + 1].fireValue + 40;
-        }
-        if (
-          this.map.isValidTile(x, y - 1) &&
-          this.map.tiles[x][y - 1].flammable == true
-        ) {
-          this.map.tiles[x][y - 1].fireValue =
-            this.map.tiles[x][y - 1].fireValue + 40;
-        }
+      var spreadchance = this.generateRandomNumber(1,5)
+      if (spreadchance==1){
+
+        this.ignite(x+1,y,this.map.tiles[x+1][y].fireValue+40,false)
+        this.ignite(x-1,y,this.map.tiles[x-1][y].fireValue+40,false)
+        this.ignite(x,y+1,this.map.tiles[x][y+1].fireValue+40,false)
+        this.ignite(x,y-1,this.map.tiles[x][y-1].fireValue+40,false)
+
       }
     }
   }
 
-  createExplosion(x: number, y: number, size: number, strength: number) {
-    for (let a = 0; a <= this.map.width; a++) {
-      for (let b = 0; b <= this.map.height; b++) {
-        const distance = Math.sqrt(Math.pow(a - x, 2) + Math.pow(b - y, 2));
-        if (distance <= size) {
-          let texture = Assets.get('explosion.png');
-          let sprite = new PIXI.Sprite(texture);
-          sprite.x = a * this.tileSize;
-          sprite.y = b * this.tileSize;
-          sprite.width = this.tileSize;
-          sprite.height = this.tileSize;
-          sprite._zIndex = 0;
-          this.effectContainer.addChild(sprite);
-          this.map.damageTile(a, b, strength / (distance + 1));
-          if (this.player1.PosX == a && this.player1.PosY == b) {
-            this.player1.health.Damage(strength / (distance + 1), 0);
-          }
-          var firechance = this.generateRandomNumber(1, 10);
-          if (firechance == 1 && this.map.tiles[a][b].flammable == true) {
-            this.map.tiles[a][b].fireValue = 100;
-          }
-        }
+  ignite(x: number, y:number, fireValue: number, additive: boolean){
+    if(this.map.isValidTile(x,y) && this.map.tiles[x][y].flammable == true){
+      if (this.map.tiles[x][y].fireValue <= 0 || additive == false){
+        this.map.tiles[x][y].fireValue += fireValue;
       }
     }
+  }
 
-    (async () => {
-      await this.delay(100);
+  createExplosion(x: number, y: number, size: number, strength: number, startFires: boolean = false){
+
+    (async () => { 
+
+      for(let i=0;i<size;i++){
+        let tiles = this.getTilesInSphere(x,y,i)
+        tiles.forEach((tile) => {
+          if (this.isLineObstructed(x,y,tile[0],tile[1],true,true)==false){
+            let texture = Assets.get("explosion.png");
+            let sprite = new PIXI.Sprite(texture);
+            sprite.x = tile[0] * this.tileSize
+            sprite.y = tile[1] * this.tileSize
+            sprite.width = this.tileSize
+            sprite.height = this.tileSize
+            sprite._zIndex = 0
+            this.effectContainer.addChild(sprite);
+            this.map.damageTile(tile[0],tile[1],strength/size)
+            if(this.player1.PosX == tile[0] && this.player1.PosY == tile[1]){
+              this.player1.health.Damage(strength/size/10)
+            }
+            var firechance=this.generateRandomNumber(1,10)
+            if (firechance==1){
+              this.ignite(tile[0],tile[1],strength,true)
+            }
+          }
+        })
+        await this.delay(50);
+      }
       this.effectContainer.removeChildren();
+
     })();
+
   }
 
   endTurn() {
@@ -695,7 +828,8 @@ export class GameController {
           this.endTurn();
           break;
         case 'p':
-          this.createExplosion(player.PosX, player.PosY, 4, 200);
+          this.createExplosion(player.PosX,player.PosY,4,50,true)
+          this.endTurn()
           break;
         default:
           return;

@@ -1,48 +1,87 @@
 import { Room } from "./room";
 
 export class RoomsData {
-    roomList: string[] = [
-        "starting_room",
-        "laboratory_room1", 
-        "office_room1", 
-        "hallway_room1",
-        "storage_room1", 
-        "security_room1",
-        "cafeteria_room1",
-        "laboratory_room_destroyed1",
-        "office_room_destroyed1", 
-        "hallway_room_destroyed1",
-        "storage_room_destroyed1", 
-        "security_room_destroyed1",
-        "cafeteria_room_destroyed1",
-    ];
+
     startingRoom: Room;
-    testRoomUp: Room;
+    labComplex1: Room;
+    crossHall1: Room;
     verticalHall: Room;
     horizontalHall: Room;
     
-    actualRoomList: string[] = [
+    roomList: string[] = [
         "startingRoom",
-        "testRoomUp",
+        "labComplex1",
+        "crossHall1",
         "verticalHall",
-       "horizontalHall"
+        "horizontalHall"
     ]
 
     constructor() {
         this.startingRoom = new Room(9, 9, ["up", "left", "right", "down"], []);
         this.startingRoom.layout = Array.from({ length: this.startingRoom.height }, () => Array.from({ length: this.startingRoom.width }, () => "floor_basic"));
-        this.startingRoom.layout[0][0] = "floor_basic";
         this.startingRoom.layout[0][4] = "room_entrance";
         this.startingRoom.layout[4][0] = "room_entrance";
         this.startingRoom.layout[4][8] = "room_entrance";
         this.startingRoom.layout[8][4] = "room_entrance";
+        this.startingRoom.layout[4][2] = "wall_basic";
+        this.startingRoom.layout[4][3] = "wall_basic";
+        this.startingRoom.layout[4][4] = "wall_basic";
+        this.startingRoom.layout[4][5] = "wall_basic";
+        this.startingRoom.layout[4][6] = "wall_basic";
         
-        this.testRoomUp = new Room(11, 11, ["up", "left", "right", "down"], []);
-        this.testRoomUp.layout = Array.from({ length: this.testRoomUp.height }, () => Array.from({ length: this.testRoomUp.width }, () => "floor_basic"));
-        this.testRoomUp.layout[0][5] = "room_entrance";
-        this.testRoomUp.layout[5][0] = "room_entrance";
-        this.testRoomUp.layout[5][10] = "room_entrance";
-        this.testRoomUp.layout[10][5] = "room_entrance";
+        this.labComplex1 = new Room(15, 15, ["up", "left", "right", "down"], []);
+        this.labComplex1.layout = Array.from({ length: this.labComplex1.height }, () => Array.from({ length: this.labComplex1.width }, () => "floor_basic"));
+        this.labComplex1.layout[0][7] = "room_entrance";
+        this.labComplex1.layout[7][0] = "room_entrance";
+        this.labComplex1.layout[7][14] = "room_entrance";
+        this.labComplex1.layout[14][7] = "room_entrance";
+        this.labComplex1.layout[1][5] = "wall_basic";
+        this.labComplex1.layout[2][5] = "wall_basic";
+        this.labComplex1.layout[3][5] = "wall_basic";
+        this.labComplex1.layout[4][5] = "wall_basic";
+        this.labComplex1.layout[5][5] = "wall_basic";
+        this.labComplex1.layout[9][5] = "wall_basic";
+        this.labComplex1.layout[10][5] = "wall_basic";
+        this.labComplex1.layout[11][5] = "wall_basic";
+        this.labComplex1.layout[12][5] = "wall_basic";
+        this.labComplex1.layout[13][5] = "wall_basic";
+        this.labComplex1.layout[1][9] = "wall_basic";
+        this.labComplex1.layout[2][9] = "wall_basic";
+        this.labComplex1.layout[3][9] = "wall_basic";
+        this.labComplex1.layout[4][9] = "wall_basic";
+        this.labComplex1.layout[5][9] = "wall_basic";
+        this.labComplex1.layout[9][9] = "wall_basic";
+        this.labComplex1.layout[10][9] = "wall_basic";
+        this.labComplex1.layout[11][9] = "wall_basic";
+        this.labComplex1.layout[12][9] = "wall_basic";
+        this.labComplex1.layout[13][9] = "wall_basic";
+        this.labComplex1.layout[5][1] = "wall_basic";
+        this.labComplex1.layout[5][2] = "wall_basic";
+        this.labComplex1.layout[5][3] = "wall_basic";
+        this.labComplex1.layout[5][4] = "wall_basic";
+        this.labComplex1.layout[5][5] = "wall_basic";
+        this.labComplex1.layout[5][9] = "wall_basic";
+        this.labComplex1.layout[5][10] = "wall_basic";
+        this.labComplex1.layout[5][11] = "wall_basic";
+        this.labComplex1.layout[5][12] = "wall_basic";
+        this.labComplex1.layout[5][13] = "wall_basic";
+        this.labComplex1.layout[9][1] = "wall_basic";
+        this.labComplex1.layout[9][2] = "wall_basic";
+        this.labComplex1.layout[9][3] = "wall_basic";
+        this.labComplex1.layout[9][4] = "wall_basic";
+        this.labComplex1.layout[9][5] = "wall_basic";
+        this.labComplex1.layout[9][9] = "wall_basic";
+        this.labComplex1.layout[9][10] = "wall_basic";
+        this.labComplex1.layout[9][11] = "wall_basic";
+        this.labComplex1.layout[9][12] = "wall_basic";
+        this.labComplex1.layout[9][13] = "wall_basic";
+
+        this.crossHall1 = new Room(15, 15, ["up", "left", "right", "down"], []);
+        this.crossHall1.layout = Array.from({ length: this.labComplex1.height }, () => Array.from({ length: this.labComplex1.width }, () => "floor_basic"));
+        this.crossHall1.layout[0][7] = "room_entrance";
+        this.crossHall1.layout[7][0] = "room_entrance";
+        this.crossHall1.layout[7][14] = "room_entrance";
+        this.crossHall1.layout[14][7] = "room_entrance";
 
         this.verticalHall = new Room(5, 15, ["up", "down"], []);
         this.verticalHall.layout = Array.from({ length: this.verticalHall.width }, () => Array.from({ length: this.verticalHall.height }, () => "floor_basic"));

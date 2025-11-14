@@ -13,7 +13,6 @@ export class World {
         this.roomsIDs = new Array();
         this.width = 10;
         this.height = 10;
-
     }
 
     CreateWorld(){
@@ -21,10 +20,7 @@ export class World {
             this.rooms[x] = new Array();
             this.roomsIDs[x] = new Array();
             for(let y=0;y<this.height;y++){
-              
-
-
-                let roomID = this.data.actualRoomList[Math.floor(Math.random()*this.data.actualRoomList.length)];
+                let roomID = this.data.roomList[Math.floor(Math.random()*this.data.roomList.length)];
              
                    // if(this.rooms[x-1][y] != null && this.getRoomById(roomID as keyof RoomsData).entrances.includes("left") && this.getRoomById(this.roomsIDs[x][y] as keyof RoomsData).entrances.includes("right")){
                     
@@ -32,20 +28,11 @@ export class World {
 
                    // }
                 
-                
                 this.loadRoomWithId(x,y,roomID as keyof RoomsData);
-              
             }
         }
-
-
-
         this.loadRoomWithId(5,5,"startingRoom");
-
-        this.loadRoomWithId(5,6,"testRoomUp");
-    
-            
-
+        this.loadRoomWithId(5,6,"labComplex1");
     }
 
     isValidRoom(x:number,y:number){
@@ -63,7 +50,6 @@ export class World {
         this.rooms[worldX][worldY].createEmptyMap();
         this.rooms[worldX][worldY].loadMap((this.data[id] as any).layout);
     }
-
    
 }
 
