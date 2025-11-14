@@ -5,7 +5,8 @@ import { tile } from './tile';
 import { Item } from './items/item';
 import * as PIXI from 'pixi.js';
 import { Assets } from 'pixi.js';
-import { Dummy } from './dummy';
+import { Dummy, HeavyDummy } from './enemyTypes';
+import { entity } from './entity';
 export class GameGrid {
   width: number;
   height: number;
@@ -32,13 +33,42 @@ export class GameGrid {
         if(i==0 || j==0 || i==map.length-1 || j==map[i].length-1){
           this.tiles[i][j] = this.getTileData("wall_corner")
         }
-        
         if(map[i][j] != "floor_basic"){
           this.tiles[i][j] = this.getTileData(map[i][j])
         }
-        
       }
     }
+  }
+  
+  getTileData(name: String){
+
+    let info = new tile("empty",false,"",false,null,true,0,null,"",false,null,null);
+
+    switch (name){
+
+    
+    case 'glass_shards':
+      info = new tile("glass_shards",false,"glass_shards",true,5,true,0,null,"glass_shards.png",false,null,null);
+      return info
+    
+    case 'wall_corner':
+      info = new tile("wall_corner",true,"",false,null,false,0,null,"placeholder.png",false,null,null);
+      return info
+
+    case 'wall_basic':
+      info = new tile("wall_basic",true,"",true,100,true,0,null,"placeholder.png",false,null,null);
+      return info
+      
+    case 'ash':
+      info = new tile("ash",false,"",false,null,false,0,null,"ash.png",false,null,null);
+      return info
+
+    case 'room_entrance':
+      info = new tile("door",false,"entrance",false,null,false,0,null,"door1.png",false,null,null);
+      return info
+      
+    }
+    return info;
   }
 
   createTile(x: number, y: number, name: String, replace: boolean){
@@ -92,6 +122,9 @@ export class GameGrid {
   getTileCoords(worldX: number, worldY: number, tileSize: number) {
     const tileX = Math.floor(worldX / tileSize);
     const tileY = Math.floor(worldY / tileSize);
+    if (!this.isValidTile(tileX, tileY)) {
+      return null;
+    }
     return { x: tileX, y: tileY };
   }
 
@@ -113,18 +146,13 @@ export class GameGrid {
     this.tiles[x][y].entity = player;
   }
 
-  createDummy(x: number, y: number, id: string) {
-    this.tiles[x][y].entity = new Dummy(x, y, id, 10);
-  }
-
-  loadDummy(x: number, y: number, dummy: any) {
-    this.tiles[x][y].entity = dummy;
+  loadEnemy(x: number, y: number, entity: any) {
+    this.tiles[x][y].entity = entity;
   }
 
   SpawnItem(x: number, y: number, item: Item) {
     this.tiles[x][y].hasItem = true;
     this.tiles[x][y].item = item;
-    this.tiles[x][y].sprite = item.sprite;
   }
 
   RemoveItem(x: number, y: number, effect?: string) {
