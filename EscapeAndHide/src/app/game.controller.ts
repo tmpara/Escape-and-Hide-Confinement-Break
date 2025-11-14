@@ -413,9 +413,12 @@ export class GameController {
           sprite.height = this.tileSize;
           sprite._zIndex = 2;
           this.entityContainer.addChild(sprite);
-          if (this.isLineObstructed(this.player1.PosX, this.player1.PosY, x, y,true,true)==true){
+          if (this.map.tiles[x][y].hiddenOutsideLOS==true && this.isLineObstructed(this.player1.PosX, this.player1.PosY, x, y,true,true)==true){
            sprite.alpha = 0
           }
+          /*else if(this.map.tiles[x][y].hiddenOutsideLOS==false && this.isLineObstructed(this.player1.PosX, this.player1.PosY, x, y,true,true)==true){
+            sprite.alpha = 0.5
+          }*/
           else if(this.isLineObstructed(this.player1.PosX, this.player1.PosY, x, y,true,true)==false){
             sprite.alpha = 1
           }
@@ -447,12 +450,9 @@ export class GameController {
           sprite.height = this.tileSize;
           sprite._zIndex = 1;
           this.gridContainer.addChild(sprite);
-          if (this.map.tiles[x][y].hiddenOutsideLOS==true && this.isLineObstructed(this.player1.PosX, this.player1.PosY, x, y,true,true)==true){
-           sprite.alpha = 0
+          if (this.isLineObstructed(this.player1.PosX, this.player1.PosY, x, y,true,true)==true){
+            sprite.alpha = 0
           }
-          /*else if(this.map.tiles[x][y].hiddenOutsideLOS==false && this.isLineObstructed(this.player1.PosX, this.player1.PosY, x, y,true,true)==true){
-            sprite.alpha = 0.5
-          }*/
           else if(this.isLineObstructed(this.player1.PosX, this.player1.PosY, x, y,true,true)==false){
             sprite.alpha = 1
           }
@@ -477,7 +477,6 @@ export class GameController {
                 } else{
                   texture = Assets.get('heavyDummyDead.png');
                 }
-              
             }
             let sprite = new PIXI.Sprite(texture);
             sprite.x = x * this.tileSize;
@@ -486,6 +485,12 @@ export class GameController {
             sprite.height = this.tileSize;
             sprite._zIndex = 2;
             this.entityContainer.addChild(sprite);
+            if (this.isLineObstructed(this.player1.PosX, this.player1.PosY, x, y,true,true)==true){
+              sprite.alpha = 0
+            }
+            else if(this.isLineObstructed(this.player1.PosX, this.player1.PosY, x, y,true,true)==false){
+              sprite.alpha = 1
+            }
           }
         }
 
@@ -511,6 +516,18 @@ export class GameController {
             fireSprite.alpha = 1
           }
         }
+
+        this.tile.lineStyle(1, 0x888888);
+        this.tile.beginFill(0xcccccc);
+        this.tile.drawRect(
+          x * this.tileSize,
+          y * this.tileSize,
+          this.tileSize,
+          this.tileSize
+        );
+        this.tile._zIndex = 0;
+        this.tile.endFill();
+        this.gridContainer.addChild(this.tile);
       }
     }
   }

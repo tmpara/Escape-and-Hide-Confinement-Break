@@ -39,37 +39,6 @@ export class GameGrid {
       }
     }
   }
-  
-  getTileData(name: String){
-
-    let info = new tile("empty",false,"",false,null,true,0,null,"",false,null,null);
-
-    switch (name){
-
-    
-    case 'glass_shards':
-      info = new tile("glass_shards",false,"glass_shards",true,5,true,0,null,"glass_shards.png",false,null,null);
-      return info
-    
-    case 'wall_corner':
-      info = new tile("wall_corner",true,"",false,null,false,0,null,"placeholder.png",false,null,null);
-      return info
-
-    case 'wall_basic':
-      info = new tile("wall_basic",true,"",true,100,true,0,null,"placeholder.png",false,null,null);
-      return info
-      
-    case 'ash':
-      info = new tile("ash",false,"",false,null,false,0,null,"ash.png",false,null,null);
-      return info
-
-    case 'room_entrance':
-      info = new tile("door",false,"entrance",false,null,false,0,null,"door1.png",false,null,null);
-      return info
-      
-    }
-    return info;
-  }
 
   createTile(x: number, y: number, name: String, replace: boolean){
     if (this.isValidTile(x,y)==true){
@@ -199,7 +168,7 @@ export class GameGrid {
       break;
 
     case 'glass_shards':
-      tileName="glass_shards"
+      tileName="glass shards"
       hasCollision=false
       effect="glass_shards"
       destroyable=true
@@ -211,7 +180,7 @@ export class GameGrid {
       break;
     
     case 'wall_corner':
-      tileName="wall_corner"
+      tileName="corner wall"
       hasCollision=true
       effect=""
       destroyable=false
@@ -223,7 +192,7 @@ export class GameGrid {
       break;
 
     case 'wall_basic':
-      tileName="wall_basic"
+      tileName="basic wall"
       hasCollision=true
       effect=""
       destroyable=true
