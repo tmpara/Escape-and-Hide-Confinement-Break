@@ -1,36 +1,46 @@
 import * as PIXI from 'pixi.js';
-import { entity } from './entity';
+import { Entity } from './entity';
 import { Health } from './health/health';
 import { Energy } from './energy/energy';
 
-export class Player extends entity {
-  PosX: number;
-  PosY: number;
+export type playerConfig = {
+  id: number,
+  name?: string,
+  sprite?: string,
+  posX?: number,
+  posY?: number,
+  collidable?: boolean,
+  damageable?: boolean,
+  health?: number,
+}
+
+export class Player extends Entity {
+  id: number;
   renderX: number;
   renderY: number;
-  id: string;
-  health: Health;
-  energy: Energy;
-
-  constructor(
-    PosX: number,
-    PosY: number,
-    id: string,
-    health: Health,
-    energy: Energy
-  ) {
-    super();
+  Health: Health;
+  Energy: Energy;
+  constructor(t:playerConfig) 
+  {
+    const {id
+      ,name
+      ,sprite
+      ,posX
+      ,posY
+      ,collidable
+      ,damageable
+      ,health}=t
+    super(name ?? "Player", sprite ?? "placeholder.png", posX ?? 0, posY ?? 0, collidable ?? false, damageable ?? false, health ?? 100);
     this.id = id;
-    this.PosX = PosX;
-    this.PosY = PosY;
-    this.renderX = PosX;
-    this.renderY = PosY;
-    this.health = health;
-    this.energy = energy;
+    this.renderX = 0;
+    this.renderY = 0;
+    this.Health = new Health(5,5);
+    this.Energy = new Energy(100,100);
   }
 
   playerAction(energyCost: number) {
-    this.health.TriggerDot();
-    this.energy.loseEnergy(energyCost);
+    this.Health.TriggerDot();
+    this.Energy.loseEnergy(energyCost);
   }
+
 }

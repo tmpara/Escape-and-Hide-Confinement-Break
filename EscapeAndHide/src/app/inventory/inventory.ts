@@ -266,7 +266,7 @@ export class Inventory {
 
     const title = document.createElement('div');
     title.className = 'loot-title';
-    title.textContent = entity.displayName;
+    title.textContent = entity.name;
 
     const itemLootBox = document.createElement('div');
     itemLootBox.className = 'item-loot box';

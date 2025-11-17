@@ -1,6 +1,6 @@
 import { Application, Graphics, Container } from 'pixi.js';
 import { GameGrid } from './grid';
-import { Player } from './player';
+import { Player, playerConfig } from './player';
 import { Health } from './health/health';
 import { Text, Assets } from 'pixi.js';
 import * as PIXI from 'pixi.js';
@@ -8,7 +8,7 @@ import { Energy } from './energy/energy';
 import { Items, Weapon } from './items/items';
 import { World } from './world';
 import { WeaponFunctionality } from './items/weapon_functionality';
-import { Dummy, HeavyDummy} from './enemyTypes'
+import { Dummy, HeavyDummy, dummyConfig, heavyDummyConfig} from './enemyTypes'
 import { Inventory } from './inventory/inventory';
 
 export class GameController {
@@ -17,9 +17,9 @@ export class GameController {
   items = new Items();
   inventory!: Inventory;
   weaponFunctionality = new WeaponFunctionality();
-  player1 = new Player(1, 1, '1', new Health(5.0, 4.0), new Energy(100, 100));
-  dummy1 = new Dummy(5, 2, '1', 1.0);
-  heavyDummy1 = new HeavyDummy(5, 3, '1', 20.0);
+  player1 = new Player({} as playerConfig);
+  dummy1 = new Dummy({} as dummyConfig);
+  heavyDummy1 = new HeavyDummy({} as heavyDummyConfig);
   world = new World();
   gridContainer = new Container();
   effectContainer = new Container();
@@ -60,7 +60,6 @@ export class GameController {
     this.map = this.world.rooms[5][5];
 
     console.log(this.map.width + ' ' + this.map.height);
-    this.map.loadPlayer(1, 1, this.player1);
 
     // Create PIXI app
     this.app = new Application();
@@ -78,12 +77,10 @@ export class GameController {
 
     this.map.loadPlayer(1, 1, this.player1);
     this.map.loadEnemy(5, 2, this.dummy1);
-    this.map.loadEnemy(5,3, this.heavyDummy1);
+    this.map.loadEnemy(5, 3, this.heavyDummy1);
 
     this.map.SpawnItem(1, 3, new Items().gun);
     this.map.SpawnItem(2, 3, new Items().bigGun);
-
-    this.map.tiles[3][3] = this.map.getTileData('glass_shards');
 
     // Draw grid, player
     this.drawGrid();
@@ -160,7 +157,7 @@ export class GameController {
     // Add starting tile if it's inside the map
     if (inBounds(x, y)) {
       hitTiles.push([x, y]);
-      if (stopOnCollision && this.map.tiles[x][y].hasCollision) return hitTiles;
+      if (stopOnCollision && this.map.tiles[x][y].entity?.collidable) return hitTiles;
     }
 
     // Degenerate case: start == end
@@ -187,7 +184,7 @@ export class GameController {
       if (!inBounds(x, y)) break;
       hitTiles.push([x, y]);
       // If requested, stop the ray when we hit a tile that has collision
-      if (stopOnCollision && this.map.tiles[x][y].hasCollision) break;
+      if (stopOnCollision && this.map.tiles[x][y].entity?.collidable) break;
     }
 
     return hitTiles;
@@ -206,7 +203,7 @@ export class GameController {
       const [tx, ty] = tiles[i];
       if (!this.map.isValidTile(tx, ty)) continue;
       const t = this.map.tiles[tx][ty];
-      if (t.hasCollision || t.entity) return true;
+      if (t.entity?.collidable || t.entity) return true;
     }
 
     return false;
@@ -278,7 +275,7 @@ export class GameController {
 
   drawHealthBar() {
     const myText = new Text({
-      text: Math.round(this.player1.health.currentHealth * 100) / 100 + ' L',
+      text: Math.round(this.player1.Health.currentHealth * 100) / 100 + ' L',
       style: {
         fontSize: 20,
         fill: '#ffffff',
@@ -301,26 +298,26 @@ export class GameController {
     this.healthBar.endFill();
 
     const dotPercentage = Math.min(
-      this.player1.health.Dot / this.player1.health.maxHealth,
+      this.player1.Health.Dot / this.player1.Health.maxHealth,
       1
     );
     const regenPercentage = Math.min(
-      this.player1.health.Regeneration / this.player1.health.maxHealth,
+      this.player1.Health.Regeneration / this.player1.Health.maxHealth,
       1
     );
 
     // Health
     const healthPercentage =
-      this.player1.health.currentHealth / this.player1.health.maxHealth;
+      this.player1.Health.currentHealth / this.player1.Health.maxHealth;
     this.healthBar.beginFill(0xff0000);
     this.healthBar.drawRect(x, y, barWidth * healthPercentage, barHeight);
     this.healthBar.addChild(myText);
     this.healthBar.endFill();
 
     // DOT effect
-    if (this.player1.health.Dot > 0) {
-      let dotRate = this.player1.health.DotReduceRate / 0.25;
-      let dotDamage = 0.25 / this.player1.health.DotDamageRate;
+    if (this.player1.Health.Dot > 0) {
+      let dotRate = this.player1.Health.DotReduceRate / 0.25;
+      let dotDamage = 0.25 / this.player1.Health.DotDamageRate;
       this.healthBar.beginFill(0xffff00);
       this.healthBar.drawRect(
         x + barWidth * (healthPercentage - dotPercentage / dotDamage / dotRate),
@@ -333,10 +330,10 @@ export class GameController {
 
     // Regeneration
     if (
-      this.player1.health.Regeneration > 0 &&
-      this.player1.health.currentHealth < this.player1.health.maxHealth
+      this.player1.Health.Regeneration > 0 &&
+      this.player1.Health.currentHealth < this.player1.Health.maxHealth
     ) {
-      if (this.player1.health.Dot > 0) {
+      if (this.player1.Health.Dot > 0) {
         this.healthBar.beginFill(0x00ff00);
         this.healthBar.drawRect(
           x + barWidth * (healthPercentage - dotPercentage),
@@ -346,12 +343,12 @@ export class GameController {
         );
         this.healthBar.endFill();
       } else if (
-        this.player1.health.currentHealth + this.player1.health.Regeneration >
-        this.player1.health.maxHealth
+        this.player1.Health.currentHealth + this.player1.Health.Regeneration >
+        this.player1.Health.maxHealth
       ) {
         const regenerationToMaxPercentage =
-          (this.player1.health.maxHealth - this.player1.health.currentHealth) /
-          this.player1.health.maxHealth;
+          (this.player1.Health.maxHealth - this.player1.Health.currentHealth) /
+          this.player1.Health.maxHealth;
         this.healthBar.beginFill(0x00ff00);
         this.healthBar.drawRect(
           x + barWidth * healthPercentage,
@@ -388,7 +385,7 @@ export class GameController {
 
     // Energy
     const energyPercentage =
-    this.player1.energy.currentEnergy / this.player1.energy.maxEnergy;
+    this.player1.Energy.currentEnergy / this.player1.Energy.maxEnergy;
     this.energyBar.beginFill(0xffff00);
     this.energyBar.drawRect(x, y, barWidth * energyPercentage, barHeight);
     this.energyBar.endFill();
@@ -413,15 +410,6 @@ export class GameController {
           sprite.height = this.tileSize;
           sprite._zIndex = 2;
           this.entityContainer.addChild(sprite);
-          if (this.map.tiles[x][y].hiddenOutsideLOS==true && this.isLineObstructed(this.player1.PosX, this.player1.PosY, x, y,true,true)==true){
-           sprite.alpha = 0
-          }
-          /*else if(this.map.tiles[x][y].hiddenOutsideLOS==false && this.isLineObstructed(this.player1.PosX, this.player1.PosY, x, y,true,true)==true){
-            sprite.alpha = 0.5
-          }*/
-          else if(this.isLineObstructed(this.player1.PosX, this.player1.PosY, x, y,true,true)==false){
-            sprite.alpha = 1
-          }
         }
 
         const item = this.map.tiles[x][y].item;
@@ -450,10 +438,10 @@ export class GameController {
           sprite.height = this.tileSize;
           sprite._zIndex = 1;
           this.gridContainer.addChild(sprite);
-          if (this.isLineObstructed(this.player1.PosX, this.player1.PosY, x, y,true,true)==true){
+          if (this.isLineObstructed(this.player1.posX, this.player1.posY, x, y,true,true)==true){
             sprite.alpha = 0
           }
-          else if(this.isLineObstructed(this.player1.PosX, this.player1.PosY, x, y,true,true)==false){
+          else if(this.isLineObstructed(this.player1.posX, this.player1.posY, x, y,true,true)==false){
             sprite.alpha = 1
           }
         }
@@ -485,10 +473,10 @@ export class GameController {
             sprite.height = this.tileSize;
             sprite._zIndex = 2;
             this.entityContainer.addChild(sprite);
-            if (this.isLineObstructed(this.player1.PosX, this.player1.PosY, x, y,true,true)==true){
+            if (this.isLineObstructed(this.player1.posX, this.player1.posY, x, y,true,true)==true){
               sprite.alpha = 0
             }
-            else if(this.isLineObstructed(this.player1.PosX, this.player1.PosY, x, y,true,true)==false){
+            else if(this.isLineObstructed(this.player1.posX, this.player1.posY, x, y,true,true)==false){
               sprite.alpha = 1
             }
           }
@@ -509,10 +497,10 @@ export class GameController {
           fireSprite.height = this.tileSize
           fireSprite._zIndex = 5
           this.gridContainer.addChild(fireSprite);
-          if (this.map.tiles[x][y].hiddenOutsideLOS==true && this.isLineObstructed(this.player1.PosX, this.player1.PosY, x, y,true,true)==true){
+          if (this.isLineObstructed(this.player1.posX, this.player1.posY, x, y,true,true)==true){
            fireSprite.alpha = 0
           }
-          else if(this.isLineObstructed(this.player1.PosX, this.player1.PosY, x, y,true,true)==false){
+          else if(this.isLineObstructed(this.player1.posX, this.player1.posY, x, y,true,true)==false){
             fireSprite.alpha = 1
           }
         }
@@ -581,29 +569,29 @@ export class GameController {
   }
 
   teleportPlayer(player: Player, targetX: number, targetY: number) {
-    let playerPosX = player.PosX;
-    let playerPosY = player.PosY;
+    let playerPosX = player.posX;
+    let playerPosY = player.posY;
     if (playerPosX < this.map.width && playerPosY < this.map.height) {
       this.map.tiles[playerPosX][playerPosY].entity = null;
     }
 
-    player.PosX = targetX;
-    player.PosY = targetY;
+    player.posX = targetX;
+    player.posY = targetY;
     this.map.tiles[targetX][targetY].entity = player;
     this.animatePlayerMove(player, targetX, targetY);
     //player.playerAction(10);
     this.checkUnderPlayer(player);
-    console.log('Player teleported to: ' + player.PosX + ', ' + player.PosY);
+    console.log('Player teleported to: ' + player.posX + ', ' + player.posY);
   }
 
   tryToMovePlayer(player: Player, targetX: number, targetY: number) {
-    if (this.player1.energy.currentEnergy < 10) {
+    if (this.player1.Energy.currentEnergy < 10) {
       console.log('Not enough energy');
       return;
     }
 
-    let playerPosX = player.PosX;
-    let playerPosY = player.PosY;
+    let playerPosX = player.posX;
+    let playerPosY = player.posY;
 
     let deltaX = Math.abs(targetX - playerPosX);
     let deltaY = Math.abs(targetY - playerPosY);
@@ -620,15 +608,15 @@ export class GameController {
       targetY < 0 ||
       targetX >= this.map.width ||
       targetY >= this.map.height ||
-      targetTile.hasCollision ||
+      targetTile.entity?.collidable ||
       entityBlocking ||
       deltaX + deltaY > 1
     ) {
       console.log('Collision detected or too far away or out of bounds');
     } else {
       this.map.tiles[playerPosX][playerPosY].entity = null;
-      player.PosX = targetX;
-      player.PosY = targetY;
+      player.posX = targetX;
+      player.posY = targetY;
       this.map.tiles[targetX][targetY].entity = player;
       this.animatePlayerMove(player, targetX, targetY);
       this.player1.playerAction(10);
@@ -638,22 +626,22 @@ export class GameController {
   }
 
   async checkTileForItem(player: Player) {
-    if (this.map.tiles[player.PosX][player.PosY].item != null) {
+    if (this.map.tiles[player.posX][player.posY].item != null) {
       console.log('truly');
-      const item = this.map.tiles[player.PosX][player.PosY].item;
+      const item = this.map.tiles[player.posX][player.posY].item;
       if (item) {
         const pickedUp = await this.inventory.showPickUpPrompt(item);
         if (pickedUp) {
           this.inventory.pickUp(item);
-          this.map.RemoveItem(player.PosX, player.PosY, this.map.tiles[player.PosX][player.PosY].effect);
+          this.map.RemoveItem(player.posX, player.posY);
         }
       }
     }
   }
   
   findRoom(player: Player) {
-    let playerPosX = player.PosX;
-    let playerPosY = player.PosY;
+    let playerPosX = player.posX;
+    let playerPosY = player.posY;
 
     let mapX = this.map.width;
     let mapY = this.map.height;
@@ -718,20 +706,6 @@ export class GameController {
   }
 
   checkUnderPlayer(player: Player) {
-    let tileEffect = this.map.tiles[player.PosX][player.PosY].effect;
-    console.log('Tile effect: ' + tileEffect);
-    switch (tileEffect) {
-      case 'glass_shards':
-        player.health.Damage(0, 1.0);
-        return 'glass_shards';
-      case 'fire':
-        player.health.Damage(0, 2.0);
-        return 'fire';
-      case 'entrance':
-        this.findRoom(player);
-        return 'entrance';
-    }
-
     return '';
   }
 
@@ -746,7 +720,7 @@ export class GameController {
   updateTile(x: number, y: number){
 
     if (this.map.tiles[x][y].fireValue > 0){ 
-      this.map.damageTile(x,y,this.map.tiles[x][y].fireValue/5)
+      this.map.tiles[x][y].entity?.takeDamage(this.map.tiles[x][y].fireValue/5,"fire")
       this.map.tiles[x][y].fireValue = this.clampNumber(this.map.tiles[x][y].fireValue - this.generateRandomNumber(10,20),0,100,)
       if (this.map.tiles[x][y].name=="empty"){
         this.map.createTile(x,y,"ash",true);
@@ -787,9 +761,9 @@ export class GameController {
             sprite.height = this.tileSize
             sprite._zIndex = 0
             this.effectContainer.addChild(sprite);
-            this.map.damageTile(tile[0],tile[1],strength/size)
-            if(this.player1.PosX == tile[0] && this.player1.PosY == tile[1]){
-              this.player1.health.Damage(strength/size/10)
+            this.map.tiles[tile[0]][tile[1]].entity?.takeDamage(strength/size,"explosion")
+            if(this.player1.posX == tile[0] && this.player1.posY == tile[1]){
+              this.player1.Health.Damage(strength/size/10)
             }
             var firechance=this.generateRandomNumber(1,10)
             if (firechance==1){
@@ -808,14 +782,14 @@ export class GameController {
   endTurn() {
     this.updateAllTiles();
     this.checkUnderPlayer(this.player1);
-    this.player1.energy.setEnergy(100);
+    this.player1.Energy.setEnergy(100);
     this.player1.playerAction(0);
   }
 
   listenForMovement(player: Player) {
     window.addEventListener('keydown', (event) => {
-      let targetX = player.PosX;
-      let targetY = player.PosY;
+      let targetX = player.posX;
+      let targetY = player.posY;
 
       switch (event.key.toLowerCase()) {
         case 'w':
@@ -845,7 +819,7 @@ export class GameController {
           this.endTurn();
           break;
         case 'p':
-          this.createExplosion(player.PosX,player.PosY,4,50,true)
+          this.createExplosion(player.posX,player.posY,4,50,true)
           this.endTurn()
           break;
         default:
