@@ -414,7 +414,7 @@ export class GameController {
     this.animatePlayerMove(player, targetX, targetY);
     //player.playerAction(10);
     this.checkUnderPlayer(player);
-    console.log("Player teleported to: " + player.PosX + ", " + player.PosY);
+   // console.log("Player teleported to: " + player.PosX + ", " + player.PosY);
   }
 
   tryToMovePlayer(player: Player, targetX: number, targetY: number) {
@@ -479,7 +479,7 @@ findRoom(player: Player){
         this.map.tiles[playerPosX][playerPosY].entity = null;
         this.map = this.world.rooms[this.playerWorldX-1][this.playerWorldY];
         this.playerWorldX -= 1;
-        this.teleportPlayer(this.player1, this.map.width-2, Math.floor(this.map.height/2));
+        this.teleportPlayer(this.player1, this.findEnntrance("right")!.x, this.findEnntrance("right")!.y);
         console.log("Moved to left room");
         console.log("World coordinates: " + this.playerWorldX + ", " + this.playerWorldY);
       }
@@ -490,39 +490,70 @@ findRoom(player: Player){
         this.map.tiles[playerPosX][playerPosY].entity = null;
         this.map = this.world.rooms[this.playerWorldX+1][this.playerWorldY];
         this.playerWorldX += 1;
-        this.teleportPlayer(this.player1, 1, Math.floor(this.map.height/2));
+        this.teleportPlayer(this.player1, this.findEnntrance("left")!.x, this.findEnntrance("left")!.y);
         console.log("Moved to right room");
         console.log("World coordinates: " + this.playerWorldX + ", " + this.playerWorldY);
       }
     }
     else if(playerPosY == 0 && playerPosX < mapX){
-      //up
-      if (this.playerWorldY + 1  <= 10){
+      //up 
+      if (this.playerWorldY - 1  >= 0){
         this.map.tiles[playerPosX][playerPosY].entity = null;
-        this.map = this.world.rooms[this.playerWorldX][this.playerWorldY+1];
-        this.playerWorldY += 1;
-        this.teleportPlayer(this.player1, Math.floor(this.map.width/2), this.map.height-2);
-        console.log("Moved to up room");
+        this.map = this.world.rooms[this.playerWorldX][this.playerWorldY-1];
+        this.playerWorldY -= 1;
+        this.teleportPlayer(this.player1, this.findEnntrance("down")!.x, this.findEnntrance("down")!.y);
+        console.log("Moved to down room");
         console.log("World coordinates: " + this.playerWorldX + ", " + this.playerWorldY);
       }
     }
     else if(playerPosY == mapY-1 && playerPosX < mapX){
       //down
-      if (this.playerWorldY - 1  >= 0){
+      if (this.playerWorldY + 1  <= 10){
         this.map.tiles[playerPosX][playerPosY].entity = null;
-        this.map = this.world.rooms[this.playerWorldX][this.playerWorldY-1];
-        this.playerWorldY -= 1;
-        this.teleportPlayer(this.player1, Math.floor(this.map.width/2), 1);
-        console.log("Moved to down room");
+        this.map = this.world.rooms[this.playerWorldX][this.playerWorldY+1];
+        this.playerWorldY += 1;
+        this.teleportPlayer(this.player1, this.findEnntrance("up")!.x, this.findEnntrance("up")!.y);
+        console.log("Moved to up room");
         console.log("World coordinates: " + this.playerWorldX + ", " + this.playerWorldY);
       }
     }
    
   }
 
+  findEnntrance(side: string){
+     for (let x = 0; x <= this.map.width; x++) {
+      for (let y = 0; y <= this.map.height; y++) {
+        switch(side){
+          case "left":
+            if (this.map.tiles[x][y].effect == "entrance_left") {
+              return {x: x+1, y: y};
+            }    
+            break;
+          case "right":
+            if (this.map.tiles[x][y].effect == "entrance_right") {
+              return {x: x-1, y: y};  
+            }
+            break;
+          case "up":
+            if (this.map.tiles[x][y].effect == "entrance_up") {  
+              return {x: x, y: y+1};
+            }
+            break;
+          case "down":
+            if (this.map.tiles[x][y].effect == "entrance_down") {   
+              return {x: x, y: y-1};
+            }
+            break;
+          default:
+            return {x: 0, y: 0};
+         }
+       }
+     }
+           return;
+   }
   checkUnderPlayer(player: Player) {
     let tileEffect = this.map.tiles[player.PosX][player.PosY].effect;
-    console.log('Tile effect: ' + tileEffect);
+   // console.log('Tile effect: ' + tileEffect);
     switch (tileEffect) {
       case 'glass_shards':
         player.health.Damage(0, 1.0);
@@ -533,7 +564,15 @@ findRoom(player: Player){
       case 'entrance':
         this.findRoom(player);
         return "entrance"
+
+      default:
+        if (tileEffect?.includes("entrance")){
+          this.findRoom(player);
+          return "entrance"
+        }
       }
+
+      
 
       return ""
   }

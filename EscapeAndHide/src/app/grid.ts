@@ -71,8 +71,24 @@ export class GameGrid {
     case 'room_entrance':
       info = new tile("door",false,"entrance",false,null,false,0,null,"door1.png",false,null,null);
       return info
-      
+    
+    default:
+      if (name.startsWith("room_entrance")){
+        if (name.includes("left")){
+          info = new tile("door",false,"entrance_left",false,null,false,0,null,"door1.png",false,null,null);
+        }
+        else if (name.includes("right")){
+          info = new tile("door",false,"entrance_right",false,null,false,0,null,"door1.png",false,null,null);
+        }
+        else if (name.includes("down")){
+          info = new tile("door",false,"entrance_down",false,null,false,0,null,"door1.png",false,null,null);
+        }
+        else if (name.includes("up")){
+          info = new tile("door",false,"entrance_up",false,null,false,0,null,"door1.png",false,null,null);
+        }
+
     }
+  }
     return info;
   }
 

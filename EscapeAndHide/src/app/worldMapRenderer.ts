@@ -83,7 +83,7 @@ export class WorldMapRenderer {
           const rightId = this.world.roomsIDs[x + 1] ? this.world.roomsIDs[x + 1][y] : undefined;
           if (rightId) {
             const rightEntr = this.world.getRoomEntrances(rightId as any) as string[];
-            if (entrances.includes('right') && rightEntr.includes('left')) {
+            if (rightEntr.includes('left')) {
               const x1 = px + size; // current right edge (inner)
               const x2 = (x + 1) * this.cellSize + this.padding; // neighbour left edge (inner)
               this.graphics.moveTo(x1, cy);
@@ -96,12 +96,38 @@ export class WorldMapRenderer {
           const downId = this.world.roomsIDs[x] ? this.world.roomsIDs[x][y + 1] : undefined;
           if (downId) {
             const downEntr = this.world.getRoomEntrances(downId as any) as string[];
-            if (entrances.includes('down') && downEntr.includes('up')) {
+            if (downEntr.includes('up')) {
               const y1 = py + size; // current bottom edge
               const y2 = (y + 1) * this.cellSize + this.padding; // neighbour top edge
               this.graphics.moveTo(cx, y1);
               this.graphics.lineTo(cx, y2);
             }
+          }
+        }
+        // up connector (draw only if neighbour exists and has down entrance)
+        if (y > 0) {
+          const upId = this.world.roomsIDs[x] ? this.world.roomsIDs[x][y - 1] : undefined;    
+          if (upId) {
+            const upEntr = this.world.getRoomEntrances(upId as any) as string[];
+            if (upEntr.includes('down')) {
+              const y1 = py;
+              const y2 = (y - 1) * this.cellSize + this.padding + size;
+              this.graphics.moveTo(cx, y1);
+              this.graphics.lineTo(cx, y2);
+            }
+          }
+        }
+        // left connector (draw only if neighbour exists and has right entrance)
+        if (x > 0) {
+          const leftId = this.world.roomsIDs[x - 1] ? this.world.roomsIDs[x - 1][y] : undefined;  
+          if (leftId) {
+            const leftEntr = this.world.getRoomEntrances(leftId as any) as string[];
+            if (leftEntr.includes('right')) {
+              const x1 = px; // current left edge
+              const x2 = (x - 1) * this.cellSize + this.padding + size;
+              this.graphics.moveTo(x1, cy);
+              this.graphics.lineTo(x2, cy);
+            } 
           }
         }
         
