@@ -202,7 +202,6 @@ export class Inventory {
     });
   }
 
-
   pickUpPopupStyles() {
     const style = document.createElement('style');
     style.id = 'inventory-prompt-styles';
@@ -245,14 +244,14 @@ export class Inventory {
     document.head.appendChild(style);
   }
 
-  hideLootPopup(){
+  hideLootPopup() {
     if (this.lootOverlay) {
       this.lootOverlay.remove();
       this.lootOverlay = null;
     }
   }
 
-  showLootPopup(entity: Dummy | HeavyDummy){
+  showLootPopup(entity: Dummy | HeavyDummy) {
     if (this.lootOverlay) {
       return Promise.resolve(false);
     }
@@ -271,7 +270,7 @@ export class Inventory {
     const itemLootBox = document.createElement('div');
     itemLootBox.className = 'item-loot box';
 
-    for(let i=0; i<entity.lootTable.length; i++){
+    for (let i = 0; i < entity.lootTable.length; i++) {
       const item = entity.lootTable[i];
       const itemButton = document.createElement('button');
       itemButton.className = 'loot-item-btn';
@@ -281,6 +280,8 @@ export class Inventory {
         itemButton.disabled = true;
       };
       itemLootBox.appendChild(itemButton);
+      entity.lootTable.splice(i, 1);
+      i--;
     }
 
     const buttons = document.createElement('div');
@@ -315,7 +316,7 @@ export class Inventory {
     });
   }
 
-  lootPopupStyles(){
+  lootPopupStyles() {
     const style = document.createElement('style');
     style.id = 'inventory-prompt-styles';
     style.textContent = `
