@@ -17,7 +17,7 @@ export class GameController {
   items = new Items();
   inventory!: Inventory;
   weaponFunctionality = new WeaponFunctionality();
-  player1 = new Player(1, 1, '1', new Health(5.0, 4.0), new Energy(100, 100));
+  player1 = new Player(1, 1, '1', new Health(5000, 5000), new Energy(100, 100));
   dummy1 = new Dummy(5, 2, '1', 1.0);
   heavyDummy1 = new HeavyDummy(5, 3, '1', 20.0);
   world = new World();
@@ -297,17 +297,6 @@ export class GameController {
   }
 
   drawHealthBar() {
-    const myText = new Text({
-      text: Math.round(this.player1.health.currentHealth * 100) / 100 + ' L',
-      style: {
-        fontSize: 20,
-        fill: '#ffffff',
-      },
-      anchor: 0.5,
-      y: 830,
-      x: 100,
-    });
-
     this.healthBar.removeChildren();
     this.healthBar.clear();
     const barWidth = 200;
@@ -315,81 +304,72 @@ export class GameController {
     const x = 10;
     const y = 820;
 
+    const myText = new Text({
+      text: Math.round(this.player1.health.currentBlood) + ' ml',
+      style: {
+        fontSize: 20,
+        fill: '#ffffff',
+      },
+      anchor: 0.5,
+      y: y + barHeight / 2,
+      x: 100,
+    });
+
     // Background
     this.healthBar.drawRect(x, y, barWidth, barHeight);
     this.healthBar.beginFill(0x555555);
     this.healthBar.endFill();
 
-    const dotPercentage = Math.min(
-      this.player1.health.Dot / this.player1.health.maxHealth,
+    const bleedingPercentage = Math.min(
+      this.player1.health.bleedingRate / this.player1.health.maxBlood,
       1
     );
     const regenPercentage = Math.min(
-      this.player1.health.Regeneration / this.player1.health.maxHealth,
+      this.player1.health.regeneration / this.player1.health.maxBlood,
       1
     );
 
     // Health
     const healthPercentage =
-      this.player1.health.currentHealth / this.player1.health.maxHealth;
-    this.healthBar.beginFill(0xff0000);
-    this.healthBar.drawRect(x, y, barWidth * healthPercentage, barHeight);
-    this.healthBar.addChild(myText);
-    this.healthBar.endFill();
+      this.player1.health.currentBlood / this.player1.health.maxBlood;
+      this.healthBar.beginFill(0xff0000);
+      this.healthBar.drawRect(x, y, barWidth * healthPercentage, barHeight);
+      this.healthBar.addChild(myText);
+      this.healthBar.endFill();
 
-    // DOT effect
-    if (this.player1.health.Dot > 0) {
-      let dotRate = this.player1.health.DotReduceRate / 0.25;
-      let dotDamage = 0.25 / this.player1.health.DotDamageRate;
+    // Bleeding effect
+    if (this.player1.health.currentBlood > 0 && this.player1.health.bleedingRate > 0 && bleedingPercentage > regenPercentage) {
       this.healthBar.beginFill(0xffff00);
       this.healthBar.drawRect(
-        x + barWidth * (healthPercentage - dotPercentage / dotDamage / dotRate),
+        x + barWidth * (healthPercentage - bleedingPercentage),
         y,
-        barWidth * (dotPercentage / dotRate / dotDamage),
+        barWidth * bleedingPercentage,
         barHeight
       );
       this.healthBar.endFill();
     }
 
-    // Regeneration
+    // Regeneration effect
     if (
-      this.player1.health.Regeneration > 0 &&
-      this.player1.health.currentHealth < this.player1.health.maxHealth
+      this.player1.health.regeneration > 0 &&
+      this.player1.health.currentBlood < this.player1.health.maxBlood
     ) {
-      if (this.player1.health.Dot > 0) {
-        this.healthBar.beginFill(0x00ff00);
-        this.healthBar.drawRect(
-          x + barWidth * (healthPercentage - dotPercentage),
-          y,
-          barWidth * regenPercentage,
-          barHeight
-        );
-        this.healthBar.endFill();
-      } else if (
-        this.player1.health.currentHealth + this.player1.health.Regeneration >
-        this.player1.health.maxHealth
-      ) {
-        const regenerationToMaxPercentage =
-          (this.player1.health.maxHealth - this.player1.health.currentHealth) /
-          this.player1.health.maxHealth;
-        this.healthBar.beginFill(0x00ff00);
-        this.healthBar.drawRect(
-          x + barWidth * healthPercentage,
-          y,
-          barWidth * regenerationToMaxPercentage,
-          barHeight
-        );
-        this.healthBar.endFill();
-      } else {
-        this.healthBar.beginFill(0x00ff00);
-        this.healthBar.drawRect(
-          x + barWidth * healthPercentage,
-          y,
-          barWidth * regenPercentage,
-          barHeight
-        );
-        this.healthBar.endFill();
+      let regenBarX = x + barWidth * healthPercentage;
+      let regenBarWidth = barWidth * regenPercentage;
+      if (this.player1.health.bleedingRate > 0 && regenPercentage < bleedingPercentage) {
+        regenBarX = x + barWidth * (healthPercentage - bleedingPercentage);
       }
+      if (this.player1.health.currentBlood + this.player1.health.regeneration > this.player1.health.maxBlood) {
+        regenBarWidth = barWidth * ((this.player1.health.maxBlood - this.player1.health.currentBlood) / this.player1.health.maxBlood);
+      }
+      this.healthBar.beginFill(0x00ff00);
+      this.healthBar.drawRect(
+        regenBarX,
+        y,
+        regenBarWidth,
+        barHeight
+      );
+      this.healthBar.endFill();
     }
   }
 
@@ -859,10 +839,11 @@ export class GameController {
     console.log('Tile effect: ' + tileEffect);
     switch (tileEffect) {
       case 'glass_shards':
-        player.health.Damage(0, 1.0);
+        player.health.leftLeg.addBleeding(this.clampNumber(2, 0, 100))
+        player.health.rightLeg.addBleeding(this.clampNumber(2, 0, 100))
         return 'glass_shards';
       case 'fire':
-        player.health.Damage(0, 2.0);
+        // player.health.Damage(0, 2.0);
         return 'fire';
       case 'entrance':
         this.findRoom(player);
@@ -932,9 +913,9 @@ export class GameController {
             sprite._zIndex = 0;
             this.effectContainer.addChild(sprite);
             this.map.damageTile(tile[0], tile[1], strength / size);
-            if (this.player1.PosX == tile[0] && this.player1.PosY == tile[1]) {
-              this.player1.health.Damage(strength / size / 10);
-            }
+            // if (this.player1.PosX == tile[0] && this.player1.PosY == tile[1]) {
+            //   this.player1.health.Damage(strength / size / 10);
+            // }
             var firechance = this.generateRandomNumber(1, 10);
             if (firechance == 1) {
               this.ignite(tile[0], tile[1], strength, true);
@@ -992,6 +973,9 @@ export class GameController {
           break;
         case 'f':
           this.aimMode = !this.aimMode;
+          break;
+        case 'l':
+          this.player1.health.stopBleeding();
           break;
         default:
           return;

@@ -30,7 +30,7 @@ export class Player extends entity {
   }
 
   playerAction(energyCost: number) {
-    this.health.TriggerDot();
+    this.health.damage();
     this.energy.loseEnergy(energyCost);
   }
 }
