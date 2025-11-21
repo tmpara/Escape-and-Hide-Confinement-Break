@@ -8,7 +8,7 @@ import { Energy } from './energy/energy';
 import { Items, Weapon } from './items/items';
 import { World } from './world';
 import { WeaponFunctionality } from './items/weapon_functionality';
-import { Dummy, HeavyDummy, dummyConfig, heavyDummyConfig} from './enemyTypes'
+import { Dummy, HeavyDummy} from './enemyTypes'
 import { Inventory } from './inventory/inventory';
 
 export class GameController {
@@ -18,8 +18,8 @@ export class GameController {
   inventory!: Inventory;
   weaponFunctionality = new WeaponFunctionality();
   player1 = new Player({} as playerConfig);
-  dummy1 = new Dummy({} as dummyConfig);
-  heavyDummy1 = new HeavyDummy({} as heavyDummyConfig);
+  dummy1 = new Dummy()
+  heavyDummy1 = new HeavyDummy();
   world = new World();
   gridContainer = new Container();
   effectContainer = new Container();
@@ -204,6 +204,25 @@ export class GameController {
       if (!this.map.isValidTile(tx, ty)) continue;
       const t = this.map.tiles[tx][ty];
       if (t.entity?.collidable || t.entity) return true;
+    }
+
+    return false;
+  }
+
+  isLOSObstructed(x1: number, y1: number, x2: number, y2: number, ignoreStart: boolean = true, ignoreEnd: boolean = false): boolean {
+
+    const tiles = this.castRay(x1, y1, x2, y2, false);
+    if (tiles.length === 0) return false;
+
+    const startIndex = ignoreStart ? 1 : 0;
+    const endIndex = tiles.length - 1 - (ignoreEnd ? 1 : 0);
+    if (endIndex < startIndex) return false;
+
+    for (let i = startIndex; i <= endIndex; i++) {
+      const [tx, ty] = tiles[i];
+      if (!this.map.isValidTile(tx, ty)) continue;
+      const t = this.map.tiles[tx][ty];
+      if (t.entity?.blockLOS || t.entity) return true;
     }
 
     return false;
@@ -438,45 +457,29 @@ export class GameController {
           sprite.height = this.tileSize;
           sprite._zIndex = 1;
           this.gridContainer.addChild(sprite);
-          if (this.isLineObstructed(this.player1.posX, this.player1.posY, x, y,true,true)==true){
+          if (this.isLOSObstructed(this.player1.posX, this.player1.posY, x, y,true,true)==true){
             sprite.alpha = 0
           }
-          else if(this.isLineObstructed(this.player1.posX, this.player1.posY, x, y,true,true)==false){
+          else if(this.isLOSObstructed(this.player1.posX, this.player1.posY, x, y,true,true)==false){
             sprite.alpha = 1
           }
         }
 
-        // Draw entities (except player)
         const entity = this.map.tiles[x][y].entity;
         if (entity != null) {
-          if (!(entity instanceof Player)) {
-            let texture;
-            switch(true){
-              case entity instanceof Dummy:
-                if(!entity.isDead){
-                  texture = Assets.get('dummy.png');
-                } else{
-                  texture = Assets.get('dummyDead.png');
-                }
-                break;
-              case entity instanceof HeavyDummy:
-                if(!entity.isDead){
-                  texture = Assets.get('heavyDummy.png');
-                } else{
-                  texture = Assets.get('heavyDummyDead.png');
-                }
-            }
-            let sprite = new PIXI.Sprite(texture);
-            sprite.x = x * this.tileSize;
-            sprite.y = y * this.tileSize;
-            sprite.width = this.tileSize;
-            sprite.height = this.tileSize;
-            sprite._zIndex = 2;
-            this.entityContainer.addChild(sprite);
-            if (this.isLineObstructed(this.player1.posX, this.player1.posY, x, y,true,true)==true){
+          let texture = Assets.get((this.map.tiles[x][y].entity!.sprite).toString())
+          let sprite = new PIXI.Sprite(texture);
+          sprite.x = x * this.tileSize;
+          sprite.y = y * this.tileSize;
+          sprite.width = this.tileSize;
+          sprite.height = this.tileSize;
+          sprite._zIndex = 2;
+          this.entityContainer.addChild(sprite);
+          if (this.map.tiles[x][y].entity?.hiddenOutsideLOS){
+            if (this.isLOSObstructed(this.player1.posX, this.player1.posY, x, y,true,true)==true){
               sprite.alpha = 0
             }
-            else if(this.isLineObstructed(this.player1.posX, this.player1.posY, x, y,true,true)==false){
+            else if(this.isLOSObstructed(this.player1.posX, this.player1.posY, x, y,true,true)==false){
               sprite.alpha = 1
             }
           }
@@ -497,10 +500,10 @@ export class GameController {
           fireSprite.height = this.tileSize
           fireSprite._zIndex = 5
           this.gridContainer.addChild(fireSprite);
-          if (this.isLineObstructed(this.player1.posX, this.player1.posY, x, y,true,true)==true){
+          if (this.isLOSObstructed(this.player1.posX, this.player1.posY, x, y,true,true)==true){
            fireSprite.alpha = 0
           }
-          else if(this.isLineObstructed(this.player1.posX, this.player1.posY, x, y,true,true)==false){
+          else if(this.isLOSObstructed(this.player1.posX, this.player1.posY, x, y,true,true)==false){
             fireSprite.alpha = 1
           }
         }
@@ -706,7 +709,19 @@ export class GameController {
   }
 
   checkUnderPlayer(player: Player) {
-    return '';
+    let tileEffect = this.map.tiles[player.posX][player.posY].effect;
+   // console.log('Tile effect: ' + tileEffect);
+    switch (tileEffect) {
+      case 'entrance':
+        this.findRoom(player);
+        return "entrance"
+      default:
+        if (tileEffect?.includes("entrance")){
+          this.findRoom(player);
+          return "entrance"
+        }
+      }
+      return ''
   }
 
   updateAllTiles() {

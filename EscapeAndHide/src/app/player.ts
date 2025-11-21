@@ -3,17 +3,6 @@ import { Entity } from './entity';
 import { Health } from './health/health';
 import { Energy } from './energy/energy';
 
-export type playerConfig = {
-  id: number,
-  name?: string,
-  sprite?: string,
-  posX?: number,
-  posY?: number,
-  collidable?: boolean,
-  damageable?: boolean,
-  health?: number,
-}
-
 export class Player extends Entity {
   id: number;
   renderX: number;
@@ -29,8 +18,10 @@ export class Player extends Entity {
       ,posY
       ,collidable
       ,damageable
-      ,health}=t
-    super(name ?? "Player", sprite ?? "placeholder.png", posX ?? 0, posY ?? 0, collidable ?? false, damageable ?? false, health ?? 100);
+      ,health
+      ,hiddenOutsideLOS
+      ,blockLOS}=t
+    super(name ?? "Player", sprite ?? "placeholder.png", posX ?? 0, posY ?? 0, collidable ?? false, damageable ?? false, health ?? 100, hiddenOutsideLOS ?? true, blockLOS ?? false);
     this.id = id;
     this.renderX = 0;
     this.renderY = 0;

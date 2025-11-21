@@ -1,12 +1,9 @@
-import { Health } from './health/health';
-import { Energy } from './energy/energy';
 import { Player } from './player';
 import { tile } from './tile';
 import { Item } from './items/item';
 import * as PIXI from 'pixi.js';
 import { Assets } from 'pixi.js';
-import { Dummy, HeavyDummy } from './enemyTypes';
-import { Entity } from './entity';
+import { Wall1} from './entities'
 export class GameGrid {
   width: number;
   height: number;
@@ -33,7 +30,8 @@ export class GameGrid {
         if(i==0 || j==0 || i==map.length-1 || j==map[i].length-1){
           this.tiles[i][j] = this.getTileData("wall_corner")
         }
-        if(map[i][j] != "floor_basic"){
+        
+        if(map[i][j] != ""){
           this.tiles[i][j] = this.getTileData(map[i][j])
         }
       }
@@ -77,7 +75,8 @@ export class GameGrid {
   }
 
   loadPlayer(x: number, y: number, player: Player) {
-
+    player.posX = x
+    player.posY = y
   }
 
   loadEnemy(x: number, y: number, entity: any) {
@@ -95,43 +94,49 @@ export class GameGrid {
   getTileData(name: String){
 
     let tileName = ""
-    let flammable = false
     let sprite = ""
+    let effect = ""
+    let flammable = false
 
     switch (name){
 
     case 'empty':
       tileName="door"
       sprite=""
+      effect = ""
       flammable=true
       break;
     
     case 'wall_corner':
       tileName="corner wall"
       sprite="placeholder.png"
+      effect = ""
       flammable=false
       break;
 
     case 'wall_basic':
       tileName="basic wall"
       sprite="placeholder.png"
+      effect = ""
       flammable=true
       break;
       
     case 'ash':
       tileName="ash"
+      effect = ""
       sprite="ash.png"
       flammable=false
       break;
 
     case 'room_entrance':
       tileName="door"
+      effect = "entrance"
       sprite="door1.png"
       flammable=false
       break;  
     }
 
-    let info = new tile(tileName,sprite,flammable,0,null,null);
+    let info = new tile(tileName,sprite,effect,flammable,0,null,null);
     return info;
   }
 

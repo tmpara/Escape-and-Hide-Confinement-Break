@@ -2,66 +2,30 @@ import { Entity } from './entity';
 import { Item } from './items/item';
 import { Items } from './items/items';
 
-export type dummyConfig = {
-  name?: string,
-  sprite?: string,
-  posX: number,
-  posY: number,
-  renderX?: number,
-  renderY?: number,
-  collidable?: boolean,
-  damageable?: boolean,
-  health?: number,
-}
-
 export class Dummy extends Entity {
-  renderX: number;
-  renderY: number;
-  isDead: boolean = false;
-  lootTable: Item[] = [new Items().gun, new Items().bandage];
-  constructor(t:dummyConfig) 
-    {
-      const {name
-        ,sprite
-        ,posX
-        ,posY
-        ,collidable
-        ,damageable
-        ,health}=t
-      super(name ?? "Dummy", sprite ?? "dummy.png", posX ?? 0, posY ?? 0, collidable ?? false, damageable ?? false, health ?? 100);
-      this.renderX = 0;
-      this.renderY = 0;
-    }
-}
-
-export type heavyDummyConfig = {
-  name?: string,
-  sprite?: string,
-  posX: number,
-  posY: number,
-  renderX?: number,
-  renderY?: number,
-  collidable?: boolean,
-  damageable?: boolean,
-  health?: number,
+  override name = "dummy";
+  override sprite = "dummy.png";
+  override posX = 0;
+  override posY = 0;
+  override collidable = true;
+  override damageable = true;
+  override health = 100;
+  override hiddenOutsideLOS = true;
+  override blockLOS = false;
+  isDead = false;
+  lootTable = [new Items().gun, new Items().bandage];
 }
 
 export class HeavyDummy extends Entity {
-  renderX: number;
-  renderY: number;
-  isDead: boolean = false;
-  lootTable: Item[] = [new Items().gun, new Items().bandage];
-  constructor(t:heavyDummyConfig) 
-    {
-      const {name
-        ,sprite
-        ,posX
-        ,posY
-        ,collidable
-        ,damageable
-        ,health}=t
-      super(name ?? "Heavy Dummy", sprite ?? "heavyDummy.png", posX ?? 0, posY ?? 0, collidable ?? false, damageable ?? false, health ?? 100);
-      this.renderX = 0;
-      this.renderY = 0;
-    }
+  override name = "heavy dummy";
+  override sprite = "heavyDummy.png";
+  override posX = 0;
+  override posY = 0;
+  override collidable = true;
+  override damageable = true;
+  override health = 200;
+  override hiddenOutsideLOS = true;
+  override blockLOS = false;
+  isDead = false;
+  lootTable = [new Items().gun, new Items().bandage];
 }
