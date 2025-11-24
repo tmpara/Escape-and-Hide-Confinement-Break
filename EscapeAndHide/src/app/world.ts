@@ -8,6 +8,7 @@ export class World {
     height: number;
     data: RoomsData = new RoomsData();
     
+    
     constructor() {
         this.rooms = new Array();
         this.roomsIDs = new Array();
@@ -16,16 +17,29 @@ export class World {
     }
 
     CreateWorld(){
-        
+         // ensure arrays exist for every column
         for(let x=0;x<this.width;x++){
             this.rooms[x] = new Array();
             this.roomsIDs[x] = new Array();
-            for(let y=0;y<this.height;y++){
+        }
 
+        // choose a single starting room (center by default)
+        const startX = 5;
+        const startY = 5;
+        this.roomsIDs[startX][startY] = "startingRoom";
+        this.loadRoomWithId(startX, startY, "startingRoom");
+
+        for(let x=0;x<this.width;x++){
+            for(let y=0;y<this.height;y++){
                 
-                
+                if (x === startX && y === startY) continue;
+                 
                 let leftEntranceRequired = false;
                 let upEntranceRequired = false;
+
+                let rightEntranceRequired = false;
+                let downEntranceRequired = false;
+
 
 
                 //let roomID = this.data.roomList[Math.floor(Math.random()*this.data.roomList.length)];
@@ -49,21 +63,31 @@ export class World {
                     }
                 }
 
-                this.setRoomByEntrance(leftEntranceRequired, upEntranceRequired, x, y);
+                if (x > 0 && this.roomsIDs[x+1] && this.roomsIDs[x+1][y]) {
+                    const neighborId = this.roomsIDs[x+1][y] as keyof RoomsData;
+                    if (this.getRoomEntrances(neighborId).includes("left")) {
+                        rightEntranceRequired = true;
+                        console.log("right entrance required at "+x+","+y);
+                    }
+                }
+
+                if (y > 0 && this.roomsIDs[x] && this.roomsIDs[x][y+1]) {
+                    const neighborId = this.roomsIDs[x][y+1] as keyof RoomsData;
+                    if (this.getRoomEntrances(neighborId).includes("up")) {
+                        downEntranceRequired = true;
+                        console.log("down entrance required at "+x+","+y);
+                    }
+                }
+
+              
 
                 
-                
-                
-                
-                
               
-              
+                
+                this.setRoomByEntrance(leftEntranceRequired, upEntranceRequired, rightEntranceRequired, downEntranceRequired, x, y);
             }
         }
-        this.loadRoomWithId(5,5,"startingRoom");
-        this.roomsIDs[5][5] = "startingRoom";
-        this.loadRoomWithId(5,6,"testRoomUp");
-        this.roomsIDs[5][6] = "testRoomUp";
+      
        console.log("World created:");
        console.log(this.roomsIDs);
     }
@@ -80,46 +104,17 @@ export class World {
       return true;
     }
   }
+  
 
-    setRoomByEntrance(leftEntranceRequired: boolean, upEntranceRequired: boolean, x:number, y:number){
+setRoomByEntrance(leftEntranceRequired: boolean, upEntranceRequired: boolean, rightEntranceRequired:boolean, downEntranceRequired:boolean, x:number, y:number){
         let roomID = this.data.roomList[Math.floor(Math.random()*this.data.roomList.length)];
+      
+        while(this.getRoomEntrances(roomID as keyof RoomsData).includes("up")!=upEntranceRequired || this.getRoomEntrances(roomID as keyof RoomsData).includes("left") != leftEntranceRequired  ){
+                roomID = this.data.roomList[Math.floor(Math.random()*this.data.roomList.length)];
+                this.roomsIDs[x][y] = roomID;
+            }
         
-        if  (leftEntranceRequired && upEntranceRequired){
-            console.log("left and up entrance required at "+x+","+y);
-            //debugger;
-            while(this.getRoomEntrances(roomID as keyof RoomsData).includes("left")==false || this.getRoomEntrances(roomID as keyof RoomsData).includes("up")==false){
-                roomID = this.data.roomList[Math.floor(Math.random()*this.data.roomList.length)];
-                this.roomsIDs[x][y] = roomID;
-                console.log("Searching for room with left and up entrance");
-            }
-            
-        } else if (leftEntranceRequired && !upEntranceRequired){
-            console.log("left entrance required and up is forbidden at "+x+","+y);
-           // debugger;
-            while(this.getRoomEntrances(roomID as keyof RoomsData).includes("left")==false || this.getRoomEntrances(roomID as keyof RoomsData).includes("up")==true){
-                roomID = this.data.roomList[Math.floor(Math.random()*this.data.roomList.length)];
-                this.roomsIDs[x][y] = roomID;
-                console.log("Searching for room with left entrance and no up entrance");
-            }
-        } else if (!leftEntranceRequired && upEntranceRequired){
-            //debugger;
-            console.log("up entrance required and left is forbidden at "+x+","+y);
-            while(this.getRoomEntrances(roomID as keyof RoomsData).includes("up")==false || this.getRoomEntrances(roomID as keyof RoomsData).includes("left")==true){
-                roomID = this.data.roomList[Math.floor(Math.random()*this.data.roomList.length)];
-                this.roomsIDs[x][y] = roomID;
-                console.log("Searching for room with up entrance and no left entrance");
-            }
-        } else {
-            //debugger;
-            console.log("both left and up entrance are forbidden at "+x+","+y);
-            while(this.getRoomEntrances(roomID as keyof RoomsData).includes("up")==true || this.getRoomEntrances(roomID as keyof RoomsData).includes("left")==true){
-                roomID = this.data.roomList[Math.floor(Math.random()*this.data.roomList.length)];
-                this.roomsIDs[x][y] = roomID;
-                console.log("Searching for room with no left or up entrance");
-            }
-        }
         
-        console.log("chose entrances: "+ this.getRoomEntrances(roomID as keyof RoomsData) + " for room at "+x+","+y);
         this.roomsIDs[x][y] = roomID;
         this.loadRoomWithId(x,y,roomID as keyof RoomsData);
 

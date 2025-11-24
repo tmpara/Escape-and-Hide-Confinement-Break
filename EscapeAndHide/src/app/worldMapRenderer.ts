@@ -23,7 +23,7 @@ export class WorldMapRenderer {
     this.graphics.clear();
   }
 
-  draw() {
+draw() {
     this.graphics.clear();
 
     const w = this.world.width;
@@ -34,6 +34,7 @@ export class WorldMapRenderer {
     this.graphics.drawRect(0, 0, w * this.cellSize, h * this.cellSize);
     this.graphics.endFill();
 
+    // draw room cells
     for (let x = 0; x < w; x++) {
       for (let y = 0; y < h; y++) {
         const px = x * this.cellSize + this.padding;
@@ -49,102 +50,57 @@ export class WorldMapRenderer {
         this.graphics.lineStyle(1, 0x222222, 1);
         this.graphics.drawRect(px, py, size, size);
         this.graphics.endFill();
+      }
+    }
 
-        if (!hasRoom) continue;
+    // draw connections for every room cell (each connection drawn once)
+    this.graphics.lineStyle(Math.max(2, Math.floor(this.cellSize / 8)), 0x66ff66, 1);
+    for (let x = 0; x < w; x++) {
+      for (let y = 0; y < h; y++) {
+        const roomId = this.world.roomsIDs[x] ? this.world.roomsIDs[x][y] : undefined;
+        if (!roomId) continue;
 
-        // draw entrance markers based on the room's entrance list
-        const entrances = this.world.getRoomEntrances(roomId as any) as string[];
-        const markLen = Math.floor(size * 0.28);
-        const cx = px + size / 2;
-        const cy = py + size / 2;
+        const entrances = (this.world.getRoomEntrances(roomId as any) as string[]) || [];
+        // center point of this minimap cell
+        const cx = x * this.cellSize + this.cellSize / 2;
+        const cy = y * this.cellSize + this.cellSize / 2;
 
-        this.graphics.lineStyle(2, 0x44cc44, 1);
+        for (const dir of entrances) {
+          let nx = x;
+          let ny = y;
+          if (dir === 'left') nx = x - 1;
+          else if (dir === 'right') nx = x + 1;
+          else if (dir === 'up') ny = y - 1;
+          else if (dir === 'down') ny = y + 1;
 
-        if (entrances.includes('up')) {
-          this.graphics.moveTo(cx - markLen / 2, py);
-          this.graphics.lineTo(cx + markLen / 2, py);
-        }
-        if (entrances.includes('down')) {
-          this.graphics.moveTo(cx - markLen / 2, py + size);
-          this.graphics.lineTo(cx + markLen / 2, py + size);
-        }
-        if (entrances.includes('left')) {
-          this.graphics.moveTo(px, cy - markLen / 2);
-          this.graphics.lineTo(px, cy + markLen / 2);
-        }
-        if (entrances.includes('right')) {
-          this.graphics.moveTo(px + size, cy - markLen / 2);
-          this.graphics.lineTo(px + size, cy + markLen / 2);
-        }
-        // draw connectors to neighbours when both rooms have matching entrances
-        this.graphics.lineStyle(Math.max(2, Math.floor(size * 0.18)), 0x44cc44, 1);
-        // right connector (draw only if neighbour exists and has left entrance)
-        if (x < w - 1) {
-          const rightId = this.world.roomsIDs[x + 1] ? this.world.roomsIDs[x + 1][y] : undefined;
-          if (rightId) {
-            const rightEntr = this.world.getRoomEntrances(rightId as any) as string[];
-            if (rightEntr.includes('left')) {
-              const x1 = px + size; // current right edge (inner)
-              const x2 = (x + 1) * this.cellSize + this.padding; // neighbour left edge (inner)
-              this.graphics.moveTo(x1, cy);
-              this.graphics.lineTo(x2, cy);
-            }
-          }
-        }
-        // down connector (draw only if neighbour exists and has up entrance)
-        if (y < h - 1) {
-          const downId = this.world.roomsIDs[x] ? this.world.roomsIDs[x][y + 1] : undefined;
-          if (downId) {
-            const downEntr = this.world.getRoomEntrances(downId as any) as string[];
-            if (downEntr.includes('up')) {
-              const y1 = py + size; // current bottom edge
-              const y2 = (y + 1) * this.cellSize + this.padding; // neighbour top edge
-              this.graphics.moveTo(cx, y1);
-              this.graphics.lineTo(cx, y2);
-            }
-          }
-        }
-        // up connector (draw only if neighbour exists and has down entrance)
-        if (y > 0) {
-          const upId = this.world.roomsIDs[x] ? this.world.roomsIDs[x][y - 1] : undefined;    
-          if (upId) {
-            const upEntr = this.world.getRoomEntrances(upId as any) as string[];
-            if (upEntr.includes('down')) {
-              const y1 = py;
-              const y2 = (y - 1) * this.cellSize + this.padding + size;
-              this.graphics.moveTo(cx, y1);
-              this.graphics.lineTo(cx, y2);
-            }
-          }
-        }
-        // left connector (draw only if neighbour exists and has right entrance)
-        if (x > 0) {
-          const leftId = this.world.roomsIDs[x - 1] ? this.world.roomsIDs[x - 1][y] : undefined;  
-          if (leftId) {
-            const leftEntr = this.world.getRoomEntrances(leftId as any) as string[];
-            if (leftEntr.includes('right')) {
-              const x1 = px; // current left edge
-              const x2 = (x - 1) * this.cellSize + this.padding + size;
-              this.graphics.moveTo(x1, cy);
-              this.graphics.lineTo(x2, cy);
-            } 
-          }
-        }
-        
-        // draw player marker if present
-        if (this.playerX === x && this.playerY === y) {
-          const pr = Math.max(2, Math.floor(size * 0.22));
-          this.graphics.beginFill(0xff3333, 1);
-          this.graphics.drawCircle(cx, cy, pr);
-          this.graphics.endFill();
-          // small white center
-          this.graphics.beginFill(0xffffff, 1);
-          this.graphics.drawCircle(cx, cy, Math.max(1, Math.floor(pr / 3)));
-          this.graphics.endFill();
+          if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
+          const neighborId = this.world.roomsIDs[nx] ? this.world.roomsIDs[nx][ny] : undefined;
+          if (!neighborId) continue;
+
+          // draw each connection only once (skip if neighbor is before current in iteration)
+          if (nx < x || (nx === x && ny < y)) continue;
+
+          const ncx = nx * this.cellSize + this.cellSize / 2;
+          const ncy = ny * this.cellSize + this.cellSize / 2;
+
+          this.graphics.moveTo(cx, cy);
+          this.graphics.lineTo(ncx, ncy);
         }
       }
     }
+
+    // draw player marker if present
+    if (this.playerX !== undefined && this.playerY !== undefined) {
+      const px = this.playerX * this.cellSize + this.padding;
+      const py = this.playerY * this.cellSize + this.padding;
+      const size = this.cellSize - this.padding * 2;
+      this.graphics.beginFill(0x0000ff, 1);
+      this.graphics.drawRect(px + size / 4, py + size / 4, size / 2, size / 2);
+      this.graphics.endFill();
+    }
   }
+    
+  
 
   // redraw (alias)
   update() {

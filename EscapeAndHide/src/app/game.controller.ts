@@ -12,6 +12,7 @@ import { WorldMapRenderer } from './worldMapRenderer';
 import { WeaponFunctionality } from './items/weapon_functionality';
 import { Dummy } from './dummy';
 
+
 export class GameController {
   app!: Application;
   map!: GameGrid;
@@ -84,6 +85,25 @@ export class GameController {
   this.app.stage.addChild(this.mapContainer);
   this.mapRenderer = new WorldMapRenderer(this.mapContainer, this.world, mapCellSize, 2);
   this.mapRenderer.draw();
+
+    // make minimap interactive so clicks teleport
+  this.mapContainer.interactive = true;
+  // ensure the container has a hit area that covers the full minimap
+  this.mapContainer.hitArea = new PIXI.Rectangle(0, 0, this.world.width * this.mapRenderer.cellSize, this.world.height * this.mapRenderer.cellSize);
+  (this.mapContainer as any).cursor = 'pointer';
+  this.mapContainer.on('pointerdown', (e: PIXI.FederatedPointerEvent) => {
+  // convert global pointer to container-local coordinates
+    const localPoint = this.mapContainer!.toLocal(new PIXI.Point(e.globalX, e.globalY));
+    const cellX = Math.floor(localPoint.x / this.mapRenderer!.cellSize);
+    const cellY = Math.floor(localPoint.y / this.mapRenderer!.cellSize);
+    if (cellX < 0 || cellY < 0 || cellX >= this.world.width || cellY >= this.world.height) return;
+    // require a room id at that position
+    const id = this.world.roomsIDs[cellX] ? this.world.roomsIDs[cellX][cellY] : undefined;
+    if (!id) return;
+    // teleport the player to the clicked room
+    this.teleportToRoom(cellX, cellY);
+    console.log("teleported player to room:" + this.world.roomsIDs[cellX][cellY]);
+  });
 
     // Create map and player
     
@@ -467,6 +487,7 @@ export class GameController {
     }
  }
 findRoom(player: Player){
+ 
     let playerPosX = player.PosX;
     let playerPosY = player.PosY;
 
@@ -479,7 +500,9 @@ findRoom(player: Player){
         this.map.tiles[playerPosX][playerPosY].entity = null;
         this.map = this.world.rooms[this.playerWorldX-1][this.playerWorldY];
         this.playerWorldX -= 1;
-        this.teleportPlayer(this.player1, this.findEnntrance("right")!.x, this.findEnntrance("right")!.y);
+        let x = this.findEnntrance("right")!.x
+        let y = this.findEnntrance("right")!.y
+        this.teleportPlayer(this.player1, x, y);
         console.log("Moved to left room");
         console.log("World coordinates: " + this.playerWorldX + ", " + this.playerWorldY);
       }
@@ -490,7 +513,9 @@ findRoom(player: Player){
         this.map.tiles[playerPosX][playerPosY].entity = null;
         this.map = this.world.rooms[this.playerWorldX+1][this.playerWorldY];
         this.playerWorldX += 1;
-        this.teleportPlayer(this.player1, this.findEnntrance("left")!.x, this.findEnntrance("left")!.y);
+        let x = this.findEnntrance("left")!.x
+        let y = this.findEnntrance("left")!.y
+        this.teleportPlayer(this.player1, x, y);
         console.log("Moved to right room");
         console.log("World coordinates: " + this.playerWorldX + ", " + this.playerWorldY);
       }
@@ -501,19 +526,24 @@ findRoom(player: Player){
         this.map.tiles[playerPosX][playerPosY].entity = null;
         this.map = this.world.rooms[this.playerWorldX][this.playerWorldY-1];
         this.playerWorldY -= 1;
-        this.teleportPlayer(this.player1, this.findEnntrance("down")!.x, this.findEnntrance("down")!.y);
-        console.log("Moved to down room");
+        let x = this.findEnntrance("down")!.x
+        let y = this.findEnntrance("down")!.y
+        this.teleportPlayer(this.player1, x, y);
+        console.log("Moved to up room");
         console.log("World coordinates: " + this.playerWorldX + ", " + this.playerWorldY);
       }
     }
     else if(playerPosY == mapY-1 && playerPosX < mapX){
       //down
       if (this.playerWorldY + 1  <= 10){
+        debugger
         this.map.tiles[playerPosX][playerPosY].entity = null;
         this.map = this.world.rooms[this.playerWorldX][this.playerWorldY+1];
         this.playerWorldY += 1;
-        this.teleportPlayer(this.player1, this.findEnntrance("up")!.x, this.findEnntrance("up")!.y);
-        console.log("Moved to up room");
+        let x = this.findEnntrance("up")!.x
+        let y = this.findEnntrance("up")!.y
+        this.teleportPlayer(this.player1, x, y);
+        console.log("Moved to down room");
         console.log("World coordinates: " + this.playerWorldX + ", " + this.playerWorldY);
       }
     }
@@ -703,5 +733,42 @@ findRoom(player: Player){
 
   delay(ms: number) {
     return new Promise( resolve => setTimeout(resolve, ms) );
+  }
+
+   teleportToRoom(worldX: number, worldY: number) {
+    // ensure target room exists
+    if (!this.world.rooms[worldX] || !this.world.rooms[worldX][worldY]) return;
+
+    // clear player from current room (if within bounds)
+    if (this.map && this.player1.PosX >= 0 && this.player1.PosY >= 0 && this.player1.PosX < this.map.width && this.player1.PosY < this.map.height) {
+      this.map.tiles[this.player1.PosX][this.player1.PosY].entity = null;
+    }
+
+    // switch to target room
+    this.map = this.world.rooms[worldX][worldY];
+    this.playerWorldX = worldX;
+    this.playerWorldY = worldY;
+
+    // choose a safe destination (center)
+    const targetX = Math.floor(this.map.width / 2);
+    const targetY = Math.floor(this.map.height / 2);
+
+    // set player position in new room and mark entity
+    this.player1.PosX = targetX;
+    this.player1.PosY = targetY;
+    this.map.tiles[targetX][targetY].entity = this.player1;
+
+    // animate render position to new tile
+    this.animatePlayerMove(this.player1, targetX, targetY);
+
+    // update minimap marker and UI
+    if (this.mapRenderer) {
+      this.mapRenderer.setPlayer(this.playerWorldX, this.playerWorldY);
+      this.mapRenderer.update();
+    }
+
+    // run tile checks for the new room
+    this.checkUnderPlayer(this.player1);
+    this.checkTileForItem(this.player1);
   }
 }

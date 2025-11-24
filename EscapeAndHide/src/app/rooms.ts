@@ -11,6 +11,12 @@ export class RoomsData {
     cornerRoomInverted: Room;
     cornerRoomMirrored: Room;
     cornerRoomInvertedMirrored: Room;
+    TRoom: Room;
+    TRoomInverted: Room;
+    DeadEndRoomUp: Room;
+    DeadEndRoomDown: Room;
+    DeadEndRoomLeft: Room
+    DeadEndRoomRight: Room;
     
     roomList: string[] = [
         "startingRoom",
@@ -21,8 +27,19 @@ export class RoomsData {
          "cornerRoom",
         "cornerRoomInverted",
         "cornerRoomMirrored",
-        "cornerRoomInvertedMirrored"
+        "cornerRoomInvertedMirrored",
+        "TRoom",
+        "TRoomInverted",
+      
+
     ]
+
+    deadEndRooms: string[] = [
+        "DeadEndRoomUp",
+        "DeadEndRoomDown",
+        "DeadEndRoomLeft",
+        "DeadEndRoomRight"
+    ];
 
     constructor() {
         this.startingRoom = new Room(9, 9, ["up", "left", "right", "down"], []);
@@ -43,7 +60,7 @@ export class RoomsData {
         this.crossHall1 = new Room(15, 15, ["up", "left", "right", "down"], []);
         this.crossHall1.layout = Array.from({ length: this.crossHall1.height }, () => Array.from({ length: this.crossHall1.width }, () => "floor_basic"));
         this.crossHall1.layout[0][7] = "room_entrance_left";
-        this.crossHall1.layout[7][0] = "room_entrance";
+        this.crossHall1.layout[7][0] = "room_entrance_up";
         this.crossHall1.layout[7][14] = "room_entrance_down";
         this.crossHall1.layout[14][7] = "room_entrance_right";
 
@@ -76,6 +93,34 @@ export class RoomsData {
         this.cornerRoomInvertedMirrored.layout = Array.from({ length: this.cornerRoomInvertedMirrored.height }, () => Array.from({ length: this.cornerRoomInvertedMirrored.width }, () => "floor_basic"));
         this.cornerRoomInvertedMirrored.layout[3][6] = "room_entrance_down";
         this.cornerRoomInvertedMirrored.layout[0][3] = "room_entrance_left";
+
+        this.TRoom = new Room(7, 7, ["left", "right", "down"], []);
+        this.TRoom.layout = Array.from({ length: this.TRoom.height }, () => Array.from({ length: this.TRoom.width }, () => "floor_basic"));
+        this.TRoom.layout[0][3] = "room_entrance_left";
+        this.TRoom.layout[3][6] = "room_entrance_down";
+        this.TRoom.layout[6][3] = "room_entrance_right";
+
+        this.TRoomInverted = new Room(7, 7, ["left", "right", "up"], []);
+        this.TRoomInverted.layout = Array.from({ length: this.TRoomInverted.height }, () => Array.from({ length: this.TRoomInverted.width }, () => "floor_basic"));
+        this.TRoomInverted.layout[0][3] = "room_entrance_left";
+        this.TRoomInverted.layout[3][0] = "room_entrance_up";
+        this.TRoomInverted.layout[6][3] = "room_entrance_right";
+
+        this.DeadEndRoomUp = new Room(5, 5, ["up"], []);
+        this.DeadEndRoomUp.layout = Array.from({ length: this.DeadEndRoomUp.height }, () => Array.from({ length: this.DeadEndRoomUp.width }, () => "floor_basic"));
+        this.DeadEndRoomUp.layout[2][0] = "room_entrance_up";
+
+        this.DeadEndRoomDown = new Room(5, 5, ["down"], []);
+        this.DeadEndRoomDown.layout = Array.from({ length: this.DeadEndRoomDown.height }, () => Array.from({ length: this.DeadEndRoomDown.width }, () => "floor_basic"));
+        this.DeadEndRoomDown.layout[2][4] = "room_entrance_down";
+
+        this.DeadEndRoomLeft = new Room(5, 5, ["left"], []);
+        this.DeadEndRoomLeft.layout = Array.from({ length: this.DeadEndRoomLeft.height }, () => Array.from({ length: this.DeadEndRoomLeft.width }, () => "floor_basic"));
+        this.DeadEndRoomLeft.layout[0][2] = "room_entrance_left";
+
+        this.DeadEndRoomRight = new Room(5, 5, ["right"], []);
+        this.DeadEndRoomRight.layout = Array.from({ length: this.DeadEndRoomRight.height }, () => Array.from({ length: this.DeadEndRoomRight.width }, () => "floor_basic"));
+        this.DeadEndRoomRight.layout[4][2] = "room_entrance_right";
     }
  
     
