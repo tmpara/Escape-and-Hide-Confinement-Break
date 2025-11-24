@@ -1,29 +1,32 @@
-import { Application, Graphics, Container } from 'pixi.js';
-import { GameGrid } from './grid';
-import { Player, playerConfig } from './player';
-import { Health } from './health/health';
-import { Text, Assets } from 'pixi.js';
 import * as PIXI from 'pixi.js';
-import { Energy } from './energy/energy';
-import { Items, Weapon } from './items/items';
+import { Application, Graphics, Container } from 'pixi.js';
+import { Text, Assets } from 'pixi.js';
+import { GameGrid } from './grid';
 import { World } from './world';
+import { Player } from './player';
+import { Health } from './health/health';
+import { Energy } from './energy/energy';
+import { Item } from './items/item';
+import { Items, Weapon } from './items/items';
 import { WeaponFunctionality } from './items/weapon_functionality';
-import { Dummy, HeavyDummy} from './enemyTypes'
 import { Inventory } from './inventory/inventory';
+import { Dummy, HeavyDummy} from './enemyTypes'
+import { ExplosiveBarrel} from './entities'
 
 export class GameController {
+  static current: GameController | null = null;
   app!: Application;
   map!: GameGrid;
   items = new Items();
   inventory!: Inventory;
   weaponFunctionality = new WeaponFunctionality();
-  player1 = new Player({} as playerConfig);
+  player1 = new Player();
   dummy1 = new Dummy()
   heavyDummy1 = new HeavyDummy();
+  barrel = new ExplosiveBarrel();
   world = new World();
-  gridContainer = new Container();
+  spriteContainer = new Container();
   effectContainer = new Container();
-  entityContainer = new Container();
   pickUpPopUp = new Container();
   playerSprite = new Graphics();
   healthBar = new Graphics();
@@ -36,6 +39,8 @@ export class GameController {
   constructor() {}
 
   async init(container: HTMLDivElement): Promise<void> {
+    // expose the running instance so entities can access controller methods
+    GameController.current = this;
     await Assets.load('explosion.png');
     await Assets.load('fire_legacy.png');
     await Assets.load('fire_large.png');
@@ -53,6 +58,7 @@ export class GameController {
     await Assets.load('medkit.png');
     await Assets.load('bandage.png');
     await Assets.load('glass_shards.png');
+    await Assets.load('explosiveBarrel.png');
 
     this.world.CreateWorld();
     // Create map and player
@@ -75,21 +81,21 @@ export class GameController {
 
     // Create map and player
 
-    this.map.loadPlayer(1, 1, this.player1);
-    this.map.loadEnemy(5, 2, this.dummy1);
-    this.map.loadEnemy(5, 3, this.heavyDummy1);
+    this.loadPlayer(1, 1, this.player1);
+    this.loadEntity(5, 2, this.dummy1);
+    this.loadEntity(5, 3, this.heavyDummy1);
+    this.loadEntity(6, 2, this.barrel);
 
-    this.map.SpawnItem(1, 3, new Items().gun);
-    this.map.SpawnItem(2, 3, new Items().bigGun);
+    this.SpawnItem(1, 3, new Items().gun);
+    this.SpawnItem(2, 3, new Items().bigGun);
 
     // Draw grid, player
     this.drawGrid();
     this.drawPlayer();
 
     // Add containers to stage
-    this.app.stage.addChild(this.gridContainer);
+    this.app.stage.addChild(this.spriteContainer);
     this.app.stage.addChild(this.effectContainer);
-    this.app.stage.addChild(this.entityContainer);
     this.app.stage.addChild(this.playerSprite);
     this.app.stage.addChild(this.healthBar);
     this.app.stage.addChild(this.energyBar);
@@ -122,7 +128,7 @@ export class GameController {
   async generateRoom(x: number, y: number) {
     this.map = new GameGrid(x, y);
     this.map.createEmptyMap();
-    this.map.loadPlayer(1, 1, this.player1);
+    this.loadPlayer(1, 1, this.player1);
   }
 
   generateRandomNumber(min: number, max: number) {
@@ -222,7 +228,7 @@ export class GameController {
       const [tx, ty] = tiles[i];
       if (!this.map.isValidTile(tx, ty)) continue;
       const t = this.map.tiles[tx][ty];
-      if (t.entity?.blockLOS || t.entity) return true;
+      if (t.entity?.blockLOS==true) return true;
     }
 
     return false;
@@ -413,74 +419,73 @@ export class GameController {
   }
 
   drawGrid() {
-    this.gridContainer.removeChildren();
+    this.spriteContainer.removeChildren();
     this.tile.clear();
-    this.entityContainer.removeChildren();
 
     for (let x = 0; x < this.map.width; x++) {
       for (let y = 0; y < this.map.height; y++) {
         // Draw base tile sprite
-        if (this.map.tiles[x][y].sprite != '') {
-          let texture = Assets.get(this.map.tiles[x][y].sprite.toString());
-          let sprite = new PIXI.Sprite(texture);
-          sprite.x = x * this.tileSize;
-          sprite.y = y * this.tileSize;
-          sprite.width = this.tileSize;
-          sprite.height = this.tileSize;
-          sprite._zIndex = 2;
-          this.entityContainer.addChild(sprite);
+        if (this.map.tiles[x][y].sprite != "") {
+          let tileTexture = Assets.get(this.map.tiles[x][y].sprite.toString());
+          let tileSprite = new PIXI.Sprite(tileTexture);
+          tileSprite.x = x * this.tileSize;
+          tileSprite.y = y * this.tileSize;
+          tileSprite.width = this.tileSize;
+          tileSprite.height = this.tileSize;
+          tileSprite._zIndex = 1;
+          this.spriteContainer.addChild(tileSprite);
         }
 
         const item = this.map.tiles[x][y].item;
         if(item != null){
-          let texture;
+          let itemTexture;
           switch(item.name){
             case 'gun':
-              texture = Assets.get('gun.png');
+              itemTexture = Assets.get('gun.png');
               break;
             case 'bigGun':
-              texture = Assets.get('biggun.png');
+              itemTexture = Assets.get('biggun.png');
               break;
             case 'bandage':
-              texture = Assets.get('bandage.png');
+              itemTexture = Assets.get('bandage.png');
               break;
             case 'medkit':
-              texture = Assets.get('medkit.png');
+              itemTexture = Assets.get('medkit.png');
               break;
             default:
               break;
           }
-          let sprite = new PIXI.Sprite(texture);
-          sprite.x = x * this.tileSize;
-          sprite.y = y * this.tileSize;
-          sprite.width = this.tileSize;
-          sprite.height = this.tileSize;
-          sprite._zIndex = 1;
-          this.gridContainer.addChild(sprite);
+          let itemSprite = new PIXI.Sprite(itemTexture);
+          itemSprite.x = x * this.tileSize;
+          itemSprite.y = y * this.tileSize;
+          itemSprite.width = this.tileSize;
+          itemSprite.height = this.tileSize;
+          itemSprite._zIndex = 2;
+          this.spriteContainer.addChild(itemSprite);
           if (this.isLOSObstructed(this.player1.posX, this.player1.posY, x, y,true,true)==true){
-            sprite.alpha = 0
+            itemSprite.alpha = 0
           }
           else if(this.isLOSObstructed(this.player1.posX, this.player1.posY, x, y,true,true)==false){
-            sprite.alpha = 1
+            itemSprite.alpha = 1
           }
         }
 
         const entity = this.map.tiles[x][y].entity;
-        if (entity != null) {
-          let texture = Assets.get((this.map.tiles[x][y].entity!.sprite).toString())
-          let sprite = new PIXI.Sprite(texture);
-          sprite.x = x * this.tileSize;
-          sprite.y = y * this.tileSize;
-          sprite.width = this.tileSize;
-          sprite.height = this.tileSize;
-          sprite._zIndex = 2;
-          this.entityContainer.addChild(sprite);
+        if (entity != null && entity.sprite != "") {
+          let entityTexture = Assets.get((this.map.tiles[x][y].entity!.sprite).toString())
+          let entitySprite = new PIXI.Sprite(entityTexture);
+          entitySprite.x = x * this.tileSize;
+          entitySprite.y = y * this.tileSize;
+          entitySprite.width = this.tileSize;
+          entitySprite.height = this.tileSize;
+          entitySprite._zIndex = 3;
+          this.spriteContainer.addChild(entitySprite);
           if (this.map.tiles[x][y].entity?.hiddenOutsideLOS){
             if (this.isLOSObstructed(this.player1.posX, this.player1.posY, x, y,true,true)==true){
-              sprite.alpha = 0
+              entitySprite.alpha = 0
             }
             else if(this.isLOSObstructed(this.player1.posX, this.player1.posY, x, y,true,true)==false){
-              sprite.alpha = 1
+              entitySprite.alpha = 1
             }
           }
         }
@@ -499,7 +504,7 @@ export class GameController {
           fireSprite.width = this.tileSize
           fireSprite.height = this.tileSize
           fireSprite._zIndex = 5
-          this.gridContainer.addChild(fireSprite);
+          this.spriteContainer.addChild(fireSprite);
           if (this.isLOSObstructed(this.player1.posX, this.player1.posY, x, y,true,true)==true){
            fireSprite.alpha = 0
           }
@@ -518,7 +523,7 @@ export class GameController {
         );
         this.tile._zIndex = 0;
         this.tile.endFill();
-        this.gridContainer.addChild(this.tile);
+        this.spriteContainer.addChild(this.tile);
       }
     }
   }
@@ -636,7 +641,7 @@ export class GameController {
         const pickedUp = await this.inventory.showPickUpPrompt(item);
         if (pickedUp) {
           this.inventory.pickUp(item);
-          this.map.RemoveItem(player.posX, player.posY);
+          this.RemoveItem(player.posX, player.posY);
         }
       }
     }
@@ -735,7 +740,7 @@ export class GameController {
   updateTile(x: number, y: number){
 
     if (this.map.tiles[x][y].fireValue > 0){ 
-      this.map.tiles[x][y].entity?.takeDamage(this.map.tiles[x][y].fireValue/5,"fire")
+      this.map.tiles[x][y].entity?.takeDamage(this.map.tiles[x][y].fireValue/2,"fire")
       this.map.tiles[x][y].fireValue = this.clampNumber(this.map.tiles[x][y].fireValue - this.generateRandomNumber(10,20),0,100,)
       if (this.map.tiles[x][y].name=="empty"){
         this.map.createTile(x,y,"ash",true);
@@ -743,17 +748,17 @@ export class GameController {
       var spreadchance = this.generateRandomNumber(1,5)
       if (spreadchance==1){
 
-        this.ignite(x+1,y,this.map.tiles[x+1][y].fireValue+40,false)
-        this.ignite(x-1,y,this.map.tiles[x-1][y].fireValue+40,false)
-        this.ignite(x,y+1,this.map.tiles[x][y+1].fireValue+40,false)
-        this.ignite(x,y-1,this.map.tiles[x][y-1].fireValue+40,false)
+        this.ignite(x+1,y,this.map.tiles[x+1][y].fireValue+25,false,false)
+        this.ignite(x-1,y,this.map.tiles[x-1][y].fireValue+25,false,false)
+        this.ignite(x,y+1,this.map.tiles[x][y+1].fireValue+25,false,false)
+        this.ignite(x,y-1,this.map.tiles[x][y-1].fireValue+25,false,false)
 
       }
     }
   }
 
-  ignite(x: number, y:number, fireValue: number, additive: boolean){
-    if(this.map.isValidTile(x,y) && this.map.tiles[x][y].flammable == true){
+  ignite(x: number, y:number, fireValue: number, additive: boolean, ignoreFlammable: boolean){
+    if(this.map.isValidTile(x,y) && ignoreFlammable==false && this.map.tiles[x][y].flammable == true || this.map.isValidTile(x,y) && ignoreFlammable==true){
       if (this.map.tiles[x][y].fireValue <= 0 || additive == false){
         this.map.tiles[x][y].fireValue += fireValue;
       }
@@ -761,6 +766,8 @@ export class GameController {
   }
 
   createExplosion(x: number, y: number, size: number, strength: number, startFires: boolean = false){
+
+    console.log("explosion");
 
     (async () => { 
 
@@ -780,9 +787,9 @@ export class GameController {
             if(this.player1.posX == tile[0] && this.player1.posY == tile[1]){
               this.player1.Health.Damage(strength/size/10)
             }
-            var firechance=this.generateRandomNumber(1,10)
+            var firechance=this.generateRandomNumber(1,5)
             if (firechance==1){
-              this.ignite(tile[0],tile[1],strength,true)
+              this.ignite(tile[0],tile[1],strength/4,true,true)
             }
           }
         })
@@ -792,6 +799,32 @@ export class GameController {
 
     })();
 
+  }
+
+  loadPlayer(x: number, y: number, player: Player) {
+    player.posX = x
+    player.posY = y
+  }
+
+  loadEntity(x: number, y: number, entity: any) {
+    this.map.tiles[x][y].entity = entity;
+    // keep entity coordinates in sync with map placement
+    if (entity != null) {
+      entity.posX = x;
+      entity.posY = y;
+    }
+  }
+
+  RemoveEntities(x: number, y: number) {
+    this.map.tiles[x][y].entity = null;
+  }
+
+  SpawnItem(x: number, y: number, item: Item) {
+    this.map.tiles[x][y].item = item;
+  }
+
+  RemoveItem(x: number, y: number, effect?: string) {
+    this.map.tiles[x][y].item = null;
   }
 
   endTurn() {
@@ -849,13 +882,9 @@ export class GameController {
       );
       if (coords) {
         const targetEntity = this.map.tiles[coords.x][coords.y].entity
-        if (targetEntity instanceof Dummy || targetEntity instanceof HeavyDummy)
-          if(!targetEntity.isDead){
-            this.weaponFunctionality.attack(coords, this.map, this.inventory, targetEntity);
-          } else{
-            this.inventory.showLootPopup(targetEntity);
-          }   
-      }
+        if (targetEntity?.damageable)
+          this.weaponFunctionality.attack(coords, this.map, this.inventory, targetEntity);
+        }
     });
   }
 

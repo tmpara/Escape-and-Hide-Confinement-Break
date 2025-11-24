@@ -1,9 +1,4 @@
-import { Player } from './player';
 import { tile } from './tile';
-import { Item } from './items/item';
-import * as PIXI from 'pixi.js';
-import { Assets } from 'pixi.js';
-import { Wall1} from './entities'
 export class GameGrid {
   width: number;
   height: number;
@@ -44,16 +39,9 @@ export class GameGrid {
       let entity = this.tiles[x][y].entity
       this.tiles[x][y] = this.getTileData(name)
       if (this.tiles[x][y].flammable==true || name=="ash"){
-        this.tiles[x][y].fireValue = firevalue
-        
+        this.tiles[x][y].fireValue = firevalue  
       }
       this.tiles[x][y].entity = entity
-    }
-  }
-
-  clearTile(x: number, y: number){
-    if (this.isValidTile(x,y)){
-      this.tiles[x][y] = this.getTileData("empty")
     }
   }
 
@@ -74,23 +62,6 @@ export class GameGrid {
     return { x: tileX, y: tileY };
   }
 
-  loadPlayer(x: number, y: number, player: Player) {
-    player.posX = x
-    player.posY = y
-  }
-
-  loadEnemy(x: number, y: number, entity: any) {
-    this.tiles[x][y].entity = entity;
-  }
-
-  SpawnItem(x: number, y: number, item: Item) {
-    this.tiles[x][y].item = item;
-  }
-
-  RemoveItem(x: number, y: number, effect?: string) {
-    this.tiles[x][y].item = null;
-  }
-
   getTileData(name: String){
 
     let tileName = ""
@@ -101,22 +72,8 @@ export class GameGrid {
     switch (name){
 
     case 'empty':
-      tileName="door"
+      tileName="empty"
       sprite=""
-      effect = ""
-      flammable=true
-      break;
-    
-    case 'wall_corner':
-      tileName="corner wall"
-      sprite="placeholder.png"
-      effect = ""
-      flammable=false
-      break;
-
-    case 'wall_basic':
-      tileName="basic wall"
-      sprite="placeholder.png"
       effect = ""
       flammable=true
       break;

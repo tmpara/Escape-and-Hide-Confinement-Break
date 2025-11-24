@@ -12,8 +12,16 @@ export class Dummy extends Entity {
   override health = 100;
   override hiddenOutsideLOS = true;
   override blockLOS = false;
+  override flammable = true;
   isDead = false;
   lootTable = [new Items().gun, new Items().bandage];
+
+  takeDamageCustom(){}
+  destroyCustom(){}
+  onUse(){}
+  onEndTurn(){}
+  onHeal(){}
+  
 }
 
 export class HeavyDummy extends Entity {
@@ -26,6 +34,14 @@ export class HeavyDummy extends Entity {
   override health = 200;
   override hiddenOutsideLOS = true;
   override blockLOS = false;
+  override flammable = true;
   isDead = false;
   lootTable = [new Items().gun, new Items().bandage];
+
+  takeDamageCustom(){}
+  destroyCustom(){}
+  onUse(){}
+  onEndTurn(){}
+  onHeal(){}
+
 }
