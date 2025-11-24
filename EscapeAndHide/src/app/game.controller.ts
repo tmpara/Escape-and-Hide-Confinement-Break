@@ -38,6 +38,11 @@ export class GameController {
   mouseTileX: number = 0;
   mouseTileY: number = 0;
 
+  limbContainer = new Container();
+  limbSprites: Record<string, PIXI.Sprite> = {};
+  afflictionsPanel!: HTMLDivElement;
+  selectedLimb: string | null = null;
+
   constructor() {}
 
   async init(container: HTMLDivElement): Promise<void> {
@@ -59,6 +64,12 @@ export class GameController {
     await Assets.load('bandage.png');
     await Assets.load('glass_shards.png');
     await Assets.load('aimingReticle.png');
+    await Assets.load('head.png');
+    await Assets.load('torso.png');
+    await Assets.load('leftarm.png');
+    await Assets.load('rightarm.png');
+    await Assets.load('leftleg.png');
+    await Assets.load('rightleg.png');
 
     this.world.CreateWorld();
     // Create map and player
@@ -94,6 +105,7 @@ export class GameController {
     // Draw grid, player
     this.drawGrid();
     this.drawPlayer();
+    this.drawHealthUI();
 
     // Add containers to stage
     this.app.stage.addChild(this.gridContainer);
@@ -103,6 +115,7 @@ export class GameController {
     this.app.stage.addChild(this.healthBar);
     this.app.stage.addChild(this.energyBar);
     this.app.stage.addChild(this.reticleContainer);
+    this.app.stage.addChild(this.limbContainer);
 
     // Create inventory and equipped containers side by side
     const inventoryRow = document.createElement('div');
@@ -332,13 +345,17 @@ export class GameController {
     // Health
     const healthPercentage =
       this.player1.health.currentBlood / this.player1.health.maxBlood;
-      this.healthBar.beginFill(0xff0000);
-      this.healthBar.drawRect(x, y, barWidth * healthPercentage, barHeight);
-      this.healthBar.addChild(myText);
-      this.healthBar.endFill();
+    this.healthBar.beginFill(0xff0000);
+    this.healthBar.drawRect(x, y, barWidth * healthPercentage, barHeight);
+    this.healthBar.addChild(myText);
+    this.healthBar.endFill();
 
     // Bleeding effect
-    if (this.player1.health.currentBlood > 0 && this.player1.health.bleedingRate > 0 && bleedingPercentage > regenPercentage) {
+    if (
+      this.player1.health.currentBlood > 0 &&
+      this.player1.health.bleedingRate > 0 &&
+      bleedingPercentage > regenPercentage
+    ) {
       this.healthBar.beginFill(0xffff00);
       this.healthBar.drawRect(
         x + barWidth * (healthPercentage - bleedingPercentage),
@@ -356,19 +373,22 @@ export class GameController {
     ) {
       let regenBarX = x + barWidth * healthPercentage;
       let regenBarWidth = barWidth * regenPercentage;
-      if (this.player1.health.bleedingRate > 0 && regenPercentage < bleedingPercentage) {
+      if (
+        this.player1.health.bleedingRate > 0 &&
+        regenPercentage < bleedingPercentage
+      ) {
         regenBarX = x + barWidth * (healthPercentage - bleedingPercentage);
-      }
-      if (this.player1.health.currentBlood + this.player1.health.regeneration > this.player1.health.maxBlood) {
-        regenBarWidth = barWidth * ((this.player1.health.maxBlood - this.player1.health.currentBlood) / this.player1.health.maxBlood);
+      } else if (
+        this.player1.health.currentBlood + this.player1.health.regeneration >
+        this.player1.health.maxBlood
+      ) {
+        regenBarWidth =
+          barWidth *
+          ((this.player1.health.maxBlood - this.player1.health.currentBlood) /
+            this.player1.health.maxBlood);
       }
       this.healthBar.beginFill(0x00ff00);
-      this.healthBar.drawRect(
-        regenBarX,
-        y,
-        regenBarWidth,
-        barHeight
-      );
+      this.healthBar.drawRect(regenBarX, y, regenBarWidth, barHeight);
       this.healthBar.endFill();
     }
   }
@@ -654,6 +674,96 @@ export class GameController {
     this.reticleContainer.addChild(reticleSprite);
   }
 
+  drawHealthUI() {
+    this.limbContainer.removeChildren();
+
+    const baseX = 150;
+    const baseY = 600;
+    const limbSize = 40;
+
+    this.addLimbSprite('head', baseX, baseY, limbSize, limbSize);
+
+    this.addLimbSprite('torso', baseX, baseY + limbSize, limbSize, limbSize);
+
+    this.addLimbSprite(
+      'leftarm',
+      baseX - limbSize,
+      baseY + limbSize,
+      limbSize,
+      limbSize
+    );
+
+    this.addLimbSprite(
+      'rightarm',
+      baseX + limbSize,
+      baseY + limbSize,
+      limbSize,
+      limbSize
+    );
+
+    this.addLimbSprite(
+      'leftleg',
+      baseX - limbSize / 2,
+      baseY + limbSize * 2,
+      limbSize,
+      limbSize
+    );
+
+    this.addLimbSprite(
+      'rightleg',
+      baseX + limbSize / 2,
+      baseY + limbSize * 2,
+      limbSize,
+      limbSize
+    );
+  }
+
+  addLimbSprite(
+    limbName: string,
+    x: number,
+    y: number,
+    width: number,
+    height: number
+  ) {
+    const texture = Assets.get(`${limbName}.png`);
+
+    const sprite = new PIXI.Sprite(texture);
+    sprite.x = x;
+    sprite.y = y;
+    sprite.width = width;
+    sprite.height = height;
+    sprite.interactive = true;
+    sprite.cursor = 'pointer';
+    sprite._zIndex = 1000;
+
+    sprite.on('pointerdown', () => {
+      this.selectedLimb = limbName;
+      console.log(limbName);
+      switch (limbName) {
+        case 'head':
+          this.player1.health.head.logAfflictions();
+          break;
+        case 'torso':
+          this.player1.health.torso.logAfflictions();
+          break;
+        case 'leftarm':
+          this.player1.health.leftArm.logAfflictions();
+          break;
+        case 'rightarm':
+          this.player1.health.rightArm.logAfflictions();
+          break;
+        case 'leftleg':
+          this.player1.health.leftLeg.logAfflictions();
+          break;
+        case 'rightleg':
+          this.player1.health.rightLeg.logAfflictions();
+          break;
+      }
+    });
+
+    this.limbContainer.addChild(sprite);
+  }
+
   animatePlayerMove(
     player: Player,
     targetX: number,
@@ -839,8 +949,10 @@ export class GameController {
     console.log('Tile effect: ' + tileEffect);
     switch (tileEffect) {
       case 'glass_shards':
-        player.health.leftLeg.addBleeding(this.clampNumber(2, 0, 100))
-        player.health.rightLeg.addBleeding(this.clampNumber(2, 0, 100))
+        player.health.leftLeg.addBleeding(this.clampNumber(2, 0, 100));
+        player.health.leftLeg.addLaceration(this.clampNumber(2, 0, 100));
+        player.health.rightLeg.addBleeding(this.clampNumber(2, 0, 100));
+        player.health.rightLeg.addLaceration(this.clampNumber(2, 0, 100));
         return 'glass_shards';
       case 'fire':
         // player.health.Damage(0, 2.0);
