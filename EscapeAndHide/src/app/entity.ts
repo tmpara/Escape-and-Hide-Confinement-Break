@@ -1,10 +1,12 @@
 import { GameController } from './game.controller';
 export abstract class Entity{
 
+    id=0;
     name = "";
     sprite = "placeholder.png";
     posX = 0;
     posY = 0;
+    zIndex = 4;
     collidable = false;
     damageable = false;
     health = 0;

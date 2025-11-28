@@ -14,7 +14,7 @@ export class Player extends Entity {
   override hiddenOutsideLOS = false
   override blockLOS = false;
   override flammable = true;
-  id = 0;
+  playerId = 0;
   renderX = 0;
   renderY = 0;
   Health = new Health(5,5);

@@ -93,7 +93,7 @@ export class GameGrid {
       break;  
     }
 
-    let info = new tile(tileName,sprite,effect,flammable,0,null,null);
+    let info = new tile(tileName,sprite,effect,flammable,0,null,[]);
     return info;
   }
 

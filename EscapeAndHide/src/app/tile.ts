@@ -8,9 +8,9 @@ export class tile {
     flammable: boolean = false;
     fireValue: number = 0;
     item: Item | null = null;
-    entity: Entity | null = null;
+    entity: Entity[];
 
-    constructor(name: string|null, sprite: string, effect: string, flammable: boolean, fireValue: number, item: Item | null, entity: Entity|null){
+    constructor(name: string|null, sprite: string, effect: string, flammable: boolean, fireValue: number, item: Item | null, entity: Entity[]){
         this.name = name
         this.sprite = sprite
         this.effect = effect
