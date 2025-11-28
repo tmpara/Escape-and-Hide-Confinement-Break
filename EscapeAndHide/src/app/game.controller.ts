@@ -536,7 +536,7 @@ findRoom(player: Player){
     else if(playerPosY == mapY-1 && playerPosX < mapX){
       //down
       if (this.playerWorldY + 1  <= 10){
-        debugger
+      
         this.map.tiles[playerPosX][playerPosY].entity = null;
         this.map = this.world.rooms[this.playerWorldX][this.playerWorldY+1];
         this.playerWorldY += 1;
