@@ -14,6 +14,8 @@ import { Inventory } from './inventory/inventory';
 export class GameController {
   app!: Application;
   map!: GameGrid;
+  healthUIApp!: PIXI.Application;
+  afflictionsApp!: PIXI.Application;
   items = new Items();
   inventory!: Inventory;
   weaponFunctionality = new WeaponFunctionality();
@@ -38,10 +40,10 @@ export class GameController {
   mouseTileX: number = 0;
   mouseTileY: number = 0;
 
-  limbContainer = new Container();
+  healthLimbContainer = new Container();
   limbSprites: Record<string, PIXI.Sprite> = {};
-  afflictionsPanel!: HTMLDivElement;
-  selectedLimb: string | null = null;
+  selectedLimb: string = '';
+  afflictions: any = {};
 
   constructor() {}
 
@@ -82,13 +84,12 @@ export class GameController {
     // Create PIXI app
     this.app = new Application();
     await this.app.init({
-      width: this.tileSize * 30,
-      height: this.tileSize * 30,
+      width: window.innerWidth * 0.7,
+      height: window.innerHeight * 0.7,
       backgroundColor: 0x222222,
       antialias: true,
-      resizeTo: window,
     });
-
+    // Add main game canvas
     container.appendChild(this.app.canvas as HTMLCanvasElement);
 
     // Create map and player
@@ -115,24 +116,69 @@ export class GameController {
     this.app.stage.addChild(this.healthBar);
     this.app.stage.addChild(this.energyBar);
     this.app.stage.addChild(this.reticleContainer);
-    this.app.stage.addChild(this.limbContainer);
 
     // Create inventory and equipped containers side by side
     const inventoryRow = document.createElement('div');
     inventoryRow.style.display = 'flex';
     inventoryRow.style.flexDirection = 'row';
+    inventoryRow.style.width = '30vw'; 
+    inventoryRow.style.height = '80vh'; 
+    inventoryRow.style.position = 'absolute';
+    inventoryRow.style.right = '0';
+    inventoryRow.style.top = '0';
     container.appendChild(inventoryRow);
 
     const invDiv = document.createElement('div');
     invDiv.id = 'inventory-container';
+    invDiv.style.flex = '1';
+    invDiv.style.height = '100%';
     inventoryRow.appendChild(invDiv);
 
     const equippedDiv = document.createElement('div');
     equippedDiv.id = 'equipped-container';
+    equippedDiv.style.flex = '1';
+    equippedDiv.style.height = '100%';
     inventoryRow.appendChild(equippedDiv);
-
-    // Pass both containers to Inventory
     this.inventory = new Inventory(invDiv, equippedDiv);
+
+    // Create status row for health and afflictions side by side below main game canvas
+    const statusRow = document.createElement('div');
+    statusRow.id  = 'status-row';
+    statusRow.style.display = 'flex';
+    statusRow.style.flexDirection = 'row';
+    statusRow.style.width = 'window.innerWidth * 0.3';
+    statusRow.style.height = 'window.innerHeight * 0.29';
+    // Append statusRow after main game canvas
+    container.appendChild(statusRow);
+
+    this.healthUIApp = new PIXI.Application();
+    await this.healthUIApp.init({
+      width: statusRow.clientWidth * 0.1,
+      height: window.innerHeight * 0.29,
+      backgroundColor: 0x333333,
+      antialias: true,
+    });
+    this.healthUIApp.view.style.display = 'block';
+
+    this.afflictionsApp = new PIXI.Application();
+    await this.afflictionsApp.init({
+      width: statusRow.clientWidth * 0.2,
+      height: window.innerHeight * 0.29,
+      backgroundColor: 0x444444,
+      antialias: true,
+    });
+    this.afflictionsApp.view.style.display = 'block';
+    this.afflictionsApp.view.style.flexDirection = 'row';
+
+    // Append both canvases to the statusRow for side-by-side display
+    statusRow.appendChild(this.healthUIApp.view as HTMLCanvasElement);
+    statusRow.appendChild(this.afflictionsApp.view as HTMLCanvasElement);
+    this.healthUIApp.stage.addChild(this.healthLimbContainer);
+
+    this.selectedLimb = 'leftLeg';
+    // Set torso afflictions and display them by default
+    this.afflictions = this.player1.health.leftLeg.returnAfflictions();
+    this.drawAfflictions();
 
     // Listen for movement
     this.listenForInput(this.player1);
@@ -315,7 +361,7 @@ export class GameController {
     const barWidth = 200;
     const barHeight = 20;
     const x = 10;
-    const y = 820;
+    const y = 400;
 
     const myText = new Text({
       text: Math.round(this.player1.health.currentBlood) + ' ml',
@@ -345,10 +391,10 @@ export class GameController {
     // Health
     const healthPercentage =
       this.player1.health.currentBlood / this.player1.health.maxBlood;
-    this.healthBar.beginFill(0xff0000);
-    this.healthBar.drawRect(x, y, barWidth * healthPercentage, barHeight);
-    this.healthBar.addChild(myText);
-    this.healthBar.endFill();
+      this.healthBar.beginFill(0xff0000);
+      this.healthBar.drawRect(x, y, barWidth * healthPercentage, barHeight);
+      this.healthBar.addChild(myText);
+      this.healthBar.endFill();
 
     // Bleeding effect
     if (
@@ -399,7 +445,7 @@ export class GameController {
     const barWidth = 200;
     const barHeight = 20;
     const x = 10;
-    const y = 860;
+    const y = 430;
 
     // Background
     this.energyBar.beginFill(0x555555);
@@ -675,50 +721,21 @@ export class GameController {
   }
 
   drawHealthUI() {
-    this.limbContainer.removeChildren();
+    this.healthLimbContainer.removeChildren();
 
-    const baseX = 150;
-    const baseY = 600;
-    const limbSize = 40;
+    const baseX = 80
+    const baseY = 50; // Adjusted for healthUIApp canvas
+    const limbSize = 32;
 
-    this.addLimbSprite('head', baseX, baseY, limbSize, limbSize);
-
-    this.addLimbSprite('torso', baseX, baseY + limbSize, limbSize, limbSize);
-
-    this.addLimbSprite(
-      'leftarm',
-      baseX - limbSize,
-      baseY + limbSize,
-      limbSize,
-      limbSize
-    );
-
-    this.addLimbSprite(
-      'rightarm',
-      baseX + limbSize,
-      baseY + limbSize,
-      limbSize,
-      limbSize
-    );
-
-    this.addLimbSprite(
-      'leftleg',
-      baseX - limbSize / 2,
-      baseY + limbSize * 2,
-      limbSize,
-      limbSize
-    );
-
-    this.addLimbSprite(
-      'rightleg',
-      baseX + limbSize / 2,
-      baseY + limbSize * 2,
-      limbSize,
-      limbSize
-    );
+    this.addHealthLimbSprite('head', baseX, baseY, limbSize, limbSize);
+    this.addHealthLimbSprite('torso', baseX, baseY + limbSize, limbSize, limbSize);
+    this.addHealthLimbSprite('leftarm', baseX - limbSize, baseY + limbSize, limbSize, limbSize);
+    this.addHealthLimbSprite('rightarm', baseX + limbSize, baseY + limbSize, limbSize, limbSize);
+    this.addHealthLimbSprite('leftleg', baseX - limbSize / 2, baseY + limbSize * 2, limbSize, limbSize);
+    this.addHealthLimbSprite('rightleg', baseX + limbSize / 2, baseY + limbSize * 2, limbSize, limbSize);
   }
 
-  addLimbSprite(
+  addHealthLimbSprite(
     limbName: string,
     x: number,
     y: number,
@@ -726,7 +743,6 @@ export class GameController {
     height: number
   ) {
     const texture = Assets.get(`${limbName}.png`);
-
     const sprite = new PIXI.Sprite(texture);
     sprite.x = x;
     sprite.y = y;
@@ -735,33 +751,51 @@ export class GameController {
     sprite.interactive = true;
     sprite.cursor = 'pointer';
     sprite._zIndex = 1000;
-
     sprite.on('pointerdown', () => {
       this.selectedLimb = limbName;
       console.log(limbName);
-      switch (limbName) {
-        case 'head':
-          this.player1.health.head.logAfflictions();
-          break;
-        case 'torso':
-          this.player1.health.torso.logAfflictions();
-          break;
-        case 'leftarm':
-          this.player1.health.leftArm.logAfflictions();
-          break;
-        case 'rightarm':
-          this.player1.health.rightArm.logAfflictions();
-          break;
-        case 'leftleg':
-          this.player1.health.leftLeg.logAfflictions();
-          break;
-        case 'rightleg':
-          this.player1.health.rightLeg.logAfflictions();
-          break;
-      }
     });
+    this.healthLimbContainer.addChild(sprite);
+  }
 
-    this.limbContainer.addChild(sprite);
+  getAfflictionsForLimb(limbName: string) {
+    switch (limbName) {
+      case 'head':
+        this.afflictions = this.player1.health.head.returnAfflictions();
+        break;
+      case 'torso':
+        this.afflictions = this.player1.health.torso.returnAfflictions();
+        break;
+      case 'leftarm':
+        this.afflictions = this.player1.health.leftArm.returnAfflictions();
+        break;
+      case 'rightarm':
+        this.afflictions = this.player1.health.rightArm.returnAfflictions();
+        break;
+      case 'leftleg':
+        this.afflictions = this.player1.health.leftLeg.returnAfflictions();
+        break;
+      case 'rightleg':
+        this.afflictions = this.player1.health.rightLeg.returnAfflictions();
+        break;
+    }
+  }
+
+  drawAfflictions() {
+    this.getAfflictionsForLimb(this.selectedLimb);
+    this.afflictionsApp.stage.removeChildren();
+    for(let affliction in this.afflictions){
+      const afflictionText = new Text({
+        text: affliction + ': ' + this.afflictions[affliction],
+        style: {
+          fontSize: 16,
+          fill: '#ffffff',
+        },
+        y: Object.keys(this.afflictions).indexOf(affliction) * 20 + 10,
+        x: 10,
+      });
+      this.afflictionsApp.stage.addChild(afflictionText);
+    }
   }
 
   animatePlayerMove(
@@ -798,6 +832,7 @@ export class GameController {
     this.drawHealthBar();
     this.drawEnergyBar();
     this.drawReticle();
+    this.drawAfflictions();
     requestAnimationFrame(() => this.gameLoop());
   }
 

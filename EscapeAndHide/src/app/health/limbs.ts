@@ -46,10 +46,11 @@ export class Limbs {
     }
   }
 
-  logAfflictions() {
+  returnAfflictions() {
     console.log(
       `Bleeding: ${this.bleeding}, Lacerations: ${this.lacerations}, Fracture: ${this.fracture}`
     );
+    return [this.bleeding, this.lacerations, this.fracture];
   }
 }
 

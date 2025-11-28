@@ -10,36 +10,36 @@ export class Inventory {
   equippedWeapon: Weapon | null = null;
   inventorySize: number = 10;
   maxEquippedItems: number = 2;
-  app!: PIXI.Application;
+  inventoryApp!: PIXI.Application;
   equippedApp!: PIXI.Application;
   inventoryContainer: HTMLDivElement;
   equippedContainer: HTMLDivElement;
   pickUpOverlay: HTMLDivElement | null = null;
   lootOverlay: HTMLDivElement | null = null;
 
-  constructor(container: HTMLDivElement, equippedContainer: HTMLDivElement) {
-    this.inventoryContainer = container;
+  constructor(invContainer: HTMLDivElement, equippedContainer: HTMLDivElement) {
+    this.inventoryContainer = invContainer;
     this.equippedContainer = equippedContainer;
     this.initInventory();
     this.initEquipped();
   }
 
   async initInventory() {
-    this.app = new PIXI.Application();
-    await this.app.init({
-      width: 300,
-      height: 400,
+    this.inventoryApp = new PIXI.Application();
+    await this.inventoryApp.init({
+      width: window.innerWidth * 0.15,
+      height: window.innerHeight * 0.7,
       backgroundColor: 0x1099bb,
     });
-    this.inventoryContainer.appendChild(this.app.canvas as HTMLCanvasElement);
+    this.inventoryContainer.appendChild(this.inventoryApp.canvas as HTMLCanvasElement);
     this.displayInventory();
   }
 
   async initEquipped() {
     this.equippedApp = new PIXI.Application();
     await this.equippedApp.init({
-      width: 300,
-      height: 400,
+      width: window.innerWidth * 0.15,
+      height: window.innerHeight * 0.7,
       backgroundColor: 0x333399,
     });
     this.equippedContainer.appendChild(
@@ -49,7 +49,7 @@ export class Inventory {
   }
 
   displayInventory() {
-    this.app.stage.removeChildren();
+    this.inventoryApp.stage.removeChildren();
     for (let i = 0; i < this.items.length; i++) {
       this.items[i].displayed = false;
     }
@@ -84,7 +84,7 @@ export class Inventory {
         itemContainer.y = 10 + i * 35;
         itemContainer.addChild(sprite);
         itemContainer.addChild(text);
-        this.app.stage.addChild(itemContainer);
+        this.inventoryApp.stage.addChild(itemContainer);
       }
     }
   }
@@ -278,10 +278,10 @@ export class Inventory {
       itemButton.onclick = () => {
         this.pickUp(item);
         itemButton.disabled = true;
+        entity.lootTable.splice(i, 1); 
+        itemLootBox.removeChild(itemButton);
       };
       itemLootBox.appendChild(itemButton);
-      entity.lootTable.splice(i, 1);
-      i--;
     }
 
     const buttons = document.createElement('div');
