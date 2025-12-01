@@ -24,11 +24,5 @@ export class Player extends Entity {
     this.Health.TriggerDot();
     this.Energy.loseEnergy(energyCost);
   }
-
-  takeDamageCustom(){}
-  destroyCustom(){}
-  onUse(){}
-  onEndTurn(){}
-  onHeal(){}
-
+  
 }

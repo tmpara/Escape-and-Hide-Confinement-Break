@@ -11,7 +11,6 @@ import { Items, Weapon } from './items/items';
 import { WeaponFunctionality } from './items/weapon_functionality';
 import { Inventory } from './inventory/inventory';
 import { Dummy, HeavyDummy} from './enemyTypes'
-import { Wall1,WallCorner1,ExplosiveBarrel,Door} from './entities'
 
 export class GameController {
   static current: GameController | null = null;
@@ -23,8 +22,6 @@ export class GameController {
   player1 = new Player();
   dummy1 = new Dummy()
   heavyDummy1 = new HeavyDummy();
-  barrel = new ExplosiveBarrel();
-  door = new Door();
   world = new World();
   spriteContainer = new Container();
   effectContainer = new Container();
@@ -43,26 +40,28 @@ export class GameController {
   async init(container: HTMLDivElement): Promise<void> {
     // expose the running instance so entities can access controller methods
     GameController.current = this;
-    await Assets.load('explosion.png');
-    await Assets.load('fire_legacy.png');
-    await Assets.load('fire_large.png');
-    await Assets.load('fire_medium.png');
-    await Assets.load('fire_small.png');
-    await Assets.load('placeholder.png');
-    await Assets.load('door1.png');
-    await Assets.load('ash.png');
-    await Assets.load('gun.png');
-    await Assets.load('biggun.png');
-    await Assets.load('dummy.png');
-    await Assets.load('dummyDead.png');
-    await Assets.load('heavyDummy.png');
-    await Assets.load('heavyDummyDead.png');
-    await Assets.load('medkit.png');
-    await Assets.load('bandage.png');
-    await Assets.load('glass_shards.png');
-    await Assets.load('explosiveBarrel.png');
-    await Assets.load('door_open.png');
-    await Assets.load('door_closed.png');
+    await Assets.load('/sprites/entities/placeholder.png');
+    await Assets.load('/sprites/entities/door1.png');
+    await Assets.load('/sprites/entities/glass_shards.png');
+    await Assets.load('/sprites/entities/explosiveBarrel.png');
+    await Assets.load('/sprites/entities/door_open_horizontal.png');
+    await Assets.load('/sprites/entities/door_closed_horizontal.png');
+    await Assets.load('/sprites/entities/door_open_vertical.png');
+    await Assets.load('/sprites/entities/door_closed_vertical.png');
+    await Assets.load('/sprites/tiles/ash.png');
+    await Assets.load('/sprites/npc/dummy.png');
+    await Assets.load('/sprites/npc/dummyDead.png');
+    await Assets.load('/sprites/npc/heavyDummy.png');
+    await Assets.load('/sprites/npc/heavyDummyDead.png');
+    await Assets.load('/sprites/items/gun.png');
+    await Assets.load('/sprites/items/biggun.png');
+    await Assets.load('/sprites/items/medkit.png');
+    await Assets.load('/sprites/items/bandage.png');
+    await Assets.load('/sprites/effects/explosion.png');
+    await Assets.load('/sprites/effects/fire_legacy.png');
+    await Assets.load('/sprites/effects/fire_large.png');
+    await Assets.load('/sprites/effects/fire_medium.png');
+    await Assets.load('/sprites/effects/fire_small.png');
 
     this.world.CreateWorld();
     // Create map and player
@@ -86,10 +85,8 @@ export class GameController {
     // Create map and player
 
     this.loadPlayer(1, 1, this.player1, 1);
-    this.loadEntity(5, 2, this.dummy1);
-    this.loadEntity(5, 3, this.heavyDummy1);
-    this.loadEntity(6, 2, this.barrel);
-    this.loadEntity(3, 3, this.door);
+    this.loadEntity(5, 2, this.dummy1, this.map);
+    this.loadEntity(5, 3, this.heavyDummy1, this.map);
 
     this.spawnItem(1, 3, new Items().gun);
     this.spawnItem(2, 3, new Items().bigGun);
@@ -445,16 +442,16 @@ export class GameController {
           let itemTexture;
           switch(item.name){
             case 'gun':
-              itemTexture = Assets.get('gun.png');
+              itemTexture = Assets.get('/sprites/items/gun.png');
               break;
             case 'bigGun':
-              itemTexture = Assets.get('biggun.png');
+              itemTexture = Assets.get('/sprites/items/biggun.png');
               break;
             case 'bandage':
-              itemTexture = Assets.get('bandage.png');
+              itemTexture = Assets.get('/sprites/items/bandage.png');
               break;
             case 'medkit':
-              itemTexture = Assets.get('medkit.png');
+              itemTexture = Assets.get('/sprites/items/medkit.png');
               break;
             default:
               break;
@@ -497,11 +494,11 @@ export class GameController {
 
         let firevalue = this.map.tiles[x][y].fireValue;
         if (firevalue > 0) {
-          let fireTexture = Assets.get('fire_small.png');
+          let fireTexture = Assets.get('/sprites/effects/fire_small.png');
           if (firevalue > 66) {
-            fireTexture = Assets.get('fire_large.png');
+            fireTexture = Assets.get('/sprites/effects/fire_large.png');
           } else if (firevalue > 33) {
-            fireTexture = Assets.get('fire_medium.png');
+            fireTexture = Assets.get('/sprites/effects/fire_medium.png');
           }
           let fireSprite = new PIXI.Sprite(fireTexture);
           fireSprite.x = (x * this.tileSize)
@@ -649,7 +646,7 @@ export class GameController {
     let mapX = this.map.width;
     let mapY = this.map.height;
 
-    if (playerPosX == 0 && playerPosY < mapY) {
+    if (playerPosX == 1 && playerPosY < mapY) {
       //left
       if (this.playerWorldX - 1 >= 0) {
         this.removePlayer(playerPosX,playerPosY)
@@ -665,7 +662,7 @@ export class GameController {
           'World coordinates: ' + this.playerWorldX + ', ' + this.playerWorldY
         );
       }
-    } else if (playerPosX == mapX - 1 && playerPosY < mapY) {
+    } else if (playerPosX == 2 && playerPosY < mapY) {
       //right
       if (this.playerWorldX + 1 <= 10) {
         this.removePlayer(playerPosX,playerPosY)
@@ -677,7 +674,7 @@ export class GameController {
           'World coordinates: ' + this.playerWorldX + ', ' + this.playerWorldY
         );
       }
-    } else if (playerPosY == 0 && playerPosX < mapX) {
+    } else if (playerPosX == 3 && playerPosX < mapX) {
       //up
       if (this.playerWorldY + 1 <= 10) {
         this.removePlayer(playerPosX,playerPosY)
@@ -693,7 +690,7 @@ export class GameController {
           'World coordinates: ' + this.playerWorldX + ', ' + this.playerWorldY
         );
       }
-    } else if (playerPosY == mapY - 1 && playerPosX < mapX) {
+    } else if (playerPosX == 4 - 1 && playerPosX < mapX) {
       //down
       if (this.playerWorldY - 1 >= 0) {
         this.removePlayer(playerPosX,playerPosY)
@@ -768,7 +765,7 @@ export class GameController {
         let tiles = this.getTilesInSphere(x,y,i)
         tiles.forEach((tile) => {
           if (this.isLineObstructed(x,y,tile[0],tile[1],true,true)==false){
-            let texture = Assets.get("explosion.png");
+            let texture = Assets.get("/sprites/effects/explosion.png");
             let sprite = new PIXI.Sprite(texture);
             sprite.x = tile[0] * this.tileSize
             sprite.y = tile[1] * this.tileSize
@@ -809,8 +806,8 @@ export class GameController {
     }
   }
 
-  loadEntity(x: number, y: number, entity: any) {
-    this.map.tiles[x][y].entity!.push(entity);
+  loadEntity(x: number, y: number, entity: any, map:GameGrid) {
+    map.tiles[x][y].entity!.push(entity);
     // keep entity coordinates in sync with map placement
     if (entity != null) {
       entity.posX = x;
@@ -922,7 +919,7 @@ export class GameController {
       );
       if (coords) {
         this.getAllEntitiesOnTile(coords.x,coords.y)?.forEach((entity) => {
-          entity.onUse()
+          entity.onUse(player)
        });
       }
     });

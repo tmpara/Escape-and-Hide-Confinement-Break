@@ -19,7 +19,7 @@ export abstract class Entity{
     fireValue = 0;
 
     takeDamage(damage:number, damageType: string){
-        this.takeDamageCustom(damage,damageType)
+        this.onTakeDamage(damage,damageType)
         if (this.damageable==true && this.destroyed==false){
             this.health -= damage;
             if (this.health!<=0){
@@ -29,7 +29,7 @@ export abstract class Entity{
     }
 
     heal(amount:number){
-        this.onHeal();
+        this.onHeal(amount);
         if (this.damageable==true && this.destroyed==false){
             this.health += amount;
             if(this.health>this.maxHealth){
@@ -41,19 +41,19 @@ export abstract class Entity{
     destroy(damage:number, damageType: string){
         if (this.destroyed==false ){
             this.destroyed=true;
-            this.destroyCustom()
+            this.onDestroyed(damage,damageType)
             GameController.current?.RemoveEntities(this.posX, this.posY);
         }
     }
 
-    abstract takeDamageCustom(damage:number, damageType:string): void
+    onTakeDamage(damage:number, damageType:string){}
 
-    abstract destroyCustom(): void
+    onDestroyed(damage:number, damageType:string){}
 
-    abstract onUse(): void
+    onUse(user: Entity | null){}
 
-    abstract onEndTurn(): void
+    onEndTurn(){}
 
-    abstract onHeal(): void
+    onHeal(amountHealed: number){}
     
 }

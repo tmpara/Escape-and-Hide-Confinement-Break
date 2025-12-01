@@ -1,4 +1,7 @@
 import { tile } from './tile';
+import { Entity } from "./entity";
+import { Wall1,WallCorner1} from './entities'
+import { GameController } from './game.controller';
 export class GameGrid {
   width: number;
   height: number;
@@ -19,15 +22,14 @@ export class GameGrid {
     }
   }
 
-  loadMap(map: string[][]){
+  loadMap(map: Entity[][]){
     for(let i=0;i<map.length;i++){
       for(let j=0;j<map[i].length;j++){
         if(i==0 || j==0 || i==map.length-1 || j==map[i].length-1){
-          this.tiles[i][j] = this.getTileData("wall_corner")
+          GameController.current?.loadEntity(i,j,new WallCorner1,this)
         }
-        
-        if(map[i][j] != ""){
-          this.tiles[i][j] = this.getTileData(map[i][j])
+        if(map[i][j] != null){
+          GameController.current?.loadEntity(i,j,map[i][j],this)
         }
       }
     }
@@ -81,16 +83,9 @@ export class GameGrid {
     case 'ash':
       tileName="ash"
       effect = ""
-      sprite="ash.png"
+      sprite="/sprites/tiles/ash.png"
       flammable=false
       break;
-
-    case 'room_entrance':
-      tileName="door"
-      effect = "entrance"
-      sprite="door1.png"
-      flammable=false
-      break;  
     }
 
     let info = new tile(tileName,sprite,effect,flammable,0,null,[]);

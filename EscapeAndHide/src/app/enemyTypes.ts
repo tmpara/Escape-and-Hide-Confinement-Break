@@ -4,7 +4,7 @@ import { Items } from './items/items';
 
 export class Dummy extends Entity {
   override name = "dummy";
-  override sprite = "dummy.png";
+  override sprite = "/sprites/npc/dummy.png";
   override posX = 0;
   override posY = 0;
   override collidable = true;
@@ -15,18 +15,12 @@ export class Dummy extends Entity {
   override flammable = true;
   isDead = false;
   lootTable = [new Items().gun, new Items().bandage];
-
-  takeDamageCustom(){}
-  destroyCustom(){}
-  onUse(){}
-  onEndTurn(){}
-  onHeal(){}
   
 }
 
 export class HeavyDummy extends Entity {
   override name = "heavy dummy";
-  override sprite = "heavyDummy.png";
+  override sprite = "/sprites/npc/heavyDummy.png";
   override posX = 0;
   override posY = 0;
   override collidable = true;
@@ -37,11 +31,5 @@ export class HeavyDummy extends Entity {
   override flammable = true;
   isDead = false;
   lootTable = [new Items().gun, new Items().bandage];
-
-  takeDamageCustom(){}
-  destroyCustom(){}
-  onUse(){}
-  onEndTurn(){}
-  onHeal(){}
 
 }
