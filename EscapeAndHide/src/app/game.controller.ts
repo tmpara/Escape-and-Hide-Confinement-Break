@@ -8,8 +8,6 @@ import { Health } from './health/health';
 import { Energy } from './energy/energy';
 import { Item } from './items/item';
 import { Items, Weapon } from './items/items';
-import { inventoryRendering } from './inventory/inventoryRendering';
-import { World } from './world';
 import { WorldMapRenderer } from './worldMapRenderer';
 import { WeaponFunctionality } from './items/weapon_functionality';
 import { Inventory } from './inventory/inventory';
@@ -77,13 +75,8 @@ export class GameController {
     }
     
     // Create map and player
-
     this.map = this.world.rooms[this.playerWorldX][this.playerWorldY];
-    
-    console.log(this.map.width + " " + this.map.height);
-    this.map.loadPlayer(1, 1, this.player1);
-
-    console.log(this.map.width + ' ' + this.map.height);
+    this.loadPlayer(1, 1, this.player1,1);
 
     // Create PIXI app
     this.app = new Application();
@@ -131,9 +124,6 @@ export class GameController {
     this.loadPlayer(1, 1, this.player1, 1);
     this.loadEntity(5, 2, this.dummy1, this.map);
     this.loadEntity(5, 3, this.heavyDummy1, this.map);
-    this.map.SpawnItem(5, 3, new Items().gun);
-    this.map.SpawnItem(2, 3, new Items().bigGun);
-
     this.spawnItem(1, 3, new Items().gun);
     this.spawnItem(2, 3, new Items().bigGun);
 
@@ -691,8 +681,8 @@ export class GameController {
  }
 findRoom(player: Player){
  
-    let playerPosX = player.PosX;
-    let playerPosY = player.PosY;
+    let playerPosX = player.posX;
+    let playerPosY = player.posY;
 
     let mapX = this.map.width;
     let mapY = this.map.height;
@@ -700,7 +690,7 @@ findRoom(player: Player){
     if (playerPosX == 1 && playerPosY < mapY) {
       //left
       if (this.playerWorldX - 1  >= 0){
-        this.map.tiles[playerPosX][playerPosY].entity = null;
+        this.removePlayer(playerPosX,playerPosY)
         this.map = this.world.rooms[this.playerWorldX-1][this.playerWorldY];
         this.playerWorldX -= 1;
         let x = this.findEnntrance("right")!.x
@@ -712,7 +702,7 @@ findRoom(player: Player){
     } else if (playerPosX == 2 && playerPosY < mapY) {
       //right
       if (this.playerWorldX + 1  <= 10){
-        this.map.tiles[playerPosX][playerPosY].entity = null;
+        this.removePlayer(playerPosX,playerPosY)
         this.map = this.world.rooms[this.playerWorldX+1][this.playerWorldY];
         this.playerWorldX += 1;
         let x = this.findEnntrance("left")!.x
@@ -725,7 +715,7 @@ findRoom(player: Player){
     else if(playerPosY == 0 && playerPosX < mapX){
       //up 
       if (this.playerWorldY - 1  >= 0){
-        this.map.tiles[playerPosX][playerPosY].entity = null;
+        this.removePlayer(playerPosX,playerPosY)
         this.map = this.world.rooms[this.playerWorldX][this.playerWorldY-1];
         this.playerWorldY -= 1;
         let x = this.findEnntrance("down")!.x
@@ -738,7 +728,7 @@ findRoom(player: Player){
       //down
       if (this.playerWorldY + 1  <= 10){
       
-        this.map.tiles[playerPosX][playerPosY].entity = null;
+        this.removePlayer(playerPosX,playerPosY)
         this.map = this.world.rooms[this.playerWorldX][this.playerWorldY+1];
         this.playerWorldY += 1;
         let x = this.findEnntrance("up")!.x
@@ -1010,8 +1000,8 @@ findRoom(player: Player){
     if (!this.world.rooms[worldX] || !this.world.rooms[worldX][worldY]) return;
 
     // clear player from current room (if within bounds)
-    if (this.map && this.player1.PosX >= 0 && this.player1.PosY >= 0 && this.player1.PosX < this.map.width && this.player1.PosY < this.map.height) {
-      this.map.tiles[this.player1.PosX][this.player1.PosY].entity = null;
+    if (this.map && this.player1.posX >= 0 && this.player1.posY >= 0 && this.player1.posX < this.map.width && this.player1.posY < this.map.height) {
+      this.removePlayer(this.player1.posX,this.player1.posY)
     }
 
     // switch to target room
@@ -1024,9 +1014,9 @@ findRoom(player: Player){
     const targetY = Math.floor(this.map.height / 2);
 
     // set player position in new room and mark entity
-    this.player1.PosX = targetX;
-    this.player1.PosY = targetY;
-    this.map.tiles[targetX][targetY].entity = this.player1;
+    this.player1.posX = targetX;
+    this.player1.posY = targetY;
+    this.map.tiles[targetX][targetY].entity.push(this.player1);
 
     // animate render position to new tile
     this.animatePlayerMove(this.player1, targetX, targetY);

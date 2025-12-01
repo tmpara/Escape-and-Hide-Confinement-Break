@@ -12,7 +12,6 @@ export class World {
     endX: number = 0;
     endY: number = 0;
     
-    
     constructor() {
         this.rooms = new Array();
         this.roomsIDs = new Array();
@@ -32,8 +31,6 @@ export class World {
         }
 
         // choose a single starting room and ending room 
-
-        debugger;
         this.roomsIDs[this.startX][this.startY] = "startingRoom";
         this.loadRoomWithId(this.startX, this.startY, "startingRoom");
 
