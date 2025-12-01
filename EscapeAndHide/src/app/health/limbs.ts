@@ -15,7 +15,7 @@ export class Limbs {
   }
 
   healBleeding() {
-    if (this.bleeding > 0) {
+    if (this.bleeding > 0 && this.bleeding <= this.afflictionLimit) {
       this.bleeding -= 1;
     }
   }
@@ -27,7 +27,7 @@ export class Limbs {
   }
 
   healFracture() {
-    if (this.fracture > 0) {
+    if (this.fracture > 0 && this.fracture <= this.afflictionLimit) {
       this.fracture -= 1;
     }
   }
@@ -44,6 +44,11 @@ export class Limbs {
     if (this.lacerations > 0) {
       this.lacerations -= 1;
     }
+  }
+
+  naturalHeal() {
+    this.healBleeding();
+    this.healLaceration();
   }
 
   returnAfflictions() {

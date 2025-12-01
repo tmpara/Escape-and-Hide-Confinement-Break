@@ -1,9 +1,9 @@
 import { entity } from './entity';
-import { Item } from './items/item';
+import { Item } from './items/items';
 import { Items } from './items/items';
 
 export class Dummy extends entity {
-  displayName: string = "Dummy"
+  displayName: string = 'Dummy';
   PosX: number;
   PosY: number;
   renderX: number;
@@ -23,15 +23,15 @@ export class Dummy extends entity {
     this.health = health;
   }
 
-  dealDamage(damage: number){
-    if(!this.isDead){
+  dealDamage(damage: number) {
+    if (!this.isDead) {
       this.health -= damage;
     }
   }
 }
 
 export class HeavyDummy extends entity {
-  displayName: string = "Heavy Dummy";
+  displayName: string = 'Heavy Dummy';
   PosX: number;
   PosY: number;
   renderX: number;

@@ -12,9 +12,6 @@ export class WeaponFunctionality {
   ) {
     if (map.tiles[tileCoords.x][tileCoords.y].entity) {
       let damage = 1;
-      if (inventory.equippedWeapon) {
-        damage = inventory.equippedWeapon.damage;
-      }
       console.log(damage);
       if (target instanceof Dummy && !target.isDead) {
         target.dealDamage(damage);

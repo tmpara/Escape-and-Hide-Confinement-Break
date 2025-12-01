@@ -1,5 +1,5 @@
 import { entity } from './entity';
-import { Item } from './items/item';
+import { Item } from './items/items';
 export class tile {
   name: string | null = 'empty';
   hasCollision: boolean = false;

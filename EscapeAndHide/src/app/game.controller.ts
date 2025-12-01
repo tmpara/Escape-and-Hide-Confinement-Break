@@ -12,6 +12,7 @@ import { Dummy, HeavyDummy } from './enemyTypes';
 import { Inventory } from './inventory/inventory';
 
 export class GameController {
+  static current: GameController | null = null;
   app!: Application;
   map!: GameGrid;
   healthUIApp!: PIXI.Application;
@@ -48,6 +49,7 @@ export class GameController {
   constructor() {}
 
   async init(container: HTMLDivElement): Promise<void> {
+    GameController.current = this;
     await Assets.load('explosion.png');
     await Assets.load('fire_legacy.png');
     await Assets.load('fire_large.png');
@@ -121,8 +123,8 @@ export class GameController {
     const inventoryRow = document.createElement('div');
     inventoryRow.style.display = 'flex';
     inventoryRow.style.flexDirection = 'row';
-    inventoryRow.style.width = '30vw'; 
-    inventoryRow.style.height = '80vh'; 
+    inventoryRow.style.width = '30vw';
+    inventoryRow.style.height = '80vh';
     inventoryRow.style.position = 'absolute';
     inventoryRow.style.right = '0';
     inventoryRow.style.top = '0';
@@ -143,7 +145,7 @@ export class GameController {
 
     // Create status row for health and afflictions side by side below main game canvas
     const statusRow = document.createElement('div');
-    statusRow.id  = 'status-row';
+    statusRow.id = 'status-row';
     statusRow.style.display = 'flex';
     statusRow.style.flexDirection = 'row';
     statusRow.style.width = 'window.innerWidth * 0.3';
@@ -174,11 +176,6 @@ export class GameController {
     statusRow.appendChild(this.healthUIApp.view as HTMLCanvasElement);
     statusRow.appendChild(this.afflictionsApp.view as HTMLCanvasElement);
     this.healthUIApp.stage.addChild(this.healthLimbContainer);
-
-    this.selectedLimb = 'leftLeg';
-    // Set torso afflictions and display them by default
-    this.afflictions = this.player1.health.leftLeg.returnAfflictions();
-    this.drawAfflictions();
 
     // Listen for movement
     this.listenForInput(this.player1);
@@ -391,10 +388,10 @@ export class GameController {
     // Health
     const healthPercentage =
       this.player1.health.currentBlood / this.player1.health.maxBlood;
-      this.healthBar.beginFill(0xff0000);
-      this.healthBar.drawRect(x, y, barWidth * healthPercentage, barHeight);
-      this.healthBar.addChild(myText);
-      this.healthBar.endFill();
+    this.healthBar.beginFill(0xff0000);
+    this.healthBar.drawRect(x, y, barWidth * healthPercentage, barHeight);
+    this.healthBar.addChild(myText);
+    this.healthBar.endFill();
 
     // Bleeding effect
     if (
@@ -723,16 +720,46 @@ export class GameController {
   drawHealthUI() {
     this.healthLimbContainer.removeChildren();
 
-    const baseX = 80
+    const baseX = 80;
     const baseY = 50; // Adjusted for healthUIApp canvas
-    const limbSize = 32;
+    const limbSize = 50;
 
     this.addHealthLimbSprite('head', baseX, baseY, limbSize, limbSize);
-    this.addHealthLimbSprite('torso', baseX, baseY + limbSize, limbSize, limbSize);
-    this.addHealthLimbSprite('leftarm', baseX - limbSize, baseY + limbSize, limbSize, limbSize);
-    this.addHealthLimbSprite('rightarm', baseX + limbSize, baseY + limbSize, limbSize, limbSize);
-    this.addHealthLimbSprite('leftleg', baseX - limbSize / 2, baseY + limbSize * 2, limbSize, limbSize);
-    this.addHealthLimbSprite('rightleg', baseX + limbSize / 2, baseY + limbSize * 2, limbSize, limbSize);
+    this.addHealthLimbSprite(
+      'torso',
+      baseX,
+      baseY + limbSize,
+      limbSize,
+      limbSize
+    );
+    this.addHealthLimbSprite(
+      'leftarm',
+      baseX - limbSize,
+      baseY + limbSize,
+      limbSize,
+      limbSize
+    );
+    this.addHealthLimbSprite(
+      'rightarm',
+      baseX + limbSize,
+      baseY + limbSize,
+      limbSize,
+      limbSize
+    );
+    this.addHealthLimbSprite(
+      'leftleg',
+      baseX - limbSize / 2,
+      baseY + limbSize * 2,
+      limbSize,
+      limbSize
+    );
+    this.addHealthLimbSprite(
+      'rightleg',
+      baseX + limbSize / 2,
+      baseY + limbSize * 2,
+      limbSize,
+      limbSize
+    );
   }
 
   addHealthLimbSprite(
@@ -784,17 +811,22 @@ export class GameController {
   drawAfflictions() {
     this.getAfflictionsForLimb(this.selectedLimb);
     this.afflictionsApp.stage.removeChildren();
-    for(let affliction in this.afflictions){
-      const afflictionText = new Text({
-        text: affliction + ': ' + this.afflictions[affliction],
-        style: {
-          fontSize: 16,
-          fill: '#ffffff',
-        },
-        y: Object.keys(this.afflictions).indexOf(affliction) * 20 + 10,
-        x: 10,
-      });
-      this.afflictionsApp.stage.addChild(afflictionText);
+    for (let affliction in this.afflictions) {
+      if (
+        this.afflictions[affliction] > 0 &&
+        this.afflictions[affliction] < 100
+      ) {
+        const afflictionText = new Text({
+          text: affliction + ': ' + this.afflictions[affliction],
+          style: {
+            fontSize: 16,
+            fill: '#ffffff',
+          },
+          y: Object.keys(this.afflictions).indexOf(affliction) * 20 + 10,
+          x: 10,
+        });
+        this.afflictionsApp.stage.addChild(afflictionText);
+      }
     }
   }
 
@@ -901,11 +933,7 @@ export class GameController {
         const pickedUp = await this.inventory.showPickUpPrompt(item);
         if (pickedUp) {
           this.inventory.pickUp(item);
-          this.map.RemoveItem(
-            player.PosX,
-            player.PosY,
-            this.map.tiles[player.PosX][player.PosY].effect
-          );
+          this.map.tiles[player.PosX][player.PosY].item = null;
         }
       }
     } else if (this.inventory.pickUpOverlay != null) {

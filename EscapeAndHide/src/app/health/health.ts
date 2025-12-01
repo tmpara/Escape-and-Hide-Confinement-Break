@@ -61,6 +61,12 @@ export class Health {
     }
   }
 
+  naturalHeal() {
+    for (let limb of this.limbs) {
+      limb.naturalHeal();
+    }
+  }
+
   stopBleeding() {
     for (let limb of this.limbs) {
       limb.bleeding = 0;

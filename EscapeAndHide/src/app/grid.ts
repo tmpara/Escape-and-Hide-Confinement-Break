@@ -2,7 +2,7 @@ import { Health } from './health/health';
 import { Energy } from './energy/energy';
 import { Player } from './player';
 import { tile } from './tile';
-import { Item } from './items/item';
+import { Item } from './items/items';
 
 export class GameGrid {
   width: number;

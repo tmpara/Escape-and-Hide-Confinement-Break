@@ -32,5 +32,6 @@ export class Player extends entity {
   playerAction(energyCost: number) {
     this.health.damage();
     this.energy.loseEnergy(energyCost);
+    this.health.naturalHeal();
   }
 }
