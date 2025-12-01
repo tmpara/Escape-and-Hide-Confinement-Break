@@ -7,6 +7,10 @@ export class World {
     width: number;
     height: number;
     data: RoomsData = new RoomsData();
+    startX: number = 0;
+    startY: number = 0;
+    endX: number = 0;
+    endY: number = 0;
     
     
     constructor() {
@@ -14,6 +18,10 @@ export class World {
         this.roomsIDs = new Array();
         this.width = 10;
         this.height = 10;
+        this.startX = Math.floor((Math.random() * 8) + 1);
+        this.startY = Math.floor((Math.random() * 8) + 1);
+        this.endX = Math.floor((Math.random() * 8) + 1);
+        this.endY = Math.floor((Math.random() * 8) + 1);
     }
 
     CreateWorld(){
@@ -24,21 +32,19 @@ export class World {
         }
 
         // choose a single starting room and ending room 
-        const startX = 5;
-        const startY = 5;
-        const endX = 6;
-        const endY = 6;
-        this.roomsIDs[startX][startY] = "startingRoom";
-        this.loadRoomWithId(startX, startY, "startingRoom");
 
-        this.roomsIDs[endX][endY] = "endingRoom";
-        this.loadRoomWithId(endX, endY, "endingRoom");
+        debugger;
+        this.roomsIDs[this.startX][this.startY] = "startingRoom";
+        this.loadRoomWithId(this.startX, this.startY, "startingRoom");
+
+        this.roomsIDs[this.endX][this.endY] = "endingRoom";
+        this.loadRoomWithId(this.endX, this.endY, "endingRoom");
 
         for(let x=0;x<this.width;x++){
             for(let y=0;y<this.height;y++){
                 
-                if (x === startX && y === startY) continue;
-                if (x === endX && y === endY) continue;
+                if (x === this.startX && y === this.startY) continue;
+                if (x === this.endX && y === this.endY) continue;
                  
                 let leftEntranceRequired = false;
                 let upEntranceRequired = false;
@@ -92,7 +98,7 @@ export class World {
                 
               
                 if(y==8){
-                    debugger
+                    
                 }
                 this.setRoomByEntrance(leftEntranceRequired, upEntranceRequired, rightEntranceRequired, downEntranceRequired, x, y);
             }
@@ -115,6 +121,60 @@ export class World {
     }
   }
   
+   pathFind(fromX:number, fromY:number, toX:number, toY:number): boolean {
+    // bounds / existence checks
+    if (!this.isValidRoom(fromX, fromY) || !this.isValidRoom(toX, toY)) return false;
+    const startId = this.roomsIDs[fromX][fromY];
+    const targetId = this.roomsIDs[toX][toY];
+    if (!startId || !targetId) return false;
+
+    // simple BFS across world cells using mutual entrances (room -> neighbor and neighbor -> room)
+    const visited: boolean[][] = Array.from({ length: this.width }, () => Array(this.height).fill(false));
+    const queue: Array<[number, number]> = [];
+    queue.push([fromX, fromY]);
+    visited[fromX][fromY] = true;
+
+    const opposite = (dir: string) => {
+      if (dir === "left") return "right";
+      if (dir === "right") return "left";
+      if (dir === "up") return "down";
+      if (dir === "down") return "up";
+      return "";
+    };
+
+    while (queue.length > 0) {
+      const [cx, cy] = queue.shift()!;
+
+      if (cx === toX && cy === toY) return true;
+
+      const roomId = this.roomsIDs[cx]![cy] as keyof RoomsData;
+      const entrances = this.getRoomEntrances(roomId) || [];
+
+      for (const dir of entrances) {
+        let nx = cx;
+        let ny = cy;
+        if (dir === "left") nx = cx - 1;
+        else if (dir === "right") nx = cx + 1;
+        else if (dir === "up") ny = cy - 1;
+        else if (dir === "down") ny = cy + 1;
+
+        if (!this.isValidRoom(nx, ny)) continue;
+        const neighborId = this.roomsIDs[nx]![ny];
+        if (!neighborId) continue;
+
+        // require neighbor to have the opposite entrance
+        const neighborEntrances = this.getRoomEntrances(neighborId as keyof RoomsData) || [];
+        if (!neighborEntrances.includes(opposite(dir))) continue;
+
+        if (!visited[nx][ny]) {
+          visited[nx][ny] = true;
+          queue.push([nx, ny]);
+        }
+      }
+    }
+
+    return false;
+  }
 
 setRoomByEntrance(leftEntranceRequired: boolean, upEntranceRequired: boolean, rightEntranceRequired:number, downEntranceRequired:number, x:number, y:number){
         
@@ -139,24 +199,33 @@ setRoomByEntrance(leftEntranceRequired: boolean, upEntranceRequired: boolean, ri
 
         const whileFunction = () => {
             loopCounter++;
-            if(loopCounter > 50){
-                
-                roomID = this.data.deadEndRooms[Math.floor(Math.random()*this.data.roomList.length)];
+            if(loopCounter > 100){
+                roomID = "crossHall1";
+                this.roomsIDs[x][y] = roomID;
+                console.log("Could not find suitable room at "+x+","+y+", setting to noRoom");
+                return true;
+            }
+            else if(loopCounter > 50){
+                roomID = this.data.deadEndRooms[Math.floor(Math.random()*this.data.deadEndRooms.length)];
             }else{
                 roomID = this.data.roomList[Math.floor(Math.random()*this.data.roomList.length)];
             }
             
+            
             this.roomsIDs[x][y] = roomID;
             resetRoomEntrances();
+            return false;
         }
 
        
 
         if(x==this.width-1 ){
-                downEntranceRequired = 0;
+                rightEntranceRequired = 0;
+                console.log("No right entrance required at "+x+","+y);
         }
         if(y==this.height-1){
-                rightEntranceRequired = 0;
+                downEntranceRequired = 0;
+                console.log("No down entrance required at "+x+","+y);
         }
 
         if (rightEntranceRequired == 2){rightRequired = true; }
@@ -168,50 +237,24 @@ setRoomByEntrance(leftEntranceRequired: boolean, upEntranceRequired: boolean, ri
             if (rightEntranceRequired == 1 || downEntranceRequired == 1 ){
                 if (rightEntranceRequired == 1){
                     while(up != upEntranceRequired || left != leftEntranceRequired  || down != downRequired ){
-                    whileFunction();
-                    if(loopCounter>100){
-                        roomID = "crossHall1";
-                        this.roomsIDs[x][y] = roomID;
-                        console.log("Could not find suitable room at "+x+","+y+", setting to noRoom");
-                        break;
-                    }
+                    if(whileFunction()) {break;}
                     }
                 }
                 else{
                     while(up != upEntranceRequired || left != leftEntranceRequired  || right != rightRequired ){
-                    whileFunction();
-                    if(loopCounter>100){
-                        roomID = "crossHall1";
-                        this.roomsIDs[x][y] = roomID;
-                        console.log("Could not find suitable room at "+x+","+y+", setting to noRoom");
-                        break;
-                    }
+                    if(whileFunction()) {break;}
                     }
                 }
             }
             else{
                 while(up != upEntranceRequired || left != leftEntranceRequired || right != rightRequired || down != downRequired ){
-                    whileFunction();
-                    if(loopCounter>100){
-                        roomID = "crossHall1";
-                        this.roomsIDs[x][y] = roomID;
-                        console.log("Could not find suitable room at "+x+","+y+", setting to noRoom");
-                        break;
-                    }
+                    if(whileFunction()) {break;}
                 }
             }
-
-            
         }
         else{
              while(up != upEntranceRequired || left != leftEntranceRequired ){
-               whileFunction();
-               if(loopCounter>100){
-                        roomID = "crossHall1";
-                        this.roomsIDs[x][y] = roomID;
-                        console.log("Could not find suitable room at "+x+","+y+", setting to noRoom");
-                        break;
-                    }
+               if(whileFunction()) {break;}
                
             }
         }
@@ -227,6 +270,9 @@ setRoomByEntrance(leftEntranceRequired: boolean, upEntranceRequired: boolean, ri
     }
 
     loadRoomWithId(worldX:number,worldY:number,id: keyof RoomsData){
+        if(this.data[id]==undefined){
+            debugger
+        }
         let x = (this.data[id] as any).width;
         let y = (this.data[id] as any).height;
         this.rooms[worldX][worldY] = new GameGrid(x,y);

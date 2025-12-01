@@ -30,8 +30,8 @@ export class GameController {
   healthBar = new Graphics();
   energyBar = new Graphics();
   tile = new Graphics();
-  playerWorldX = 5;
-  playerWorldY = 5;
+  playerWorldX = this.world.startX;
+  playerWorldY = this.world.startY;
   tileSize = 32; // Size of each tile in pixels
   mapContainer?: Container;
   mapRenderer?: WorldMapRenderer;
@@ -56,9 +56,15 @@ export class GameController {
 
  
     this.world.CreateWorld();
+    while(this.world.pathFind(this.playerWorldX, this.playerWorldY,  this.world.endX, this.world.endY) == false){
+      this.world.CreateWorld();
+      this.playerWorldX = this.world.startX;
+      this.playerWorldY = this.world.startY;
+    }
+    
     // Create map and player
 
-    this.map = this.world.rooms[5][5];
+    this.map = this.world.rooms[this.playerWorldX][this.playerWorldY];
     
     console.log(this.map.width + " " + this.map.height);
     this.map.loadPlayer(1, 1, this.player1);
