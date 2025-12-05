@@ -97,6 +97,12 @@ export class RoomTransition extends Entity {
   override hiddenOutsideLOS = false;
   override blockLOS = true;
   override flammable = false;
+  type = ""
+
+  constructor(type:string){
+    super();
+    this.type = type
+  }
 
   override onUse(user: Player){
     GameController.current?.findRoom(user);
