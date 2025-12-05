@@ -7,17 +7,20 @@ import {
   Torso,
   Limbs,
 } from './limbs';
+import { Hypoxemia, Bleeding, Lacerations, Fracture, Bloodloss } from './afflictions';
 export class Health {
-  maxBlood: number = 5000; // max amount of blood in ml
-  currentBlood: number = 5000; // current amount of blood in ml
-  bleedingRate: number = 0; //in ml per turn
-  regeneration: number = 50; //base 50ml, how much health is regenerated each turn
+  maxBlood: number = 5000;
+  currentBlood: number = 5000;
+  regeneration: number = 10;
+  isUnconscious: boolean = false;
   leftArm: LeftArm = new LeftArm();
   rightArm: RightArm = new RightArm();
   leftLeg: LefLeg = new LefLeg();
   rightLeg: RightLeg = new RightLeg();
   head: Head = new Head();
   torso: Torso = new Torso();
+  hypoxemia: Hypoxemia = new Hypoxemia();
+  bloodLoss: Bloodloss = new Bloodloss();
   limbs: Limbs[] = [
     this.leftArm,
     this.rightArm,
@@ -33,23 +36,15 @@ export class Health {
   }
 
   hitRandomLimb(bleedingIncrease: number) {
-    const limb = this.limbs[Math.floor(Math.random() * this.limbs.length)];
-    if (limb.bleeding + bleedingIncrease < limb.afflictionLimit) {
-      limb.bleeding = limb.afflictionLimit;
-    } else {
-      limb.bleeding += bleedingIncrease;
-    }
-    if (Math.floor(Math.random() * 100) + 1 < 20) {
-      limb.addFracture();
-    }
+    
   }
 
-  damage() {
-    this.bleedingRate = 0;
+  updateAfflictions() {
     for (let limb of this.limbs) {
-      this.bleedingRate += limb.bleeding;
+      this.bloodLoss.increaseSeverity(limb.bleeding.severity);
     }
-    this.currentBlood -= this.bleedingRate;
+    console.log('bloodloss: '+this.bloodLoss.severity);
+    this.currentBlood -= this.bloodLoss.severity;
     if (this.currentBlood < 0) {
       this.currentBlood = 0;
     } else {
@@ -59,18 +54,26 @@ export class Health {
         this.currentBlood = this.maxBlood;
       }
     }
+    if(this.currentBlood < this.maxBlood * 0.5 && this.hypoxemia.severity < 100) {
+      this.hypoxemia.increaseSeverity(this.bloodLoss.severity / 20);
+      console.log('hypoxemia: '+this.hypoxemia.severity);
+      if(this.hypoxemia.severity >= 100) {
+        this.isUnconscious = true;
+      }
+    }
   }
 
-  naturalHeal() {
+  bleedingRegen() {
     for (let limb of this.limbs) {
-      limb.naturalHeal();
+      limb.bleeding.naturalHeal(this.regeneration);
     }
+    this.bloodLoss.decreaseSeverity(this.regeneration);
   }
 
   stopBleeding() {
     for (let limb of this.limbs) {
-      limb.bleeding = 0;
+      limb.bleeding.severity = 0;
     }
-    this.bleedingRate = 0;
+    this.bloodLoss.severity = 0;
   }
 }

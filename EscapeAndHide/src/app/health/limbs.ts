@@ -1,59 +1,30 @@
+import { Bleeding, Lacerations, Fracture } from './afflictions';
 export class Limbs {
-  afflictionLimit: number = 100;
-  bleeding: number = 0;
-  lacerations: number = 0;
-  fracture: number = 0;
-
+  bleeding: Bleeding = new Bleeding();
+  lacerations: Lacerations = new Lacerations();
+  fracture: Fracture = new Fracture();
   constructor() {}
 
   addBleeding(amount: number) {
-    if (this.bleeding + amount > this.afflictionLimit) {
-      this.bleeding = this.afflictionLimit;
-    } else {
-      this.bleeding += amount;
-    }
+    this.bleeding.increaseSeverity(amount);
   }
-
-  healBleeding() {
-    if (this.bleeding > 0 && this.bleeding <= this.afflictionLimit) {
-      this.bleeding -= 1;
-    }
-  }
-
-  addFracture() {
-    if (this.fracture < this.afflictionLimit) {
-      this.fracture = 100;
-    }
-  }
-
-  healFracture() {
-    if (this.fracture > 0 && this.fracture <= this.afflictionLimit) {
-      this.fracture -= 1;
-    }
-  }
-
   addLaceration(amount: number) {
-    if (this.lacerations + amount > this.afflictionLimit) {
-      this.lacerations = this.afflictionLimit;
-    } else {
-      this.lacerations += amount;
+    this.lacerations.increaseSeverity(amount);
+    if(amount > 30 && this.fracture.severity === 0 && Math.random() < 0.5) {
+      this.addFracture();
     }
   }
-
-  healLaceration() {
-    if (this.lacerations > 0) {
-      this.lacerations -= 1;
-    }
-  }
-
-  naturalHeal() {
-    this.healBleeding();
-    this.healLaceration();
+  addFracture() {
+    this.fracture.increaseSeverity(100);
   }
 
   returnAfflictions() {
     console.log(
-      `Bleeding: ${this.bleeding}, Lacerations: ${this.lacerations}, Fracture: ${this.fracture}`
+      "Bleeding: " + this.bleeding.severity +
+      ", Lacerations: \n" +
+      this.lacerations.severity +
+      ", Fracture: \n" +
+      this.fracture.severity
     );
     return [this.bleeding, this.lacerations, this.fracture];
   }

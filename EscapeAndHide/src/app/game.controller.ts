@@ -377,7 +377,7 @@ export class GameController {
     this.healthBar.endFill();
 
     const bleedingPercentage = Math.min(
-      this.player1.health.bleedingRate / this.player1.health.maxBlood,
+      this.player1.health.bloodLoss.severity / this.player1.health.maxBlood,
       1
     );
     const regenPercentage = Math.min(
@@ -396,7 +396,7 @@ export class GameController {
     // Bleeding effect
     if (
       this.player1.health.currentBlood > 0 &&
-      this.player1.health.bleedingRate > 0 &&
+      this.player1.health.bloodLoss.severity > 0 &&
       bleedingPercentage > regenPercentage
     ) {
       this.healthBar.beginFill(0xffff00);
@@ -417,7 +417,7 @@ export class GameController {
       let regenBarX = x + barWidth * healthPercentage;
       let regenBarWidth = barWidth * regenPercentage;
       if (
-        this.player1.health.bleedingRate > 0 &&
+        this.player1.health.bloodLoss.severity > 0 &&
         regenPercentage < bleedingPercentage
       ) {
         regenBarX = x + barWidth * (healthPercentage - bleedingPercentage);
@@ -811,21 +811,24 @@ export class GameController {
   drawAfflictions() {
     this.getAfflictionsForLimb(this.selectedLimb);
     this.afflictionsApp.stage.removeChildren();
+    let i = 0;
     for (let affliction in this.afflictions) {
+      const afflictionValue = this.afflictions[affliction];
       if (
-        this.afflictions[affliction] > 0 &&
-        this.afflictions[affliction] < 100
+        afflictionValue.severity > 0 &&
+        afflictionValue.severity <= 100
       ) {
         const afflictionText = new Text({
-          text: affliction + ': ' + this.afflictions[affliction],
+          text: afflictionValue.name + ': ' + afflictionValue.severity,
           style: {
             fontSize: 16,
             fill: '#ffffff',
           },
-          y: Object.keys(this.afflictions).indexOf(affliction) * 20 + 10,
+          y: i * 24 + 10,
           x: 10,
         });
         this.afflictionsApp.stage.addChild(afflictionText);
+        i++;
       }
     }
   }
@@ -1012,10 +1015,10 @@ export class GameController {
     console.log('Tile effect: ' + tileEffect);
     switch (tileEffect) {
       case 'glass_shards':
-        player.health.leftLeg.addBleeding(this.clampNumber(2, 0, 100));
-        player.health.leftLeg.addLaceration(this.clampNumber(2, 0, 100));
-        player.health.rightLeg.addBleeding(this.clampNumber(2, 0, 100));
-        player.health.rightLeg.addLaceration(this.clampNumber(2, 0, 100));
+        player.health.leftLeg.addBleeding(10);
+        player.health.leftLeg.addLaceration(5);
+        player.health.rightLeg.addBleeding(10);
+        player.health.rightLeg.addLaceration(5);
         return 'glass_shards';
       case 'fire':
         // player.health.Damage(0, 2.0);
