@@ -4,6 +4,12 @@ export abstract class Entity{
     id=0;
     name = "";
     sprite = "placeholder.png";
+    tags: string[] | null = null;
+    connectsWith: string | null = null
+    spriteTopCap = "";
+    spriteBottomCap = "";
+    spriteLeftCap = "";
+    spriteRightCap = "";
     posX = 0;
     posY = 0;
     zIndex = 4;
@@ -13,7 +19,6 @@ export abstract class Entity{
     hiddenOutsideLOS = false
     blockLOS = false;
     flammable = false;
-
     maxHealth = this.health
     destroyed = false;
     fireValue = 0;

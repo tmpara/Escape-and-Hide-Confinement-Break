@@ -24,7 +24,6 @@ export class RoomsData {
     noRoom: Room;
     
     roomList: string[] = [
-        "startingRoom",
         "labComplex1",
         "crossHall1",
         "verticalHall",
@@ -99,8 +98,8 @@ export class RoomsData {
         this.labComplex1.layout[9][12] = new Wall1();
         this.labComplex1.layout[9][13] = new Wall1();
         this.labComplex1.layout[9][14] = new Wall1();
-        this.labComplex1.layout[11][5] = new DoorHorizontal
-        this.labComplex1.layout[11][9] = new DoorHorizontal
+        this.labComplex1.layout[11][5] = new DoorVertical()
+        this.labComplex1.layout[11][9] = new DoorVertical()
         this.labComplex1.layout[1][1] = new ExplosiveBarrel
         this.labComplex1.layout[1][2] = new ExplosiveBarrel
         this.labComplex1.layout[2][1] = new ExplosiveBarrel

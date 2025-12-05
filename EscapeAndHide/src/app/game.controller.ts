@@ -12,6 +12,8 @@ import { WorldMapRenderer } from './worldMapRenderer';
 import { WeaponFunctionality } from './items/weapon_functionality';
 import { Inventory } from './inventory/inventory';
 import { Dummy, HeavyDummy} from './enemyTypes'
+import { Entity } from './entity';
+import { RoomTransition } from './entities';
 
 
 export class GameController {
@@ -45,6 +47,11 @@ export class GameController {
     // expose the running instance so entities can access controller methods
     GameController.current = this;
     await Assets.load('/sprites/entities/placeholder.png');
+    await Assets.load('/sprites/entities/wall_placeholder_base.png');
+    await Assets.load('/sprites/entities/wall_placeholder_topcap.png');
+    await Assets.load('/sprites/entities/wall_placeholder_bottomcap.png');
+    await Assets.load('/sprites/entities/wall_placeholder_leftcap.png');
+    await Assets.load('/sprites/entities/wall_placeholder_rightcap.png');
     await Assets.load('/sprites/entities/door1.png');
     await Assets.load('/sprites/entities/glass_shards.png');
     await Assets.load('/sprites/entities/explosiveBarrel.png');
@@ -517,6 +524,77 @@ export class GameController {
             entitySprite.height = this.tileSize;
             entitySprite._zIndex = entity.zIndex;
             this.spriteContainer.addChild(entitySprite);
+            if(entity.connectsWith!=null){
+              // handle wall connections
+                // check tile above
+                if(this.map.isValidTile(x,y-1)){
+                  this.getAllEntitiesOnTile(x,y-1)?.forEach((adjEntity)=>{
+                    if(adjEntity.name!=entity.connectsWith){
+                      if(entity.spriteTopCap!="" || adjEntity == null){
+                        let capTexture = Assets.get((entity.spriteTopCap).toString())
+                        let capSprite = new PIXI.Sprite(capTexture);
+                        capSprite.x = x * this.tileSize;
+                        capSprite.y = y * this.tileSize;
+                        capSprite.width = this.tileSize;
+                        capSprite.height = this.tileSize;
+                        capSprite._zIndex = entity.zIndex + 1;
+                        this.spriteContainer.addChild(capSprite);
+                      }
+                    }
+                  })
+                }
+                // check tile below
+                if(this.map.isValidTile(x,y+1)){
+                  this.getAllEntitiesOnTile(x,y+1)?.forEach((adjEntity)=>{
+                    if(adjEntity.name!=entity.connectsWith){
+                      if(entity.spriteBottomCap!="" || adjEntity == null){
+                        let capTexture = Assets.get((entity.spriteBottomCap).toString())
+                        let capSprite = new PIXI.Sprite(capTexture);
+                        capSprite.x = x * this.tileSize;
+                        capSprite.y = y * this.tileSize;
+                        capSprite.width = this.tileSize;
+                        capSprite.height = this.tileSize;
+                        capSprite._zIndex = entity.zIndex + 1;
+                        this.spriteContainer.addChild(capSprite);
+                      }
+                    }
+                  })
+                }
+                // check tile to the left
+                if(this.map.isValidTile(x-1,y)){
+                  this.getAllEntitiesOnTile(x,y+1)?.forEach((adjEntity)=>{
+                    if(adjEntity.name!=entity.connectsWith){
+                      if(entity.spriteBottomCap!="" || adjEntity == null){
+                        let capTexture = Assets.get((entity.spriteBottomCap).toString())
+                        let capSprite = new PIXI.Sprite(capTexture);
+                        capSprite.x = x * this.tileSize;
+                        capSprite.y = y * this.tileSize;
+                        capSprite.width = this.tileSize;
+                        capSprite.height = this.tileSize;
+                        capSprite._zIndex = entity.zIndex + 1;
+                        this.spriteContainer.addChild(capSprite);
+                      }
+                    }
+                  })
+                }
+                // check tile to the right
+                if(this.map.isValidTile(x,y+1)){
+                  this.getAllEntitiesOnTile(x,y+1)?.forEach((adjEntity)=>{
+                    if(adjEntity.name!=entity.connectsWith || adjEntity == null){
+                      if(entity.spriteBottomCap!=""){
+                        let capTexture = Assets.get((entity.spriteBottomCap).toString())
+                        let capSprite = new PIXI.Sprite(capTexture);
+                        capSprite.x = x * this.tileSize;
+                        capSprite.y = y * this.tileSize;
+                        capSprite.width = this.tileSize;
+                        capSprite.height = this.tileSize;
+                        capSprite._zIndex = entity.zIndex + 1;
+                        this.spriteContainer.addChild(capSprite);
+                      }
+                    }
+                  })
+                }
+            }
             if (entity.hiddenOutsideLOS){
               if (this.isLOSObstructed(this.player1.posX, this.player1.posY, x, y,true,true)==true){
                 entitySprite.alpha = 0
@@ -630,7 +708,6 @@ export class GameController {
       this.removePlayer(playerPosX,playerPosY)
     }
     this.animatePlayerMove(player, targetX, targetY);
-    this.checkUnderPlayer(player);
     console.log('Player teleported to: ' + player.posX + ', ' + player.posY);
   }
 
@@ -662,7 +739,6 @@ export class GameController {
       player.posY = targetY;
       this.animatePlayerMove(player, targetX, targetY);
       this.player1.playerAction(0);
-      this.checkUnderPlayer(player);
       this.checkTileForItem(player);
     }
   }
@@ -679,7 +755,7 @@ export class GameController {
       }
     }
  }
-findRoom(player: Player){
+findRoom(player: Player, transition: RoomTransition){
  
     let playerPosX = player.posX;
     let playerPosY = player.posY;
@@ -687,7 +763,7 @@ findRoom(player: Player){
     let mapX = this.map.width;
     let mapY = this.map.height;
 
-    if (playerPosX == 1 && playerPosY < mapY) {
+    if (transition.type=="left") {
       //left
       if (this.playerWorldX - 1  >= 0){
         this.removePlayer(playerPosX,playerPosY)
@@ -699,7 +775,7 @@ findRoom(player: Player){
         console.log("Moved to left room");
         console.log("World coordinates: " + this.playerWorldX + ", " + this.playerWorldY);
       }
-    } else if (playerPosX == 2 && playerPosY < mapY) {
+    } else if (transition.type=="right") {
       //right
       if (this.playerWorldX + 1  <= 10){
         this.removePlayer(playerPosX,playerPosY)
@@ -712,7 +788,7 @@ findRoom(player: Player){
         console.log("World coordinates: " + this.playerWorldX + ", " + this.playerWorldY);
       }
     }
-    else if(playerPosY == 0 && playerPosX < mapX){
+    else if(transition.type=="up"){
       //up 
       if (this.playerWorldY - 1  >= 0){
         this.removePlayer(playerPosX,playerPosY)
@@ -724,10 +800,9 @@ findRoom(player: Player){
         console.log("Moved to up room");
         console.log("World coordinates: " + this.playerWorldX + ", " + this.playerWorldY);
       }
-    } else if (playerPosX == 4 - 1 && playerPosX < mapX) {
+    } else if (transition.type=="down"){
       //down
       if (this.playerWorldY + 1  <= 10){
-      
         this.removePlayer(playerPosX,playerPosY)
         this.map = this.world.rooms[this.playerWorldX][this.playerWorldY+1];
         this.playerWorldY += 1;
@@ -741,27 +816,40 @@ findRoom(player: Player){
   }
 
   findEnntrance(side: string){
-     for (let x = 0; x <= this.map.width; x++) {
+    let entities = []
+    for (let x = 0; x <= this.map.width; x++) {
       for (let y = 0; y <= this.map.height; y++) {
         switch(side){
           case "left":
-            if (this.map.tiles[x][y].effect == "entrance_left") {
-              return {x: x+1, y: y};
-            }    
+            entities = GameController.current?.getAllEntitiesOnTile(x,y)!
+            for(let i=0;i<entities.length!;i++){
+              if (entities[i] instanceof RoomTransition && (entities[i] as RoomTransition).type=="left"){
+                return {x: x+1, y: y};  
+              }
+            }
             break;
           case "right":
-            if (this.map.tiles[x][y].effect == "entrance_right") {
-              return {x: x-1, y: y};  
+            entities = GameController.current?.getAllEntitiesOnTile(x,y)!
+            for(let i=0;i<entities.length!;i++){
+              if (entities[i] instanceof RoomTransition && (entities[i] as RoomTransition).type=="right"){
+                return {x: x-1, y: y};  
+              }
             }
             break;
           case "up":
-            if (this.map.tiles[x][y].effect == "entrance_up") {  
-              return {x: x, y: y+1};
+            entities = GameController.current?.getAllEntitiesOnTile(x,y)!
+            for(let i=0;i<entities.length!;i++){
+              if (entities[i] instanceof RoomTransition && (entities[i] as RoomTransition).type=="up"){
+                return {x: x, y: y+1};  
+              }
             }
             break;
           case "down":
-            if (this.map.tiles[x][y].effect == "entrance_down") {   
-              return {x: x, y: y-1};
+            entities = GameController.current?.getAllEntitiesOnTile(x,y)!
+            for(let i=0;i<entities.length!;i++){
+              if (entities[i] instanceof RoomTransition && (entities[i] as RoomTransition).type=="down"){
+                return {x: x, y: y-1};  
+              }
             }
             break;
           default:
@@ -769,22 +857,7 @@ findRoom(player: Player){
          }
        }
      }
-           return;
-   }
-  checkUnderPlayer(player: Player) {
-    let tileEffect = this.map.tiles[player.posX][player.posY].effect;
-   // console.log('Tile effect: ' + tileEffect);
-    switch (tileEffect) {
-      case 'entrance':
-        this.findRoom(player);
-        return "entrance"
-      default:
-        if (tileEffect?.includes("entrance")){
-          this.findRoom(player);
-          return "entrance"
-        }
-      }
-      return ''
+     return;
   }
 
   updateAllTiles() {
@@ -932,7 +1005,6 @@ findRoom(player: Player){
 
   endTurn() {
     this.updateAllTiles();
-    this.checkUnderPlayer(this.player1);
     this.player1.Energy.setEnergy(100);
     this.player1.playerAction(0);
   }
@@ -1028,7 +1100,6 @@ findRoom(player: Player){
     }
 
     // run tile checks for the new room
-    this.checkUnderPlayer(this.player1);
     this.checkTileForItem(this.player1);
   }
 }
