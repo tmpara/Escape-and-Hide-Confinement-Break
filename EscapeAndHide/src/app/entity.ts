@@ -3,6 +3,7 @@ export abstract class Entity{
 
     id=0;
     name = "";
+    description = "";
     sprite = "placeholder.png";
     posX = 0;
     posY = 0;

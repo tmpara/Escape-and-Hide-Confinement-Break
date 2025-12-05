@@ -6,8 +6,6 @@ import { Energy } from './energy/energy';
 export class Player extends Entity {
   override name = "";
   override sprite = "";
-  override posX = 0;
-  override posY = 0;
   override collidable = false;
   override damageable = false;
   override health = 0;
@@ -15,8 +13,8 @@ export class Player extends Entity {
   override blockLOS = false;
   override flammable = true;
   playerId = 0;
-  renderX = 0;
-  renderY = 0;
+  renderX = this.posX;
+  renderY = this.posY;
   Health = new Health(5,5);
   Energy = new Energy(100,100);
 

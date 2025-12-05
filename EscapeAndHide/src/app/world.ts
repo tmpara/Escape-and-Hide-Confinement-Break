@@ -33,7 +33,7 @@ export class World {
 
         // choose a single starting room and ending room 
 
-        debugger;
+        
         this.roomsIDs[this.startX][this.startY] = "startingRoom";
         this.loadRoomWithId(this.startX, this.startY, "startingRoom");
 
@@ -76,17 +76,18 @@ export class World {
                     }
                 }
 
-                if (x > 0 && this.roomsIDs[x+1] && this.roomsIDs[x+1][y]) {
+                if (x >= 0 && this.roomsIDs[x+1] && this.roomsIDs[x+1][y]) {
                     const neighborId = this.roomsIDs[x+1][y] as keyof RoomsData;
-                    
+                    console.log("right room located at "+(x+1)+","+y)
                     if (this.getRoomEntrances(neighborId).includes("left")) {
                         rightEntranceRequired = 2
                         console.log("right entrance required at "+x+","+y);
                     }
                 }
 
-                if (y > 0 && this.roomsIDs[x] && this.roomsIDs[x][y+1]) {
+                if (y >= 0 && this.roomsIDs[x] && this.roomsIDs[x][y+1]) {
                     const neighborId = this.roomsIDs[x][y+1] as keyof RoomsData;
+                    console.log("down room located at "+(x)+","+(y+1))
                     if (this.getRoomEntrances(neighborId).includes("up")) {
                         downEntranceRequired = 2
                         console.log("down entrance required at "+x+","+y);
@@ -103,7 +104,8 @@ export class World {
                 this.setRoomByEntrance(leftEntranceRequired, upEntranceRequired, rightEntranceRequired, downEntranceRequired, x, y);
             }
         }
-      
+        console.log("starting room at "+this.startX+","+this.startY);
+        console.log("ending room at "+this.endX+","+this.endY);
        console.log("World created:");
        console.log(this.roomsIDs);
     }
@@ -221,15 +223,15 @@ setRoomByEntrance(leftEntranceRequired: boolean, upEntranceRequired: boolean, ri
 
         if(x==this.width-1 ){
                 rightEntranceRequired = 0;
-                console.log("No right entrance required at "+x+","+y);
+               // console.log("No right entrance required at "+x+","+y);
         }
         if(y==this.height-1){
                 downEntranceRequired = 0;
-                console.log("No down entrance required at "+x+","+y);
+                //console.log("No down entrance required at "+x+","+y);
         }
 
-        if (rightEntranceRequired == 2){rightRequired = true; }
-        if (downEntranceRequired == 2) {downRequired = true; }
+        if (rightEntranceRequired == 2){rightRequired = true; console.log("right entrance required at "+x+","+y); }
+        if (downEntranceRequired == 2) {downRequired = true; console.log("down entrance required at "+x+","+y); }
         if (rightEntranceRequired == 0){rightRequired = false; }
         if (downEntranceRequired == 0) {downRequired = false; }
 
