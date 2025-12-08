@@ -52,6 +52,10 @@ export class GameController {
     await Assets.load('/sprites/entities/wall_placeholder_bottomcap.png');
     await Assets.load('/sprites/entities/wall_placeholder_leftcap.png');
     await Assets.load('/sprites/entities/wall_placeholder_rightcap.png');
+    await Assets.load('/sprites/entities/wall_placeholder_toprightcorner.png');
+    await Assets.load('/sprites/entities/wall_placeholder_bottomleftcorner.png');
+    await Assets.load('/sprites/entities/wall_placeholder_topleftcorner.png');
+    await Assets.load('/sprites/entities/wall_placeholder_bottomrightcorner.png');
     await Assets.load('/sprites/entities/door1.png');
     await Assets.load('/sprites/entities/glass_shards.png');
     await Assets.load('/sprites/entities/explosiveBarrel.png');
@@ -524,76 +528,102 @@ export class GameController {
             entitySprite.height = this.tileSize;
             entitySprite._zIndex = entity.zIndex;
             this.spriteContainer.addChild(entitySprite);
-            if(entity.connectsWith!=null){
-              // handle wall connections
-                // check tile above
-                if(this.map.isValidTile(x,y-1)){
-                  this.getAllEntitiesOnTile(x,y-1)?.forEach((adjEntity)=>{
-                    if(adjEntity.name!=entity.connectsWith){
-                      if(entity.spriteTopCap!="" || adjEntity == null){
-                        let capTexture = Assets.get((entity.spriteTopCap).toString())
-                        let capSprite = new PIXI.Sprite(capTexture);
-                        capSprite.x = x * this.tileSize;
-                        capSprite.y = y * this.tileSize;
-                        capSprite.width = this.tileSize;
-                        capSprite.height = this.tileSize;
-                        capSprite._zIndex = entity.zIndex + 1;
-                        this.spriteContainer.addChild(capSprite);
-                      }
-                    }
-                  })
+            // handle wall connections
+            const shouldSpawnCap = (x: number, y: number) => { 
+              if(this.map.isValidTile(x,y)){
+                let entities = this.getAllEntitiesOnTile(x,y)
+                for(let i=0;i<entities.length;i++){
+                  if (entities[i].connectsWith == entity.connectsWith){
+                    return false;
+                  }
                 }
-                // check tile below
-                if(this.map.isValidTile(x,y+1)){
-                  this.getAllEntitiesOnTile(x,y+1)?.forEach((adjEntity)=>{
-                    if(adjEntity.name!=entity.connectsWith){
-                      if(entity.spriteBottomCap!="" || adjEntity == null){
-                        let capTexture = Assets.get((entity.spriteBottomCap).toString())
-                        let capSprite = new PIXI.Sprite(capTexture);
-                        capSprite.x = x * this.tileSize;
-                        capSprite.y = y * this.tileSize;
-                        capSprite.width = this.tileSize;
-                        capSprite.height = this.tileSize;
-                        capSprite._zIndex = entity.zIndex + 1;
-                        this.spriteContainer.addChild(capSprite);
-                      }
-                    }
-                  })
-                }
-                // check tile to the left
-                if(this.map.isValidTile(x-1,y)){
-                  this.getAllEntitiesOnTile(x,y+1)?.forEach((adjEntity)=>{
-                    if(adjEntity.name!=entity.connectsWith){
-                      if(entity.spriteBottomCap!="" || adjEntity == null){
-                        let capTexture = Assets.get((entity.spriteBottomCap).toString())
-                        let capSprite = new PIXI.Sprite(capTexture);
-                        capSprite.x = x * this.tileSize;
-                        capSprite.y = y * this.tileSize;
-                        capSprite.width = this.tileSize;
-                        capSprite.height = this.tileSize;
-                        capSprite._zIndex = entity.zIndex + 1;
-                        this.spriteContainer.addChild(capSprite);
-                      }
-                    }
-                  })
-                }
-                // check tile to the right
-                if(this.map.isValidTile(x,y+1)){
-                  this.getAllEntitiesOnTile(x,y+1)?.forEach((adjEntity)=>{
-                    if(adjEntity.name!=entity.connectsWith || adjEntity == null){
-                      if(entity.spriteBottomCap!=""){
-                        let capTexture = Assets.get((entity.spriteBottomCap).toString())
-                        let capSprite = new PIXI.Sprite(capTexture);
-                        capSprite.x = x * this.tileSize;
-                        capSprite.y = y * this.tileSize;
-                        capSprite.width = this.tileSize;
-                        capSprite.height = this.tileSize;
-                        capSprite._zIndex = entity.zIndex + 1;
-                        this.spriteContainer.addChild(capSprite);
-                      }
-                    }
-                  })
-                }
+              }
+              return true
+            }
+            if (shouldSpawnCap(x,y-1) && entity.spriteTopCap!=""){
+              let capTexture = Assets.get((entity.spriteTopCap).toString())
+              let capSprite = new PIXI.Sprite(capTexture);
+              capSprite.x = x * this.tileSize;
+              capSprite.y = y * this.tileSize;
+              capSprite.width = this.tileSize;
+              capSprite.height = this.tileSize;
+              capSprite._zIndex = entity.zIndex + 0.1;
+              this.spriteContainer.addChild(capSprite);
+            }
+            if (shouldSpawnCap(x,y+1) && entity.spriteBottomCap!=""){
+              let capTexture = Assets.get((entity.spriteBottomCap).toString())
+              let capSprite = new PIXI.Sprite(capTexture);
+              capSprite.x = x * this.tileSize;
+              capSprite.y = y * this.tileSize;
+              capSprite.width = this.tileSize;
+              capSprite.height = this.tileSize;
+              capSprite._zIndex = entity.zIndex + 0.1;
+              this.spriteContainer.addChild(capSprite);
+            }
+            if (shouldSpawnCap(x-1,y) && entity.spriteLeftCap!=""){
+              let capTexture = Assets.get((entity.spriteLeftCap).toString())
+              let capSprite = new PIXI.Sprite(capTexture);
+              capSprite.x = x * this.tileSize;
+              capSprite.y = y * this.tileSize;
+              capSprite.width = this.tileSize;
+              capSprite.height = this.tileSize;
+              capSprite._zIndex = entity.zIndex + 0.1;
+              this.spriteContainer.addChild(capSprite);
+            }
+            if (shouldSpawnCap(x+1,y) && entity.spriteRightCap!=""){
+              let capTexture = Assets.get((entity.spriteRightCap).toString())
+              let capSprite = new PIXI.Sprite(capTexture);
+              capSprite.x = x * this.tileSize;
+              capSprite.y = y * this.tileSize;
+              capSprite.width = this.tileSize;
+              capSprite.height = this.tileSize;
+              capSprite._zIndex = entity.zIndex + 0.1;
+              this.spriteContainer.addChild(capSprite);
+            }
+            //corners
+            //top left
+            if (shouldSpawnCap(x-1,y) == false && shouldSpawnCap(x,y-1) == false && shouldSpawnCap(x-1,y-1) && entity.spriteTopLeftCorner!=""){
+              let capTexture = Assets.get((entity.spriteTopLeftCorner).toString())
+              let capSprite = new PIXI.Sprite(capTexture);
+              capSprite.x = x * this.tileSize;
+              capSprite.y = y * this.tileSize;
+              capSprite.width = this.tileSize;
+              capSprite.height = this.tileSize;
+              capSprite._zIndex = entity.zIndex + 0.2;
+              this.spriteContainer.addChild(capSprite);
+            }
+            //top right
+            if (shouldSpawnCap(x+1,y) == false && shouldSpawnCap(x,y-1) == false && shouldSpawnCap(x+1,y-1) && entity.spriteTopRightCorner!=""){
+              let capTexture = Assets.get((entity.spriteTopRightCorner).toString())
+              let capSprite = new PIXI.Sprite(capTexture);
+              capSprite.x = x * this.tileSize;
+              capSprite.y = y * this.tileSize;
+              capSprite.width = this.tileSize;
+              capSprite.height = this.tileSize;
+              capSprite._zIndex = entity.zIndex + 0.2;
+              this.spriteContainer.addChild(capSprite);
+            }
+            //bottom left
+            if (shouldSpawnCap(x-1,y) == false && shouldSpawnCap(x,y+1) == false && shouldSpawnCap(x-1,y+1) && entity.spriteBottomLeftCorner!=""){
+              let capTexture = Assets.get((entity.spriteBottomLeftCorner).toString())
+              let capSprite = new PIXI.Sprite(capTexture);
+              capSprite.x = x * this.tileSize;
+              capSprite.y = y * this.tileSize;
+              capSprite.width = this.tileSize;
+              capSprite.height = this.tileSize;
+              capSprite._zIndex = entity.zIndex + 0.2;
+              this.spriteContainer.addChild(capSprite);
+            }
+            //bottom right
+            if (shouldSpawnCap(x+1,y) == false && shouldSpawnCap(x,y+1) == false && shouldSpawnCap(x+1,y+1) && entity.spriteBottomRightCorner!=""){
+              let capTexture = Assets.get((entity.spriteBottomRightCorner).toString())
+              let capSprite = new PIXI.Sprite(capTexture);
+              capSprite.x = x * this.tileSize;
+              capSprite.y = y * this.tileSize;
+              capSprite.width = this.tileSize;
+              capSprite.height = this.tileSize;
+              capSprite._zIndex = entity.zIndex + 0.2;
+              this.spriteContainer.addChild(capSprite);
             }
             if (entity.hiddenOutsideLOS){
               if (this.isLOSObstructed(this.player1.posX, this.player1.posY, x, y,true,true)==true){
@@ -704,10 +734,11 @@ export class GameController {
     this.map.tiles[targetX][targetY].entity!.push(player)
     player.posX = targetX;
     player.posY = targetY;
+    player.renderX = targetX
+    player.renderY = targetY
     if (playerPosX < this.map.width && playerPosY < this.map.height) {
       this.removePlayer(playerPosX,playerPosY)
     }
-    this.animatePlayerMove(player, targetX, targetY);
     console.log('Player teleported to: ' + player.posX + ', ' + player.posY);
   }
 
@@ -754,7 +785,8 @@ export class GameController {
         }
       }
     }
- }
+  }
+
 findRoom(player: Player, transition: RoomTransition){
  
     let playerPosX = player.posX;
@@ -769,8 +801,8 @@ findRoom(player: Player, transition: RoomTransition){
         this.removePlayer(playerPosX,playerPosY)
         this.map = this.world.rooms[this.playerWorldX-1][this.playerWorldY];
         this.playerWorldX -= 1;
-        let x = this.findEnntrance("right")!.x
-        let y = this.findEnntrance("right")!.y
+        let x = this.findEntrance("right")!.x
+        let y = this.findEntrance("right")!.y
         this.teleportPlayer(this.player1, x, y);
         console.log("Moved to left room");
         console.log("World coordinates: " + this.playerWorldX + ", " + this.playerWorldY);
@@ -781,8 +813,8 @@ findRoom(player: Player, transition: RoomTransition){
         this.removePlayer(playerPosX,playerPosY)
         this.map = this.world.rooms[this.playerWorldX+1][this.playerWorldY];
         this.playerWorldX += 1;
-        let x = this.findEnntrance("left")!.x
-        let y = this.findEnntrance("left")!.y
+        let x = this.findEntrance("left")!.x
+        let y = this.findEntrance("left")!.y
         this.teleportPlayer(this.player1, x, y);
         console.log("Moved to right room");
         console.log("World coordinates: " + this.playerWorldX + ", " + this.playerWorldY);
@@ -794,8 +826,8 @@ findRoom(player: Player, transition: RoomTransition){
         this.removePlayer(playerPosX,playerPosY)
         this.map = this.world.rooms[this.playerWorldX][this.playerWorldY-1];
         this.playerWorldY -= 1;
-        let x = this.findEnntrance("down")!.x
-        let y = this.findEnntrance("down")!.y
+        let x = this.findEntrance("down")!.x
+        let y = this.findEntrance("down")!.y
         this.teleportPlayer(this.player1, x, y);
         console.log("Moved to up room");
         console.log("World coordinates: " + this.playerWorldX + ", " + this.playerWorldY);
@@ -806,8 +838,8 @@ findRoom(player: Player, transition: RoomTransition){
         this.removePlayer(playerPosX,playerPosY)
         this.map = this.world.rooms[this.playerWorldX][this.playerWorldY+1];
         this.playerWorldY += 1;
-        let x = this.findEnntrance("up")!.x
-        let y = this.findEnntrance("up")!.y
+        let x = this.findEntrance("up")!.x
+        let y = this.findEntrance("up")!.y
         this.teleportPlayer(this.player1, x, y);
         console.log("Moved to down room");
         console.log("World coordinates: " + this.playerWorldX + ", " + this.playerWorldY);
@@ -815,7 +847,7 @@ findRoom(player: Player, transition: RoomTransition){
     }
   }
 
-  findEnntrance(side: string){
+  findEntrance(side: string){
     let entities = []
     for (let x = 0; x <= this.map.width; x++) {
       for (let y = 0; y <= this.map.height; y++) {
@@ -933,6 +965,8 @@ findRoom(player: Player, transition: RoomTransition){
   loadPlayer(x: number, y: number, player: Player, playerId: number) {
     player.posX = x
     player.posY = y
+    player.renderX = x
+    player.renderY = y
     player.playerId = playerId
   }
 
@@ -946,9 +980,9 @@ findRoom(player: Player, transition: RoomTransition){
   }
 
   loadEntity(x: number, y: number, entity: any, map:GameGrid) {
-    map.tiles[x][y].entity!.push(entity);
     // keep entity coordinates in sync with map placement
     if (entity != null) {
+      map.tiles[x][y].entity!.push(entity);
       entity.posX = x;
       entity.posY = y;
       entity.id = this.lastUsedId

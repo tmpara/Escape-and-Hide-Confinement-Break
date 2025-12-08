@@ -66,7 +66,6 @@ export class RoomsData {
         this.labComplex1.layout[10][5] = new Wall1();
         this.labComplex1.layout[12][5] = new Wall1();
         this.labComplex1.layout[13][5] = new Wall1();
-        this.labComplex1.layout[14][5] = new Wall1();
         this.labComplex1.layout[1][9] = new Wall1();
         this.labComplex1.layout[2][9] = new Wall1();
         this.labComplex1.layout[3][9] = new DoorVertical();
@@ -86,7 +85,6 @@ export class RoomsData {
         this.labComplex1.layout[5][11] = new DoorHorizontal();
         this.labComplex1.layout[5][12] = new Wall1();
         this.labComplex1.layout[5][13] = new Wall1();
-        this.labComplex1.layout[5][14] = new Wall1();
         this.labComplex1.layout[9][1] = new Wall1();
         this.labComplex1.layout[9][2] = new Wall1();
         this.labComplex1.layout[9][3] = new DoorHorizontal();
@@ -97,7 +95,6 @@ export class RoomsData {
         this.labComplex1.layout[9][11] = new DoorHorizontal();
         this.labComplex1.layout[9][12] = new Wall1();
         this.labComplex1.layout[9][13] = new Wall1();
-        this.labComplex1.layout[9][14] = new Wall1();
         this.labComplex1.layout[11][5] = new DoorVertical()
         this.labComplex1.layout[11][9] = new DoorVertical()
         this.labComplex1.layout[1][1] = new ExplosiveBarrel
@@ -191,10 +188,10 @@ export class RoomsData {
     
         this.endingRoom = new Room(13, 13, ["up", "left", "right", "down"], []);
         this.endingRoom.layout = Array.from({ length: this.endingRoom.width }, () => Array.from({ length: this.endingRoom.height }));
-        this.endingRoom.layout[0][6] = new RoomTransition("up");
-        this.endingRoom.layout[6][0] = new RoomTransition("left");
-        this.endingRoom.layout[6][12] = new RoomTransition("right");
-        this.endingRoom.layout[12][6] = new RoomTransition("down");
+        this.endingRoom.layout[0][6] = new RoomTransition("left");
+        this.endingRoom.layout[6][0] = new RoomTransition("up");
+        this.endingRoom.layout[6][12] = new RoomTransition("down");
+        this.endingRoom.layout[12][6] = new RoomTransition("right");
 
         this.noRoom = new Room(1, 1, [], []);
         // this.noRoom.layout = [["empty"]];

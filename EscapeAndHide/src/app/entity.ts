@@ -10,6 +10,10 @@ export abstract class Entity{
     spriteBottomCap = "";
     spriteLeftCap = "";
     spriteRightCap = "";
+    spriteTopLeftCorner = "";
+    spriteTopRightCorner = "";
+    spriteBottomLeftCorner = "";
+    spriteBottomRightCorner = "";
     posX = 0;
     posY = 0;
     zIndex = 4;
@@ -56,6 +60,8 @@ export abstract class Entity{
     onDestroyed(damage:number, damageType:string){}
 
     onUse(user: Entity | null){}
+
+    onSteppedOn(user: Entity | null){}
 
     onEndTurn(){}
 
