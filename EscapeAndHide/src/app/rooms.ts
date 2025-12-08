@@ -1,6 +1,7 @@
 
 import { Room } from "./room";
 import { Wall1,WallCorner1,ExplosiveBarrel,DoorHorizontal,DoorVertical,RoomTransition} from './entities'
+import { LightInterferanceUnit } from "./enemyTypes";
 
 export class RoomsData {
 
@@ -25,7 +26,6 @@ export class RoomsData {
     noRoom: Room;
     
     roomList: string[] = [
-        "startingRoom",
         "labComplex1",
         "crossHall1",
         "verticalHall",
@@ -36,6 +36,8 @@ export class RoomsData {
         "cornerRoomInvertedMirrored",
         "TRoom",
         "TRoomInverted",
+        "TRoomMirrored",
+        "TRoomInvertedMirrored",
     ]
 
     deadEndRooms: string[] = [
@@ -58,6 +60,7 @@ export class RoomsData {
         this.labComplex1.layout[0][7] = new RoomTransition("left");
         this.labComplex1.layout[7][0] = new RoomTransition("up");
         this.labComplex1.layout[7][14] = new RoomTransition("down");
+        this.labComplex1.layout[7][7] = new LightInterferanceUnit() 
         this.labComplex1.layout[14][7] = new RoomTransition("right");
         this.labComplex1.layout[1][5] = new Wall1();
         this.labComplex1.layout[2][5] = new Wall1();
