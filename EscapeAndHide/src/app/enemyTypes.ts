@@ -1,53 +1,35 @@
-import { entity } from './entity';
-import { Item } from './items/items';
+import { Entity } from './entity';
+import { Item } from './items/item';
 import { Items } from './items/items';
 
-export class Dummy extends entity {
-  displayName: string = 'Dummy';
-  PosX: number;
-  PosY: number;
-  renderX: number;
-  renderY: number;
-  id: string;
-  health: number;
-  isDead: boolean = false;
-  lootTable: Item[] = [new Items().gun, new Items().bandage];
-
-  constructor(PosX: number, PosY: number, id: string, health: number) {
-    super();
-    this.id = id;
-    this.PosX = PosX;
-    this.PosY = PosY;
-    this.renderX = PosX;
-    this.renderY = PosY;
-    this.health = health;
-  }
-
-  dealDamage(damage: number) {
-    if (!this.isDead) {
-      this.health -= damage;
-    }
-  }
+export class Dummy extends Entity {
+  override name = "dummy";
+  override sprite = "/sprites/npc/dummy.png";
+  override posX = 0;
+  override posY = 0;
+  override collidable = true;
+  override damageable = true;
+  override health = 100;
+  override hiddenOutsideLOS = true;
+  override blockLOS = false;
+  override flammable = true;
+  isDead = false;
+  lootTable = [new Items().gun, new Items().bandage];
+  
 }
 
-export class HeavyDummy extends entity {
-  displayName: string = 'Heavy Dummy';
-  PosX: number;
-  PosY: number;
-  renderX: number;
-  renderY: number;
-  id: string;
-  health: number;
-  isDead: boolean = false;
-  lootTable: Item[] = [new Items().bigGun, new Items().medkit];
+export class HeavyDummy extends Entity {
+  override name = "heavy dummy";
+  override sprite = "/sprites/npc/heavyDummy.png";
+  override posX = 0;
+  override posY = 0;
+  override collidable = true;
+  override damageable = true;
+  override health = 200;
+  override hiddenOutsideLOS = true;
+  override blockLOS = false;
+  override flammable = true;
+  isDead = false;
+  lootTable = [new Items().gun, new Items().bandage];
 
-  constructor(PosX: number, PosY: number, id: string, health: number) {
-    super();
-    this.id = id;
-    this.PosX = PosX;
-    this.PosY = PosY;
-    this.renderX = PosX;
-    this.renderY = PosY;
-    this.health = health;
-  }
 }

@@ -1,9 +1,7 @@
-import { Health } from './health/health';
-import { Energy } from './energy/energy';
-import { Player } from './player';
 import { tile } from './tile';
-import { Item } from './items/items';
-
+import { Entity } from "./entity";
+import { Wall1,WallCorner1} from './entities'
+import { GameController } from './game.controller';
 export class GameGrid {
   width: number;
   height: number;
@@ -24,34 +22,28 @@ export class GameGrid {
     }
   }
 
-  loadMap(map: string[][]) {
-    for (let i = 0; i < map.length; i++) {
-      for (let j = 0; j < map[i].length; j++) {
-        if (i == 0 || j == 0 || i == map.length - 1 || j == map[i].length - 1) {
-          this.tiles[i][j] = this.getTileData('wall_corner');
+  loadMap(map: Entity[][]){
+    for(let i=0;i<map.length;i++){
+      for(let j=0;j<map[i].length;j++){
+        if(i==0 || j==0 || i==map.length-1 || j==map[i].length-1){
+          GameController.current?.loadEntity(i,j,new WallCorner1,this)
         }
-        if (map[i][j] != 'floor_basic') {
-          this.tiles[i][j] = this.getTileData(map[i][j]);
+        if(map[i][j] != null){
+          GameController.current?.loadEntity(i,j,map[i][j],this)
         }
       }
     }
   }
 
-  createTile(x: number, y: number, name: String, replace: boolean) {
-    if (this.isValidTile(x, y) == true) {
-      let firevalue = this.tiles[x][y].fireValue;
-      let entity = this.tiles[x][y].entity;
-      this.tiles[x][y] = this.getTileData(name);
-      if (this.tiles[x][y].flammable == true || name == 'ash') {
-        this.tiles[x][y].fireValue = firevalue;
+  createTile(x: number, y: number, name: String, replace: boolean){
+    if (this.isValidTile(x,y)==true){
+      let firevalue = this.tiles[x][y].fireValue
+      let entity = this.tiles[x][y].entity
+      this.tiles[x][y] = this.getTileData(name)
+      if (this.tiles[x][y].flammable==true || name=="ash"){
+        this.tiles[x][y].fireValue = firevalue  
       }
       this.tiles[x][y].entity = entity;
-    }
-  }
-
-  clearTile(x: number, y: number) {
-    if (this.isValidTile(x, y)) {
-      this.tiles[x][y] = this.getTileData('empty');
     }
   }
 
@@ -62,29 +54,7 @@ export class GameGrid {
       return true;
     }
   }
-
-  damageTile(x: number, y: number, damage: number) {
-    if (
-      this.tiles[x][y].health != null &&
-      this.tiles[x][y].destroyable == true
-    ) {
-      this.tiles[x][y].health = this.tiles[x][y].health! - damage;
-      if (this.tiles[x][y].health <= 0) {
-        this.destroyTile(x, y);
-      }
-    }
-  }
-
-  destroyTile(x: number, y: number) {
-    if (this.tiles[x][y].brokenTile == null && this.tiles[x][y].fireValue > 0) {
-      this.createTile(x, y, 'ash', true);
-    } else if (this.tiles[x][y].brokenTile != null) {
-      this.createTile(x, y, this.tiles[x][y].brokenTile, true);
-    } else {
-      this.clearTile(x, y);
-    }
-  }
-
+  
   getTileCoords(worldX: number, worldY: number, tileSize: number) {
     const tileX = Math.floor(worldX / tileSize);
     const tileY = Math.floor(worldY / tileSize);
@@ -94,73 +64,12 @@ export class GameGrid {
     return { x: tileX, y: tileY };
   }
 
-  addTileEffect(x: number, y: number, effect: string) {
-    this.tiles[x][y].effect = effect;
-  }
+  getTileData(name: String){
 
-  createPlayer(x: number, y: number, id: string) {
-    this.tiles[x][y].entity = new Player(
-      x,
-      y,
-      id,
-      new Health(5.0, 5.0),
-      new Energy(100, 100)
-    );
-  }
-
-  loadPlayer(x: number, y: number, player: Player) {
-    this.tiles[x][y].entity = player;
-  }
-
-  loadEnemy(x: number, y: number, entity: any) {
-    this.tiles[x][y].entity = entity;
-  }
-
-  SpawnItem(x: number, y: number, item: Item) {
-    this.tiles[x][y].hasItem = true;
-    this.tiles[x][y].item = item;
-  }
-
-  RemoveItem(x: number, y: number, effect?: string) {
-    let spriteAfterRemoval = '';
-    switch (effect) {
-      case 'fire':
-        spriteAfterRemoval = 'fire.png';
-        this.tiles[x][y].effect = 'fire';
-        break;
-      case 'glass_shards':
-        spriteAfterRemoval = 'placeholder.png';
-        this.tiles[x][y].effect = 'glass_shards';
-        break;
-    }
-    this.tiles[x][y].sprite = spriteAfterRemoval;
-    this.tiles[x][y].hasItem = false;
-    this.tiles[x][y].item = null;
-  }
-
-  getTileData(name: String) {
-    let tileName = '';
-    let hasCollision = false;
-    let effect = '';
-    let destroyable = false;
-    let health = null;
-    let flammable = false;
-    let brokenTile = null;
-    let sprite = '';
-    let hiddenOutsideLOS = false;
-
-    switch (name) {
-      case 'empty':
-        tileName = 'empty';
-        hasCollision = false;
-        effect = '';
-        destroyable = false;
-        health = null;
-        flammable = true;
-        brokenTile = null;
-        sprite = '';
-        hiddenOutsideLOS = false;
-        break;
+    let tileName = ""
+    let sprite = ""
+    let effect = ""
+    let flammable = false
 
       case 'glass_shards':
         tileName = 'glass_shards';
@@ -174,70 +83,22 @@ export class GameGrid {
         hiddenOutsideLOS = true;
         break;
 
-      case 'wall_corner':
-        tileName = 'wall_corner';
-        hasCollision = true;
-        effect = '';
-        destroyable = false;
-        health = null;
-        flammable = false;
-        brokenTile = null;
-        sprite = 'placeholder.png';
-        hiddenOutsideLOS = false;
-        break;
-
-      case 'wall_basic':
-        tileName = 'wall_basic';
-        hasCollision = true;
-        effect = '';
-        destroyable = true;
-        health = 100;
-        flammable = true;
-        brokenTile = null;
-        sprite = 'placeholder.png';
-        hiddenOutsideLOS = false;
-        break;
-
-      case 'ash':
-        tileName = 'ash';
-        hasCollision = false;
-        effect = '';
-        destroyable = false;
-        health = null;
-        flammable = false;
-        brokenTile = null;
-        sprite = 'ash.png';
-        hiddenOutsideLOS = true;
-        break;
-
-      case 'room_entrance':
-        tileName = 'door';
-        hasCollision = false;
-        effect = 'entrance';
-        destroyable = false;
-        health = null;
-        flammable = false;
-        brokenTile = null;
-        sprite = 'door1.png';
-        hiddenOutsideLOS = false;
-        break;
+    case 'empty':
+      tileName="empty"
+      sprite=""
+      effect = ""
+      flammable=true
+      break;
+      
+    case 'ash':
+      tileName="ash"
+      effect = ""
+      sprite="/sprites/tiles/ash.png"
+      flammable=false
+      break;
     }
 
-    let info = new tile(
-      tileName,
-      hasCollision,
-      effect,
-      destroyable,
-      health,
-      flammable,
-      brokenTile,
-      sprite,
-      hiddenOutsideLOS,
-      0,
-      false,
-      null,
-      null
-    );
+    let info = new tile(tileName,sprite,effect,flammable,0,null,[]);
     return info;
   }
 }
