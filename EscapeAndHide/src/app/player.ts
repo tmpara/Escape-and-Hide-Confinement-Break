@@ -21,8 +21,9 @@ export class Player extends Entity {
   Energy = new Energy(100,100);
 
   playerAction(energyCost: number) {
-    this.Health.TriggerDot();
-    this.Energy.loseEnergy(energyCost);
+    this.Health.updateAfflictions();
+    this.energy.loseEnergy(energyCost);
+    this.Health.bleedingRegen();
   }
   
 }

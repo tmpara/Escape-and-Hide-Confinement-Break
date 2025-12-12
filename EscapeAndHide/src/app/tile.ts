@@ -1,6 +1,19 @@
 import { Entity } from './entity';
 import { Item } from './items/item';
 export class tile {
+  name: string | null = 'empty';
+  hasCollision: boolean = false;
+  effect?: string = '';
+  destroyable: boolean = false;
+  health: number | null = null;
+  flammable: boolean = false;
+  brokenTile: String | null = null;
+  sprite: String = 'placeholder.png';
+  hiddenOutsideLOS: boolean = false;
+  fireValue: number = 0;
+  hasItem: boolean = false;
+  item: Item | null = null;
+  entity: entity | null = null;
 
     name: string | null = "empty";
     sprite: string = "placeholder.png";

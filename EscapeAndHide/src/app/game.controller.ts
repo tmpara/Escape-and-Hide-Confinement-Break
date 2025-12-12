@@ -20,6 +20,8 @@ export class GameController {
   static current: GameController | null = null;
   app!: Application;
   map!: GameGrid;
+  healthUIApp!: PIXI.Application;
+  afflictionsApp!: PIXI.Application;
   items = new Items();
   inventory!: Inventory;
   weaponFunctionality = new WeaponFunctionality();
@@ -33,7 +35,18 @@ export class GameController {
   playerSprite = new Graphics();
   healthBar = new Graphics();
   energyBar = new Graphics();
+  reticleContainer = new Container();
   tile = new Graphics();
+  aimMode: boolean = false;
+  mouseX: number = 0;
+  mouseY: number = 0;
+  mouseTileX: number = 0;
+  mouseTileY: number = 0;
+
+  healthLimbContainer = new Container();
+  limbSprites: Record<string, PIXI.Sprite> = {};
+  selectedLimb: string = '';
+  afflictions: any = {};
   playerWorldX = this.world.startX;
   playerWorldY = this.world.startY;
   tileSize = 32; // Size of each tile in pixels
@@ -44,8 +57,14 @@ export class GameController {
   constructor() {}
 
   async init(container: HTMLDivElement): Promise<void> {
-    // expose the running instance so entities can access controller methods
     GameController.current = this;
+    await Assets.load('aimingReticle.png');
+    await Assets.load('head.png');
+    await Assets.load('torso.png');
+    await Assets.load('leftarm.png');
+    await Assets.load('rightarm.png');
+    await Assets.load('leftleg.png');
+    await Assets.load('rightleg.png');
     await Assets.load('/sprites/entities/placeholder.png');
     await Assets.load('/sprites/entities/door1.png');
     await Assets.load('/sprites/entities/glass_shards.png');
@@ -88,11 +107,10 @@ export class GameController {
     // Create PIXI app
     this.app = new Application();
     await this.app.init({
-      width: this.tileSize * 30,
-      height: this.tileSize * 30,
+      width: window.innerWidth * 0.7,
+      height: window.innerHeight * 0.7,
       backgroundColor: 0x222222,
       antialias: true,
-      resizeTo: window,
     });
     
   container.appendChild(this.app.canvas as HTMLCanvasElement);
@@ -140,6 +158,7 @@ export class GameController {
     // Draw grid, player
     this.drawGrid();
     this.drawPlayer();
+    this.drawHealthUI();
 
     // Add containers to stage
     this.app.stage.addChild(this.spriteContainer);
@@ -147,23 +166,65 @@ export class GameController {
     this.app.stage.addChild(this.playerSprite);
     this.app.stage.addChild(this.healthBar);
     this.app.stage.addChild(this.energyBar);
+    this.app.stage.addChild(this.reticleContainer);
 
     // Create inventory and equipped containers side by side
     const inventoryRow = document.createElement('div');
     inventoryRow.style.display = 'flex';
     inventoryRow.style.flexDirection = 'row';
+    inventoryRow.style.width = '30vw';
+    inventoryRow.style.height = '80vh';
+    inventoryRow.style.position = 'absolute';
+    inventoryRow.style.right = '0';
+    inventoryRow.style.top = '0';
     container.appendChild(inventoryRow);
 
     const invDiv = document.createElement('div');
     invDiv.id = 'inventory-container';
+    invDiv.style.flex = '1';
+    invDiv.style.height = '100%';
     inventoryRow.appendChild(invDiv);
 
     const equippedDiv = document.createElement('div');
     equippedDiv.id = 'equipped-container';
+    equippedDiv.style.flex = '1';
+    equippedDiv.style.height = '100%';
     inventoryRow.appendChild(equippedDiv);
-
-    // Pass both containers to Inventory
     this.inventory = new Inventory(invDiv, equippedDiv);
+
+    // Create status row for health and afflictions side by side below main game canvas
+    const statusRow = document.createElement('div');
+    statusRow.id = 'status-row';
+    statusRow.style.display = 'flex';
+    statusRow.style.flexDirection = 'row';
+    statusRow.style.width = 'window.innerWidth * 0.3';
+    statusRow.style.height = 'window.innerHeight * 0.29';
+    // Append statusRow after main game canvas
+    container.appendChild(statusRow);
+
+    this.healthUIApp = new PIXI.Application();
+    await this.healthUIApp.init({
+      width: statusRow.clientWidth * 0.1,
+      height: window.innerHeight * 0.29,
+      backgroundColor: 0x333333,
+      antialias: true,
+    });
+    this.healthUIApp.view.style.display = 'block';
+
+    this.afflictionsApp = new PIXI.Application();
+    await this.afflictionsApp.init({
+      width: statusRow.clientWidth * 0.2,
+      height: window.innerHeight * 0.29,
+      backgroundColor: 0x444444,
+      antialias: true,
+    });
+    this.afflictionsApp.view.style.display = 'block';
+    this.afflictionsApp.view.style.flexDirection = 'row';
+
+    // Append both canvases to the statusRow for side-by-side display
+    statusRow.appendChild(this.healthUIApp.view as HTMLCanvasElement);
+    statusRow.appendChild(this.afflictionsApp.view as HTMLCanvasElement);
+    this.healthUIApp.stage.addChild(this.healthLimbContainer);
 
     // Listen for movement
     this.listenForInput(this.player1);
@@ -192,7 +253,13 @@ export class GameController {
     return number;
   }
 
-  castRay(x1: number, y1: number, x2: number, y2: number, stopOnCollision: boolean): [number, number][] {
+  castRay(
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number,
+    stopOnCollision: boolean
+  ): [number, number][] {
     const hitTiles: [number, number][] = [];
 
     // map must exist
@@ -206,7 +273,8 @@ export class GameController {
     const width = this.map.width;
     const height = this.map.height;
 
-    const inBounds = (tx: number, ty: number) => tx >= 0 && ty >= 0 && tx < width && ty < height;
+    const inBounds = (tx: number, ty: number) =>
+      tx >= 0 && ty >= 0 && tx < width && ty < height;
 
     // Add starting tile if it's inside the map
     if (inBounds(x, y)) {
@@ -244,8 +312,14 @@ export class GameController {
     return hitTiles;
   }
 
-  isLineObstructed(x1: number, y1: number, x2: number, y2: number, ignoreStart: boolean = true, ignoreEnd: boolean = false): boolean {
-
+  isLineObstructed(
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number,
+    ignoreStart: boolean = true,
+    ignoreEnd: boolean = false
+  ): boolean {
     const tiles = this.castRay(x1, y1, x2, y2, false);
     if (tiles.length === 0) return false;
 
@@ -324,13 +398,13 @@ export class GameController {
   getTilesInSphere(centerX: number, centerY: number, radius: number) {
     const hitTiles: [number, number][] = [];
     if (radius < 0) return hitTiles;
-  
+
     const rSq = radius * radius;
     const minX = Math.max(0, Math.floor(centerX - radius));
     const maxX = Math.min(this.map.width - 1, Math.ceil(centerX + radius));
     const minY = Math.max(0, Math.floor(centerY - radius));
     const maxY = Math.min(this.map.height - 1, Math.ceil(centerY + radius));
-  
+
     for (let x = minX; x <= maxX; x++) {
       for (let y = minY; y <= maxY; y++) {
         const dx = x - centerX;
@@ -346,99 +420,86 @@ export class GameController {
   }
 
   drawHealthBar() {
-    const myText = new Text({
-      text: Math.round(this.player1.Health.currentHealth * 100) / 100 + ' L',
-      style: {
-        fontSize: 20,
-        fill: '#ffffff',
-      },
-      anchor: 0.5,
-      y: 830,
-      x: 100,
-    });
-
     this.healthBar.removeChildren();
     this.healthBar.clear();
     const barWidth = 200;
     const barHeight = 20;
     const x = 10;
-    const y = 820;
+    const y = 400;
+
+    const myText = new Text({
+      text: Math.round(this.player1.health.currentBlood) + ' ml',
+      style: {
+        fontSize: 20,
+        fill: '#ffffff',
+      },
+      anchor: 0.5,
+      y: y + barHeight / 2,
+      x: 100,
+    });
 
     // Background
     this.healthBar.drawRect(x, y, barWidth, barHeight);
     this.healthBar.beginFill(0x555555);
     this.healthBar.endFill();
 
-    const dotPercentage = Math.min(
-      this.player1.Health.Dot / this.player1.Health.maxHealth,
+    const bleedingPercentage = Math.min(
+      this.player1.health.bloodLoss.severity / this.player1.health.maxBlood,
       1
     );
     const regenPercentage = Math.min(
-      this.player1.Health.Regeneration / this.player1.Health.maxHealth,
+      this.player1.health.regeneration / this.player1.health.maxBlood,
       1
     );
 
     // Health
     const healthPercentage =
-      this.player1.Health.currentHealth / this.player1.Health.maxHealth;
+      this.player1.health.currentBlood / this.player1.health.maxBlood;
     this.healthBar.beginFill(0xff0000);
     this.healthBar.drawRect(x, y, barWidth * healthPercentage, barHeight);
     this.healthBar.addChild(myText);
     this.healthBar.endFill();
 
-    // DOT effect
-    if (this.player1.Health.Dot > 0) {
-      let dotRate = this.player1.Health.DotReduceRate / 0.25;
-      let dotDamage = 0.25 / this.player1.Health.DotDamageRate;
+    // Bleeding effect
+    if (
+      this.player1.health.currentBlood > 0 &&
+      this.player1.health.bloodLoss.severity > 0 &&
+      bleedingPercentage > regenPercentage
+    ) {
       this.healthBar.beginFill(0xffff00);
       this.healthBar.drawRect(
-        x + barWidth * (healthPercentage - dotPercentage / dotDamage / dotRate),
+        x + barWidth * (healthPercentage - bleedingPercentage),
         y,
-        barWidth * (dotPercentage / dotRate / dotDamage),
+        barWidth * bleedingPercentage,
         barHeight
       );
       this.healthBar.endFill();
     }
 
-    // Regeneration
+    // Regeneration effect
     if (
-      this.player1.Health.Regeneration > 0 &&
-      this.player1.Health.currentHealth < this.player1.Health.maxHealth
+      this.player1.health.regeneration > 0 &&
+      this.player1.health.currentBlood < this.player1.health.maxBlood
     ) {
-      if (this.player1.Health.Dot > 0) {
-        this.healthBar.beginFill(0x00ff00);
-        this.healthBar.drawRect(
-          x + barWidth * (healthPercentage - dotPercentage),
-          y,
-          barWidth * regenPercentage,
-          barHeight
-        );
-        this.healthBar.endFill();
-      } else if (
-        this.player1.Health.currentHealth + this.player1.Health.Regeneration >
-        this.player1.Health.maxHealth
+      let regenBarX = x + barWidth * healthPercentage;
+      let regenBarWidth = barWidth * regenPercentage;
+      if (
+        this.player1.health.bloodLoss.severity > 0 &&
+        regenPercentage < bleedingPercentage
       ) {
-        const regenerationToMaxPercentage =
-          (this.player1.Health.maxHealth - this.player1.Health.currentHealth) /
-          this.player1.Health.maxHealth;
-        this.healthBar.beginFill(0x00ff00);
-        this.healthBar.drawRect(
-          x + barWidth * healthPercentage,
-          y,
-          barWidth * regenerationToMaxPercentage,
-          barHeight
-        );
-        this.healthBar.endFill();
-      } else {
-        this.healthBar.beginFill(0x00ff00);
-        this.healthBar.drawRect(
-          x + barWidth * healthPercentage,
-          y,
-          barWidth * regenPercentage,
-          barHeight
-        );
-        this.healthBar.endFill();
+        regenBarX = x + barWidth * (healthPercentage - bleedingPercentage);
+      } else if (
+        this.player1.health.currentBlood + this.player1.health.regeneration >
+        this.player1.health.maxBlood
+      ) {
+        regenBarWidth =
+          barWidth *
+          ((this.player1.health.maxBlood - this.player1.health.currentBlood) /
+            this.player1.health.maxBlood);
       }
+      this.healthBar.beginFill(0x00ff00);
+      this.healthBar.drawRect(regenBarX, y, regenBarWidth, barHeight);
+      this.healthBar.endFill();
     }
   }
 
@@ -448,7 +509,7 @@ export class GameController {
     const barWidth = 200;
     const barHeight = 20;
     const x = 10;
-    const y = 860;
+    const y = 430;
 
     // Background
     this.energyBar.beginFill(0x555555);
@@ -589,6 +650,162 @@ export class GameController {
     this.playerSprite._zIndex = 8
   }
 
+  drawReticle() {
+    this.reticleContainer.removeChildren();
+    const sprite = Assets.get('aimingReticle.png') as PIXI.Texture;
+    const reticleSprite = new PIXI.Sprite(sprite);
+    const tileX = this.mouseTileX;
+    const tileY = this.mouseTileY;
+    const centerX = tileX * this.tileSize + this.tileSize / 2;
+    const centerY = tileY * this.tileSize + this.tileSize / 2;
+    reticleSprite.alpha = 0;
+    if (
+      this.aimMode &&
+      this.map.tiles[tileX][tileY].hasCollision == false &&
+      this.map.tiles[tileX][tileY].name != 'door'
+    ) {
+      reticleSprite.width = this.tileSize;
+      reticleSprite.height = this.tileSize;
+      reticleSprite.anchor.set(0.5);
+      reticleSprite._zIndex = 50;
+      reticleSprite.position.set(centerX, centerY);
+
+      if (
+        !this.map ||
+        !this.map.isValidTile(tileX, tileY) ||
+        this.isLineObstructed(
+          this.player1.PosX,
+          this.player1.PosY,
+          tileX,
+          tileY,
+          true,
+          true
+        )
+      ) {
+        reticleSprite.alpha = 0;
+      } else {
+        reticleSprite.alpha = 1;
+      }
+    }
+    this.reticleContainer.addChild(reticleSprite);
+  }
+
+  drawHealthUI() {
+    this.healthLimbContainer.removeChildren();
+
+    const baseX = 80;
+    const baseY = 50; // Adjusted for healthUIApp canvas
+    const limbSize = 50;
+
+    this.addHealthLimbSprite('head', baseX, baseY, limbSize, limbSize);
+    this.addHealthLimbSprite(
+      'torso',
+      baseX,
+      baseY + limbSize,
+      limbSize,
+      limbSize
+    );
+    this.addHealthLimbSprite(
+      'leftarm',
+      baseX - limbSize,
+      baseY + limbSize,
+      limbSize,
+      limbSize
+    );
+    this.addHealthLimbSprite(
+      'rightarm',
+      baseX + limbSize,
+      baseY + limbSize,
+      limbSize,
+      limbSize
+    );
+    this.addHealthLimbSprite(
+      'leftleg',
+      baseX - limbSize / 2,
+      baseY + limbSize * 2,
+      limbSize,
+      limbSize
+    );
+    this.addHealthLimbSprite(
+      'rightleg',
+      baseX + limbSize / 2,
+      baseY + limbSize * 2,
+      limbSize,
+      limbSize
+    );
+  }
+
+  addHealthLimbSprite(
+    limbName: string,
+    x: number,
+    y: number,
+    width: number,
+    height: number
+  ) {
+    const texture = Assets.get(`${limbName}.png`);
+    const sprite = new PIXI.Sprite(texture);
+    sprite.x = x;
+    sprite.y = y;
+    sprite.width = width;
+    sprite.height = height;
+    sprite.interactive = true;
+    sprite.cursor = 'pointer';
+    sprite._zIndex = 1000;
+    sprite.on('pointerdown', () => {
+      this.selectedLimb = limbName;
+      console.log(limbName);
+    });
+    this.healthLimbContainer.addChild(sprite);
+  }
+
+  getAfflictionsForLimb(limbName: string) {
+    switch (limbName) {
+      case 'head':
+        this.afflictions = this.player1.health.head.returnAfflictions();
+        break;
+      case 'torso':
+        this.afflictions = this.player1.health.torso.returnAfflictions();
+        break;
+      case 'leftarm':
+        this.afflictions = this.player1.health.leftArm.returnAfflictions();
+        break;
+      case 'rightarm':
+        this.afflictions = this.player1.health.rightArm.returnAfflictions();
+        break;
+      case 'leftleg':
+        this.afflictions = this.player1.health.leftLeg.returnAfflictions();
+        break;
+      case 'rightleg':
+        this.afflictions = this.player1.health.rightLeg.returnAfflictions();
+        break;
+    }
+  }
+
+  drawAfflictions() {
+    this.getAfflictionsForLimb(this.selectedLimb);
+    this.afflictionsApp.stage.removeChildren();
+    let i = 0;
+    for (let affliction in this.afflictions) {
+      const afflictionValue = this.afflictions[affliction];
+      if (
+        afflictionValue.severity > 0 &&
+        afflictionValue.severity <= 100
+      ) {
+        const afflictionText = new Text({
+          text: afflictionValue.name + ': ' + afflictionValue.severity,
+          style: {
+            fontSize: 16,
+            fill: '#ffffff',
+          },
+          y: i * 24 + 10,
+          x: 10,
+        });
+        this.afflictionsApp.stage.addChild(afflictionText);
+        i++;
+      }
+    }
+  }
+
   animatePlayerMove(
     player: Player,
     targetX: number,
@@ -627,6 +844,8 @@ export class GameController {
     this.drawPlayer();
     this.drawHealthBar();
     this.drawEnergyBar();
+    this.drawReticle();
+    this.drawAfflictions();
     requestAnimationFrame(() => this.gameLoop());
   }
 
@@ -687,6 +906,8 @@ export class GameController {
           this.removeItem(player.posX, player.posY);
         }
       }
+    } else if (this.inventory.pickUpOverlay != null) {
+      this.inventory.hidePickUpPrompt();
     }
  }
 findRoom(player: Player){
@@ -833,21 +1054,25 @@ findRoom(player: Player){
     }
   }
 
-  createExplosion(x: number, y: number, size: number, strength: number, startFires: boolean = false){
-
-    (async () => { 
-
-      for(let i=0;i<size;i++){
-        let tiles = this.getTilesInSphere(x,y,i)
+  createExplosion(
+    x: number,
+    y: number,
+    size: number,
+    strength: number,
+    startFires: boolean = false
+  ) {
+    (async () => {
+      for (let i = 0; i < size; i++) {
+        let tiles = this.getTilesInSphere(x, y, i);
         tiles.forEach((tile) => {
           if (this.isLineObstructed(x,y,tile[0],tile[1],true,true)==false){
             let texture = Assets.get("/sprites/effects/explosion.png");
             let sprite = new PIXI.Sprite(texture);
-            sprite.x = tile[0] * this.tileSize
-            sprite.y = tile[1] * this.tileSize
-            sprite.width = this.tileSize
-            sprite.height = this.tileSize
-            sprite._zIndex = 0
+            sprite.x = tile[0] * this.tileSize;
+            sprite.y = tile[1] * this.tileSize;
+            sprite.width = this.tileSize;
+            sprite.height = this.tileSize;
+            sprite._zIndex = 0;
             this.effectContainer.addChild(sprite);
             this.damageEntities(tile[0],tile[1],strength/size,"explosion")
             if(this.player1.posX == tile[0] && this.player1.posY == tile[1]){
@@ -858,13 +1083,11 @@ findRoom(player: Player){
               this.ignite(tile[0],tile[1],strength/4,true,true)
             }
           }
-        })
+        });
         await this.delay(50);
       }
       this.effectContainer.removeChildren();
-
     })();
-
   }
 
   loadPlayer(x: number, y: number, player: Player, playerId: number) {
@@ -980,13 +1203,37 @@ findRoom(player: Player){
           this.endTurn();
           break;
         case 'p':
-          this.createExplosion(player.posX,player.posY,3,100,true)
-          this.endTurn()
+          this.createExplosion(player.posX, player.posY, 3, 100, true);
+          this.endTurn();
+          break;
+        case 'f':
+          this.aimMode = !this.aimMode;
+          break;
+        case 'l':
+          this.player1.health.stopBleeding();
           break;
         default:
           return;
       }
     });
+    window.addEventListener('mousemove', (event) => {
+      if (!this.app || !this.app.view) return;
+      const rect = this.app.view.getBoundingClientRect();
+      const canvasX = event.clientX - rect.left;
+      const canvasY = event.clientY - rect.top;
+      this.mouseX = canvasX;
+      this.mouseY = canvasY;
+      const coords = this.map.getTileCoords(
+        event.clientX,
+        event.clientY,
+        this.tileSize
+      );
+      if (coords) {
+        this.mouseTileX = coords.x;
+        this.mouseTileY = coords.y;
+      }
+    });
+
     window.addEventListener('click', (event) => {
       const coords = this.map.getTileCoords(
         event.clientX,
