@@ -16,8 +16,8 @@ export class GameGrid {
   createEmptyMap() {
     for (let x = 0; x <= this.width; x++) {
       this.tiles[x] = new Array();
-      for (let y = 0; y <= this.height; y++) {
-        this.tiles[x][y] = this.getTileData('empty');
+      for(let y=0;y<=this.height;y++){
+        this.tiles[x][y] = this.getTileData("empty")
       }
     }
   }
@@ -43,7 +43,7 @@ export class GameGrid {
       if (this.tiles[x][y].flammable==true || name=="ash"){
         this.tiles[x][y].fireValue = firevalue  
       }
-      this.tiles[x][y].entity = entity;
+      this.tiles[x][y].entity = entity
     }
   }
 
@@ -71,17 +71,7 @@ export class GameGrid {
     let effect = ""
     let flammable = false
 
-      case 'glass_shards':
-        tileName = 'glass_shards';
-        hasCollision = false;
-        effect = 'glass_shards';
-        destroyable = true;
-        health = 5;
-        flammable = true;
-        brokenTile = null;
-        sprite = 'glass_shards.png';
-        hiddenOutsideLOS = true;
-        break;
+    switch (name){
 
     case 'empty':
       tileName="empty"
@@ -101,4 +91,5 @@ export class GameGrid {
     let info = new tile(tileName,sprite,effect,flammable,0,null,[]);
     return info;
   }
+
 }

@@ -1,4 +1,4 @@
-import { BasicEnemyAI } from './enemyAI';
+import { BasicEnemyAI, LightInterferanceUnitAI } from './enemyAI';
 import { Entity } from './entity';
 import { Item } from './items/items';
 import { Items } from './items/items';
@@ -34,7 +34,7 @@ export class HeavyDummy extends Entity {
   
 }
 
-export class LightInterferanceUnit extends BasicEnemyAI{
+export class LightInterferanceUnit extends LightInterferanceUnitAI{
   override name = "Light Interferance Unit";
   override description = "A small robotic unit made to stop you in your tracks. Nonlethal."
   override sprite = "/sprites/npc/heavyDummy.png";
@@ -50,8 +50,8 @@ export class LightInterferanceUnit extends BasicEnemyAI{
   isDead = false;
   lootTable = [new Items().gun, new Items().bandage];
 
-  override onEndTurn(){
-    this.Main();
+  override async onEndTurn(){
+   await this.Main();
   }
 
 }

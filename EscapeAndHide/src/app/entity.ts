@@ -39,7 +39,7 @@ export abstract class Entity{
             }
         }
     }
-  }
+  
 
   heal(amount: number) {
     this.onHeal(amount);
@@ -67,9 +67,7 @@ export abstract class Entity{
 
   onSteppedOn(user: Entity | null) {}
 
-    onSteppedOn(user: Entity | null){}
-
-    onEndTurn(){}
+  onEndTurn(){}
 
   onHeal(amountHealed: number) {}
 }

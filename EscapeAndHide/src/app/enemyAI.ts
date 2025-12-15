@@ -236,13 +236,13 @@ export class BasicEnemyAI extends Entity{
 
 }
 
-export class liuAI extends BasicEnemyAI {
+export class LightInterferanceUnitAI extends BasicEnemyAI {
     override hostile = true;
     override meleePreference = false;
     override energy = 3;
-    override sightRange = 7;
-    override attackRange = 5;
+    override sightRange = 5;
+    override attackRange = 3;
     override damage = 10;
 
-
+  
 }

@@ -6,14 +6,14 @@ import { World } from './world';
 import { Player } from './player';
 import { Health } from './health/health';
 import { Energy } from './energy/energy';
-import { Item } from './items/item';
-import { Items, Weapon } from './items/items';
+import { Items, Item} from './items/items';
 import { WorldMapRenderer } from './worldMapRenderer';
 import { WeaponFunctionality } from './items/weapon_functionality';
 import { Inventory } from './inventory/inventory';
 import { Dummy, HeavyDummy, LightInterferanceUnit} from './enemyTypes'
 import { Entity } from './entity';
 import { BasicEnemyAI } from './enemyAI';
+import { RoomTransition } from './entities';
 
 
 
@@ -186,8 +186,6 @@ export class GameController {
     this.loadPlayer(1, 1, this.player1, 1);
     this.loadEntity(5, 2, this.dummy1, this.map);
     this.loadEntity(5, 3, this.heavyDummy1, this.map);
-    this.spawnItem(1, 3, new Items().gun);
-    this.spawnItem(2, 3, new Items().bigGun);
 
     // Draw grid, player
     this.drawGrid();
@@ -935,7 +933,7 @@ export class GameController {
     reticleSprite.alpha = 0;
     if (
       this.aimMode &&
-      this.map.tiles[tileX][tileY].hasCollision == false &&
+      !this.checkForCollision(tileX,tileY) &&
       this.map.tiles[tileX][tileY].name != 'door'
     ) {
       reticleSprite.width = this.tileSize;
@@ -1523,7 +1521,7 @@ findRoom(player: Player, transition: RoomTransition){
     }
   }
 
-  spawnItem(x: number, y: number, item: Items) {
+  spawnItem(x: number, y: number, item: Item) {
     this.map.tiles[x][y].item = item;
   }
 
