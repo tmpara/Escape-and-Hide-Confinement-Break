@@ -4,9 +4,17 @@ import { GameController } from './game.controller';
 
 export class Wall1 extends Entity {
   override name = "Wall";
-  override sprite = "/sprites/entities/placeholder.png";
-  override posX = 0;
-  override posY = 0;
+  override sprite = "/sprites/entities/wall_placeholder_base.png";
+  override tags = ["Wall"];
+  override connectsWith = "Wall";
+  override spriteTopCap = "/sprites/entities/wall_placeholder_topcap.png";
+  override spriteBottomCap = "/sprites/entities/wall_placeholder_bottomcap.png";
+  override spriteLeftCap = "/sprites/entities/wall_placeholder_leftcap.png";
+  override spriteRightCap = "/sprites/entities/wall_placeholder_rightcap.png";
+  override spriteTopLeftCorner = "/sprites/entities/wall_placeholder_topleftcorner.png";
+  override spriteTopRightCorner = "/sprites/entities/wall_placeholder_toprightcorner.png";
+  override spriteBottomLeftCorner = "/sprites/entities/wall_placeholder_bottomleftcorner.png";
+  override spriteBottomRightCorner = "/sprites/entities/wall_placeholder_bottomrightcorner.png";
   override collidable = true;
   override damageable = true;
   override health = 500;
@@ -17,9 +25,17 @@ export class Wall1 extends Entity {
 
 export class WallCorner1 extends Entity {
   override name = "Wall";
-  override sprite = "/sprites/entities/placeholder.png";
-  override posX = 0;
-  override posY = 0;
+  override tags = ["Wall"];
+  override sprite = "/sprites/entities/wall_placeholder_base.png";
+  override connectsWith = "Wall";
+  override spriteTopCap = "/sprites/entities/wall_placeholder_topcap.png";
+  override spriteBottomCap = "/sprites/entities/wall_placeholder_bottomcap.png";
+  override spriteLeftCap = "/sprites/entities/wall_placeholder_leftcap.png";
+  override spriteRightCap = "/sprites/entities/wall_placeholder_rightcap.png";
+  override spriteTopLeftCorner = "/sprites/entities/wall_placeholder_topleftcorner.png";
+  override spriteTopRightCorner = "/sprites/entities/wall_placeholder_toprightcorner.png";
+  override spriteBottomLeftCorner = "/sprites/entities/wall_placeholder_bottomleftcorner.png";
+  override spriteBottomRightCorner = "/sprites/entities/wall_placeholder_bottomrightcorner.png";
   override collidable = true;
   override damageable = false;
   override health = 0;
@@ -31,8 +47,6 @@ export class WallCorner1 extends Entity {
 export class Door extends Entity {
   override name = "Door";
   override sprite = "/sprites/entities/door_closed_horizontal.png";
-  override posX = 0;
-  override posY = 0;
   override zIndex = 9;
   override collidable = true;
   override damageable = true;
@@ -89,17 +103,21 @@ export class DoorVertical extends Door {
 export class RoomTransition extends Entity {
   override name = "Door";
   override sprite = "/sprites/entities/door1.png";
-  override posX = 0;
-  override posY = 0;
   override collidable = true;
   override damageable = false;
   override health = 500;
   override hiddenOutsideLOS = false;
   override blockLOS = true;
   override flammable = false;
+  type:string;
+
+  constructor(type:string){
+    super();
+    this.type = type
+  }
 
   override onUse(user: Player){
-    GameController.current?.findRoom(user);
+    GameController.current?.findRoom(user,this);
   }
 
 }
@@ -107,8 +125,6 @@ export class RoomTransition extends Entity {
 export class ExplosiveBarrel extends Entity {
   override name = "Explosive Barrel";
   override sprite = "/sprites/entities/explosiveBarrel.png";
-  override posX = 0;
-  override posY = 0;
   override collidable = true;
   override damageable = true;
   override health = 50;

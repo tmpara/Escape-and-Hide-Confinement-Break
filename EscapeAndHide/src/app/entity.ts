@@ -4,6 +4,16 @@ export abstract class Entity{
     id=0;
     name = "";
     sprite = "placeholder.png";
+    tags: string[] | null = null;
+    connectsWith: string | null = null
+    spriteTopCap = "";
+    spriteBottomCap = "";
+    spriteLeftCap = "";
+    spriteRightCap = "";
+    spriteTopLeftCorner = "";
+    spriteTopRightCorner = "";
+    spriteBottomLeftCorner = "";
+    spriteBottomRightCorner = "";
     posX = 0;
     posY = 0;
     zIndex = 4;
@@ -13,7 +23,6 @@ export abstract class Entity{
     hiddenOutsideLOS = false
     blockLOS = false;
     flammable = false;
-
     maxHealth = this.health
     destroyed = false;
     fireValue = 0;
@@ -51,6 +60,8 @@ export abstract class Entity{
     onDestroyed(damage:number, damageType:string){}
 
     onUse(user: Entity | null){}
+
+    onSteppedOn(user: Entity | null){}
 
     onEndTurn(){}
 
