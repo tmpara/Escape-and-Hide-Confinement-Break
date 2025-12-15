@@ -4,26 +4,24 @@ import { Health } from './health/health';
 import { Energy } from './energy/energy';
 
 export class Player extends Entity {
-  override name = "";
-  override sprite = "";
+  override name = '';
+  override sprite = '';
   override posX = 0;
   override posY = 0;
   override collidable = false;
   override damageable = false;
-  override health = 0;
-  override hiddenOutsideLOS = false
+  override hiddenOutsideLOS = false;
   override blockLOS = false;
   override flammable = true;
   playerId = 0;
   renderX = 0;
   renderY = 0;
-  Health = new Health(5,5);
-  Energy = new Energy(100,100);
+  Health = new Health(5000, 5000);
+  Energy = new Energy(100, 100);
 
   playerAction(energyCost: number) {
     this.Health.updateAfflictions();
-    this.energy.loseEnergy(energyCost);
+    this.Energy.loseEnergy(energyCost);
     this.Health.bleedingRegen();
   }
-  
 }

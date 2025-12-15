@@ -36,7 +36,6 @@ export class Item {
   displayed: boolean;
   sprite: string;
   isEquipped: boolean = false;
-
   constructor(
     name: string,
     category: string,

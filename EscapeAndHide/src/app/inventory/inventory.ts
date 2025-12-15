@@ -1,5 +1,5 @@
 import { Dummy, HeavyDummy } from '../enemyTypes';
-import { Item } from '../items/items';
+import { Item, Items } from '../items/items';
 import { Weapon } from '../items/items';
 import { GameGrid } from '../grid';
 import { GameController } from '../game.controller';
@@ -7,7 +7,7 @@ import { Player } from '../player';
 import * as PIXI from 'pixi.js';
 
 export class Inventory {
-  items: (Item | Weapon)[] = [];
+  items: Item[] = [];
   equippedItems: Item[] = [];
   inventorySize: number = 10;
   maxEquippedItems: number = 2;
@@ -159,7 +159,7 @@ export class Inventory {
     }
   }
 
-  showPickUpPrompt(item: Item | Weapon): Promise<boolean> {
+  showPickUpPrompt(item: Item): Promise<boolean> {
     if (this.pickUpOverlay) {
       return Promise.resolve(false);
     }
@@ -297,7 +297,7 @@ export class Inventory {
     });
   }
 
-  itemActionPrompt(item: Item | Weapon, screenX?: number, screenY?: number) {
+  itemActionPrompt(item: Item, screenX?: number, screenY?: number) {
     if (this.itemActionOverlay) {
       return;
     }
@@ -486,31 +486,31 @@ export class Inventory {
     document.head.appendChild(style);
   }
 
-  equip(itemIndex: number) {
-    const item = this.items[itemIndex];
+  equip(index: number) {
+    const item = this.items[index];
     item.isEquipped = true;
     if (item) {
       if (this.equippedItems.length < this.maxEquippedItems) {
         this.equippedItems.push(item);
-        this.items.splice(itemIndex, 1);
+        this.items.splice(index, 1);
       }
     }
     this.displayInventory();
     this.equipTabDisplay();
   }
 
-  unequip(itemIndex: number) {
-    const item = this.equippedItems[itemIndex];
+  unequip(index: number) {
+    const item = this.equippedItems[index];
     item.isEquipped = false;
     if (item) {
-      this.equippedItems.splice(itemIndex, 1);
+      this.equippedItems.splice(index, 1);
       this.items.push(item);
     }
     this.displayInventory();
     this.equipTabDisplay();
   }
 
-  pickUp(item: Item | Weapon) {
+  pickUp(item: Item) {
     if (this.items.length < this.inventorySize) {
       this.items.push(item);
     }
@@ -518,28 +518,28 @@ export class Inventory {
     this.equipTabDisplay();
   }
 
-  drop(itemIndex: number, isEquipped: boolean) {
+  drop(index: number, isEquipped: boolean) {
     let item = null;
     if (isEquipped) {
-      item = this.equippedItems[itemIndex];
+      item = this.equippedItems[index];
       item.isEquipped = false;
-      this.equippedItems.splice(itemIndex, 1);
+      this.equippedItems.splice(index, 1);
     } else {
-      item = this.items[itemIndex];
-      this.items.splice(itemIndex, 1);
+      item = this.items[index];
+      this.items.splice(index, 1);
     }
     this.displayInventory();
     this.equipTabDisplay();
 
-    const x = GameController.current?.player1.PosX;
-    const y = GameController.current?.player1.PosY;
+    const x = GameController.current?.player1.posX;
+    const y = GameController.current?.player1.posY;
 
     if (
       typeof x === 'number' &&
       typeof y === 'number' &&
       GameController.current?.map
     ) {
-      GameController.current.map.SpawnItem(x, y, item);
+      GameController.current.spawnItem(x, y, item);
     }
   }
 
