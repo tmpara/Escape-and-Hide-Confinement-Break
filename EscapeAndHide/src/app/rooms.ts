@@ -71,7 +71,6 @@ export class RoomsData {
         this.labComplex1.layout[10][5] = new Wall1();
         this.labComplex1.layout[12][5] = new Wall1();
         this.labComplex1.layout[13][5] = new Wall1();
-        this.labComplex1.layout[14][5] = new Wall1();
         this.labComplex1.layout[1][9] = new Wall1();
         this.labComplex1.layout[2][9] = new Wall1();
         this.labComplex1.layout[3][9] = new DoorVertical();
@@ -91,7 +90,6 @@ export class RoomsData {
         this.labComplex1.layout[5][11] = new DoorHorizontal();
         this.labComplex1.layout[5][12] = new Wall1();
         this.labComplex1.layout[5][13] = new Wall1();
-        this.labComplex1.layout[5][14] = new Wall1();
         this.labComplex1.layout[9][1] = new Wall1();
         this.labComplex1.layout[9][2] = new Wall1();
         this.labComplex1.layout[9][3] = new DoorHorizontal();
@@ -102,9 +100,8 @@ export class RoomsData {
         this.labComplex1.layout[9][11] = new DoorHorizontal();
         this.labComplex1.layout[9][12] = new Wall1();
         this.labComplex1.layout[9][13] = new Wall1();
-        this.labComplex1.layout[9][14] = new Wall1();
-        this.labComplex1.layout[11][5] = new DoorHorizontal
-        this.labComplex1.layout[11][9] = new DoorHorizontal
+        this.labComplex1.layout[11][5] = new DoorVertical()
+        this.labComplex1.layout[11][9] = new DoorVertical()
         this.labComplex1.layout[1][1] = new ExplosiveBarrel
         this.labComplex1.layout[1][2] = new ExplosiveBarrel
         this.labComplex1.layout[2][1] = new ExplosiveBarrel

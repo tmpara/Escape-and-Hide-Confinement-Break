@@ -1,11 +1,11 @@
 import { BasicEnemyAI } from './enemyAI';
 import { Entity } from './entity';
-import { Item } from './items/item';
+import { Item } from './items/items';
 import { Items } from './items/items';
 
 export class Dummy extends Entity {
-  override name = "dummy";
-  override sprite = "/sprites/npc/dummy.png";
+  override name = 'dummy';
+  override sprite = '/sprites/npc/dummy.png';
   override posX = 0;
   override posY = 0;
   override collidable = true;
@@ -16,12 +16,11 @@ export class Dummy extends Entity {
   override flammable = true;
   isDead = false;
   lootTable = [new Items().gun, new Items().bandage];
-  
 }
 
 export class HeavyDummy extends Entity {
-  override name = "heavy dummy";
-  override sprite = "/sprites/npc/heavyDummy.png";
+  override name = 'heavy dummy';
+  override sprite = '/sprites/npc/heavyDummy.png';
   override posX = 0;
   override posY = 0;
   override collidable = true;
