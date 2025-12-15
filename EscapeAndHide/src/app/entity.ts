@@ -36,35 +36,37 @@ export abstract class Entity{
             }
         }
     }
+  }
 
-    heal(amount:number){
-        this.onHeal(amount);
-        if (this.damageable==true && this.destroyed==false){
-            this.health += amount;
-            if(this.health>this.maxHealth){
-                this.health=this.maxHealth
-            }
-        }
+  heal(amount: number) {
+    this.onHeal(amount);
+    if (this.damageable == true && this.destroyed == false) {
+      this.health += amount;
+      if (this.health > this.maxHealth) {
+        this.health = this.maxHealth;
+      }
     }
+  }
 
-    destroy(damage:number, damageType: string){
-        if (this.destroyed==false ){
-            this.destroyed=true;
-            this.onDestroyed(damage,damageType)
-            GameController.current?.RemoveEntities(this.posX, this.posY);
-        }
+  destroy(damage: number, damageType: string) {
+    if (this.destroyed == false) {
+      this.destroyed = true;
+      this.onDestroyed(damage, damageType);
+      GameController.current?.RemoveEntities(this.posX, this.posY);
     }
+  }
 
-    onTakeDamage(damage:number, damageType:string){}
+  onTakeDamage(damage: number, damageType: string) {}
 
-    onDestroyed(damage:number, damageType:string){}
+  onDestroyed(damage: number, damageType: string) {}
 
-    onUse(user: Entity | null){}
+  onUse(user: Entity | null) {}
+
+  onSteppedOn(user: Entity | null) {}
 
     onSteppedOn(user: Entity | null){}
 
     onEndTurn(){}
 
-    onHeal(amountHealed: number){}
-    
+  onHeal(amountHealed: number) {}
 }

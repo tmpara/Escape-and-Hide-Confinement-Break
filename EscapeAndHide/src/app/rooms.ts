@@ -1,5 +1,12 @@
-import { Room } from "./room";
-import { Wall1,WallCorner1,ExplosiveBarrel,DoorHorizontal,DoorVertical,RoomTransition} from './entities'
+import { Room } from './room';
+import {
+  Wall1,
+  WallCorner1,
+  ExplosiveBarrel,
+  DoorHorizontal,
+  DoorVertical,
+  RoomTransition,
+} from './entities';
 
 export class RoomsData {
 

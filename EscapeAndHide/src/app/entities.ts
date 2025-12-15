@@ -55,49 +55,52 @@ export class Door extends Entity {
   override blockLOS = true;
   override flammable = false;
 
-  closedSprite=""
-  openSprite=""
-  open=false;
-  blocked=false;
+  closedSprite = '';
+  openSprite = '';
+  open = false;
+  blocked = false;
 
-  override onUse(user: Entity | null){
-    if (this.open == false){
+  override onUse(user: Entity | null) {
+    if (this.open == false) {
       this.open = true;
       this.sprite = this.openSprite;
       this.collidable = false;
       this.blockLOS = false;
-    }else{
-      this.blocked=false
-      let entities = GameController.current?.getAllEntitiesOnTile(this.posX,this.posY)!
-      for(let i=0;i<entities.length!;i++){
-        if (entities[i].name!="Door"){
-          console.log(entities[i].name)
-          this.blocked=true
+    } else {
+      this.blocked = false;
+      let entities = GameController.current?.getAllEntitiesOnTile(
+        this.posX,
+        this.posY
+      )!;
+      for (let i = 0; i < entities.length!; i++) {
+        if (entities[i].name != 'Door') {
+          console.log(entities[i].name);
+          this.blocked = true;
         }
       }
-      if(this.blocked==false){
+      if (this.blocked == false) {
         this.open = false;
         this.sprite = this.closedSprite;
         this.collidable = true;
         this.blockLOS = true;
       }
     }
-    console.log(this.blocked)
+    console.log(this.blocked);
   }
 }
 
 export class DoorHorizontal extends Door {
-  override name = "Door";
-  override sprite = "/sprites/entities/door_closed_horizontal.png";
-  override closedSprite="/sprites/entities/door_closed_horizontal.png";
-  override openSprite="/sprites/entities/door_open_horizontal.png";
+  override name = 'Door';
+  override sprite = '/sprites/entities/door_closed_horizontal.png';
+  override closedSprite = '/sprites/entities/door_closed_horizontal.png';
+  override openSprite = '/sprites/entities/door_open_horizontal.png';
 }
 
 export class DoorVertical extends Door {
-  override name = "Door";
-  override sprite = "/sprites/entities/door_closed_vertical.png";
-  override closedSprite="/sprites/entities/door_closed_vertical.png";
-  override openSprite="/sprites/entities/door_open_vertical.png";
+  override name = 'Door';
+  override sprite = '/sprites/entities/door_closed_vertical.png';
+  override closedSprite = '/sprites/entities/door_closed_vertical.png';
+  override openSprite = '/sprites/entities/door_open_vertical.png';
 }
 
 export class RoomTransition extends Entity {
@@ -120,6 +123,9 @@ export class RoomTransition extends Entity {
     GameController.current?.findRoom(user,this);
   }
 
+  override onUse(user: Player) {
+    GameController.current?.findRoom(user);
+  }
 }
 
 export class ExplosiveBarrel extends Entity {
@@ -132,13 +138,11 @@ export class ExplosiveBarrel extends Entity {
   override blockLOS = false;
   override flammable = false;
 
-  override onTakeDamage(){
-    GameController.current?.ignite(this.posX,this.posY,100,true,true);
+  override onTakeDamage() {
+    GameController.current?.ignite(this.posX, this.posY, 100, true, true);
   }
 
-  override onDestroyed(){
-    GameController.current?.createExplosion(this.posX,this.posY,3,200,true);
+  override onDestroyed() {
+    GameController.current?.createExplosion(this.posX, this.posY, 3, 200, true);
   }
-  
 }
-
