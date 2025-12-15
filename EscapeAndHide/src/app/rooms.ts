@@ -1,12 +1,7 @@
-import { Room } from './room';
-import {
-  Wall1,
-  WallCorner1,
-  ExplosiveBarrel,
-  DoorHorizontal,
-  DoorVertical,
-  RoomTransition,
-} from './entities';
+
+import { Room } from "./room";
+import { Wall1,WallCorner1,ExplosiveBarrel,DoorHorizontal,DoorVertical,RoomTransition} from './entities'
+import { LightInterferanceUnit } from "./enemyTypes";
 
 export class RoomsData {
 
@@ -41,6 +36,8 @@ export class RoomsData {
         "cornerRoomInvertedMirrored",
         "TRoom",
         "TRoomInverted",
+        "TRoomMirrored",
+        "TRoomInvertedMirrored",
     ]
 
     deadEndRooms: string[] = [
@@ -63,6 +60,7 @@ export class RoomsData {
         this.labComplex1.layout[0][7] = new RoomTransition("left");
         this.labComplex1.layout[7][0] = new RoomTransition("up");
         this.labComplex1.layout[7][14] = new RoomTransition("down");
+        this.labComplex1.layout[7][7] = new LightInterferanceUnit() 
         this.labComplex1.layout[14][7] = new RoomTransition("right");
         this.labComplex1.layout[1][5] = new Wall1();
         this.labComplex1.layout[2][5] = new Wall1();
@@ -195,10 +193,10 @@ export class RoomsData {
     
         this.endingRoom = new Room(13, 13, ["up", "left", "right", "down"], []);
         this.endingRoom.layout = Array.from({ length: this.endingRoom.width }, () => Array.from({ length: this.endingRoom.height }));
-        this.endingRoom.layout[0][6] = new RoomTransition("left");
-        this.endingRoom.layout[6][0] = new RoomTransition("up");
-        this.endingRoom.layout[6][12] = new RoomTransition("down");
-        this.endingRoom.layout[12][6] = new RoomTransition("right");
+        this.endingRoom.layout[0][6] = new RoomTransition("up");
+        this.endingRoom.layout[6][0] = new RoomTransition("left");
+        this.endingRoom.layout[6][12] = new RoomTransition("right");
+        this.endingRoom.layout[12][6] = new RoomTransition("down");
 
         this.noRoom = new Room(1, 1, [], []);
         // this.noRoom.layout = [["empty"]];

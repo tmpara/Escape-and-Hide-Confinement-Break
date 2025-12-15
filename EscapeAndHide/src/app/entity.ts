@@ -3,6 +3,7 @@ export abstract class Entity{
 
     id=0;
     name = "";
+    description = "";
     sprite = "placeholder.png";
     tags: string[] | null = null;
     connectsWith: string | null = null
@@ -23,6 +24,8 @@ export abstract class Entity{
     hiddenOutsideLOS = false
     blockLOS = false;
     flammable = false;
+    ai=false
+
     maxHealth = this.health
     destroyed = false;
     fireValue = 0;
