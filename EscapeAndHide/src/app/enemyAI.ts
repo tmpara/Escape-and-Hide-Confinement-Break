@@ -10,7 +10,7 @@ export class BasicEnemyAI extends Entity{
     TargetCoords: Entity[] = [];
     LastKnownTargetCoords: [number, number] | null = null;
     energy = 3;
-    sightRange = 30;
+    sightRange = 7;
     attackRange = 3;
     damage = 0;
 
@@ -20,103 +20,146 @@ export class BasicEnemyAI extends Entity{
         if (!GameController.current) return;
         // update target list
         this.findTargets();
-        if (!this.alerted) return;
 
-        const target = this.TargetCoords[0] as Player | undefined;
-        if (!target) return;
-
-        const distanceToTarget = Math.max(Math.abs(this.posX - target.posX), Math.abs(this.posY - target.posY));
-
-        // If in ranged attack window (but not adjacent) -> ranged attack
-        if (distanceToTarget <= this.attackRange && distanceToTarget > 1) {
-            this.RangedAttack();
-           // show action
-           if (GameController.current) {
-            GameController.current.drawGrid?.();
-            GameController.current.drawPlayer?.();
-            await (GameController.current.delay?.(160) ?? new Promise(res => setTimeout(res,160)));
-          }
-            return;
-        }
-
-        // If adjacent -> melee
-        if (distanceToTarget === 1) {
-            this.MeleeAttack();
-           if (GameController.current) {
-            GameController.current.drawGrid?.();
-             GameController.current.drawPlayer?.();
-            await (GameController.current.delay?.(160) ?? new Promise(res => setTimeout(res,160)));
-          }
-            return;
-        }
-
-        // Otherwise: path towards the player using A* and spend movement (energy)
         const controller = GameController.current;
-        if (!controller) return;
-        const path = controller.findPathAStar(this.posX, this.posY, target.posX, target.posY);
-        if (!path || path.length <= 1) return; // no movement possible
-
-        // move up to `energy` steps along the path (path[0] == start)
-        const steps = Math.min(this.energy, path.length - 1);
-
         const pauseMs = (controller as any).enemyStepDelay ?? 160;
-        for (let step = 1; step <= steps; step++) {
-            const [nx, ny] = path[step];
 
-            // safety checks: bounds and walkability
-            if (!controller.map || !controller.map.isValidTile(nx, ny)) break;
+        if (this.alerted && this.TargetCoords.length > 0) {
+            // Has current targets: pursue and attack as before
+            const target = this.TargetCoords[0] as Player;
 
-            // if there's a door on the next tile and it's closed, try to open it and stop moving this turn
-            const door = controller.getDoorOnTile(nx, ny);
+            const distanceToTarget = Math.max(Math.abs(this.posX - target.posX), Math.abs(this.posY - target.posY));
 
-            if (door) {
-                // attempt to open via common method names, fall back to toggling flags
-                if (typeof door.onUse === "function") {
-                    door.onUse();
-                } else if (typeof door.open === "function") {
-                    door.open();
-                } else if ('isOpen' in door) {
-                    (door as any).isOpen = true;
-                } else {
-                    (door as any).isOpen = true;
-                }
-                // redraw + pause so player sees the open attempt, then stop movement this turn
+            // If in ranged attack window (but not adjacent) -> ranged attack
+            if (distanceToTarget <= this.attackRange && distanceToTarget > 1) {
+                this.RangedAttack();
+               // show action
+               controller.drawGrid?.();
+               controller.drawPlayer?.();
+               await (controller.delay?.(pauseMs) ?? new Promise(res => setTimeout(res,pauseMs)));
+              return;
+            }
+
+            // If adjacent -> melee
+            if (distanceToTarget === 1) {
+                this.MeleeAttack();
+               controller.drawGrid?.();
+               controller.drawPlayer?.();
+               await (controller.delay?.(pauseMs) ?? new Promise(res => setTimeout(res,pauseMs)));
+              return;
+            }
+
+            // Otherwise: path towards the player using A* and spend movement (energy)
+            const path = controller.findPathAStar(this.posX, this.posY, target.posX, target.posY);
+            if (!path || path.length <= 1) return; // no movement possible
+
+            // move up to `energy` steps along the path (path[0] == start)
+            const steps = Math.min(this.energy, path.length - 1);
+            for (let step = 1; step <= steps; step++) {
+                const [nx, ny] = path[step];
+
+                // safety checks: bounds and walkability
+                if (!controller.map || !controller.map.isValidTile(nx, ny)) break;
+
+                // if there's a door on the next tile and it's closed, try to open it and stop moving this turn
+                const door = controller.getDoorOnTile(nx, ny);
+
+                if (door) {
+                    if (typeof door.onUse === "function") {
+                        if(door.open == false){
+                           door.onUse(); 
+                        }
+                    }
+                    // redraw + pause so player sees the open attempt
+                    controller.drawGrid?.();
+                    controller.drawPlayer?.();
+                    await (controller.delay?.(pauseMs) ?? new Promise(res => setTimeout(res,pauseMs)));
+                    
+                 }
+
+                // allow stepping onto the goal even if occupied by non-walkable (attack intent),
+                // otherwise require walkable
+                const isGoal = (nx === target.posX && ny === target.posY);
+                if (!isGoal && !controller.isTileWalkable(nx, ny)) break;
+
+                // remove from current tile and place at new tile via controller API
+                this.removeEntity(this.posX, this.posY);
+                controller.loadEntity(nx, ny, this, controller.map);
+
+                // redraw and pause after each step so player can observe movement
                 controller.drawGrid?.();
                 controller.drawPlayer?.();
                 await (controller.delay?.(pauseMs) ?? new Promise(res => setTimeout(res,pauseMs)));
-                break;
-             }
 
-            // allow stepping onto the goal even if occupied by non-walkable (attack intent),
-            // otherwise require walkable
-            const isGoal = (nx === target.posX && ny === target.posY);
-            if (!isGoal && !controller.isTileWalkable(nx, ny)) break;
-
-            // remove from current tile and place at new tile via controller API
-            this.removeEntity(this.posX, this.posY);
-            controller.loadEntity(nx, ny, this, controller.map);
-
-            // redraw and pause after each step so player can observe movement
-            controller.drawGrid?.();
-            controller.drawPlayer?.();
-            await (controller.delay?.(pauseMs) ?? new Promise(res => setTimeout(res,pauseMs)));
-
-            // after moving check current distance to the (possibly moved) player
-            const postDistance = Math.max(Math.abs(this.posX - target.posX), Math.abs(this.posY - target.posY));
-            if (postDistance <= this.attackRange) {
-                // if within melee range do melee, otherwise ranged
-                if (postDistance === 1) {
-                    this.MeleeAttack();
-                } else {
-                    this.RangedAttack();
+                // after moving check current distance to the (possibly moved) player
+                const postDistance = Math.max(Math.abs(this.posX - target.posX), Math.abs(this.posY - target.posY));
+                if (postDistance <= this.attackRange) {
+                    // if within melee range do melee, otherwise ranged
+                    if (postDistance === 1) {
+                        this.MeleeAttack();
+                    } else {
+                        this.RangedAttack();
+                    }
+                    // show attack and pause, then stop further movement this turn
+                    controller.drawGrid?.();
+                    controller.drawPlayer?.();
+                    await (controller.delay?.(pauseMs) ?? new Promise(res => setTimeout(res,pauseMs)));
+                    break;
                 }
-                // show attack and pause, then stop further movement this turn
+            }
+        } else if (this.LastKnownTargetCoords) {
+            // No current targets, but has last known position: move towards it
+            const [lx, ly] = this.LastKnownTargetCoords;
+            const path = controller.findPathAStar(this.posX, this.posY, lx, ly);
+            if (!path || path.length <= 1) {
+                // Can't reach last known, clear it
+                this.LastKnownTargetCoords = null;
+                return;
+            }
+
+            // move up to `energy` steps along the path
+            const steps = Math.min(this.energy, path.length - 1);
+            for (let step = 1; step <= steps; step++) {
+                const [nx, ny] = path[step];
+
+                // safety checks: bounds and walkability
+                if (!controller.map || !controller.map.isValidTile(nx, ny)) break;
+
+                // if there's a door on the next tile, try to open it
+                const door = controller.getDoorOnTile(nx, ny);
+                if (door) {
+                    
+                    if (typeof door.onUse === "function") {
+                        if(door.open == false){
+                           door.onUse(); 
+                        }
+                    }
+                    controller.drawGrid?.();
+                    controller.drawPlayer?.();
+                    await (controller.delay?.(pauseMs) ?? new Promise(res => setTimeout(res,pauseMs)));
+                    
+                }
+
+                // require walkable (since no attack intent here)
+                if (!controller.isTileWalkable(nx, ny)) break;
+
+                // move
+                this.removeEntity(this.posX, this.posY);
+                controller.loadEntity(nx, ny, this, controller.map);
+
+                // redraw and pause
                 controller.drawGrid?.();
                 controller.drawPlayer?.();
                 await (controller.delay?.(pauseMs) ?? new Promise(res => setTimeout(res,pauseMs)));
-                break;
+
+                // if reached last known, clear it
+                if (nx === lx && ny === ly) {
+                    this.LastKnownTargetCoords = null;
+                    break;
+                }
             }
         }
+        // else: no targets and no last known, do nothing
     }
 
     removeEntity(x: number, y: number) {
@@ -152,7 +195,7 @@ export class BasicEnemyAI extends Entity{
         let tiles = GameController.current?.getTilesInSphere(this.posX,this.posY,this.sightRange)!
             tiles.forEach((tile) => {
                 if (!GameController.current) return;
-           // if (GameController.current?.isLOSObstructed(this.posX,this.posY,tile[0],tile[1],true,true)==false){
+            if (GameController.current?.isLOSObstructed(this.posX,this.posY,tile[0],tile[1],true,true)==false){
                 entities = GameController.current?.getAllEntitiesOnTile(tile[0],tile[1])
                 allEntities = allEntities?.concat(entities) ;
                   for (let i=0;i<entities!.length;i++){
@@ -161,10 +204,11 @@ export class BasicEnemyAI extends Entity{
                         if (!this.TargetCoords.includes(entities![i])){
                             this.TargetCoords.push(entities![i]);
                         }
-                        
+                        // update last known position
+                        this.LastKnownTargetCoords = [entities![i].posX, entities![i].posY];
                     }
                 }
-            //}
+            }
             
             });
             for (let i=0;i<allEntities.length;i++){
@@ -175,6 +219,7 @@ export class BasicEnemyAI extends Entity{
             if (temp==0){
                 this.alerted=false;
                 this.TargetCoords = [];
+                // do not clear LastKnownTargetCoords here
             }
     }
     RangedAttack(){
@@ -183,6 +228,10 @@ export class BasicEnemyAI extends Entity{
 
     MeleeAttack(){
 
+    }
+
+    Move(){
+        
     }
 
 }

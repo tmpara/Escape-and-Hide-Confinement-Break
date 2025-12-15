@@ -32,7 +32,7 @@ export class HeavyDummy extends Entity {
   override flammable = true;
   isDead = false;
   lootTable = [new Items().gun, new Items().bandage];
-
+  
 }
 
 export class LightInterferanceUnit extends BasicEnemyAI{
@@ -46,6 +46,7 @@ export class LightInterferanceUnit extends BasicEnemyAI{
   override blockLOS = false;
   override flammable = true;
   override parentEntity = this;
+  override ai = true;
   
   isDead = false;
   lootTable = [new Items().gun, new Items().bandage];

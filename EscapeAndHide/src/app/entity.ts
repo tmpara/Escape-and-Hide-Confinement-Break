@@ -14,6 +14,7 @@ export abstract class Entity{
     hiddenOutsideLOS = false
     blockLOS = false;
     flammable = false;
+    ai=false
 
     maxHealth = this.health
     destroyed = false;

@@ -13,6 +13,8 @@ import { WeaponFunctionality } from './items/weapon_functionality';
 import { Inventory } from './inventory/inventory';
 import { Dummy, HeavyDummy, LightInterferanceUnit} from './enemyTypes'
 import { Entity } from './entity';
+import { BasicEnemyAI } from './enemyAI';
+
 
 
 export class GameController {
@@ -920,9 +922,6 @@ findRoom(player: Player){
       // redraw so player sees the result immediately
       this.drawGrid();
       this.drawPlayer();
-
-      // small pause between turns
-      
     }
   }
 
@@ -945,7 +944,33 @@ findRoom(player: Player){
       }
     }
       this.map.tiles[x][y].entity!.forEach((entity) => {
-        this.enemyTurnList.push(entity);
+        if (entity.ai){
+          this.enemyTurnList.push(entity);
+        }
+        
+    });
+  }
+
+  aiTargetUpdate(){
+     for (let x = 0; x < this.map.width; x++) {
+      for (let y = 0; y < this.map.height; y++) {
+        this.updateTarget(x, y);
+      }
+    }
+  }
+
+  updateTarget(x: number, y: number){
+  this.map.tiles[x][y].entity!.forEach((entity) => {
+        if (entity.ai){
+          if (entity instanceof BasicEnemyAI){
+            entity.findTargets();
+            console.log(entity.LastKnownTargetCoords)
+            console.log("ai find targerts")
+          }else{
+            console.log("no ai find targerts")
+          }
+        }
+
     });
   }
 
@@ -1082,15 +1107,19 @@ findRoom(player: Player){
       switch (event.key.toLowerCase()) {
         case 'w':
           targetY -= 1;
+          this.aiTargetUpdate()
           break;
         case 'a':
           targetX -= 1;
+          this.aiTargetUpdate()
           break;
         case 's':
           targetY += 1;
+          this.aiTargetUpdate()
           break;
         case 'd':
           targetX += 1;
+          this.aiTargetUpdate()
           break;
         default:
           return;
