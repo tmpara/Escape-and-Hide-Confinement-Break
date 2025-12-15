@@ -12,16 +12,15 @@ export class World {
     endX: number = 0;
     endY: number = 0;
     
-    
     constructor() {
         this.rooms = new Array();
         this.roomsIDs = new Array();
-        this.width = 10;
-        this.height = 10;
-        this.startX = Math.floor((Math.random() * 8) + 1);
-        this.startY = Math.floor((Math.random() * 8) + 1);
-        this.endX = Math.floor((Math.random() * 8) + 1);
-        this.endY = Math.floor((Math.random() * 8) + 1);
+        this.width = Math.floor(Math.random() * (9 - 7 + 1) + 7);
+        this.height = Math.floor(Math.random() * (9 - 7 + 1) + 7);
+        this.startX = Math.floor((Math.random() * (this.width-2)) + 1);
+        this.startY = Math.floor((Math.random() * (this.height-2)) + 1);
+        this.endX = Math.floor((Math.random() * (this.width-2)) + 1);
+        this.endY = Math.floor((Math.random() * (this.height-2)) + 1);
     }
 
     CreateWorld(){
@@ -32,8 +31,6 @@ export class World {
         }
 
         // choose a single starting room and ending room 
-
-        debugger;
         this.roomsIDs[this.startX][this.startY] = "startingRoom";
         this.loadRoomWithId(this.startX, this.startY, "startingRoom");
 

@@ -13,6 +13,7 @@ export class Player extends Entity {
   override hiddenOutsideLOS = false;
   override blockLOS = false;
   override flammable = true;
+  enableAnimating = true;
   playerId = 0;
   renderX = 0;
   renderY = 0;
