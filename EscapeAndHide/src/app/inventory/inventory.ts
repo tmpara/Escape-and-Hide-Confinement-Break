@@ -9,6 +9,7 @@ import * as PIXI from 'pixi.js';
 export class Inventory {
   items: Item[] = [];
   equippedItems: Item[] = [];
+  equippedWeapon: Weapon | null = null;
   inventorySize: number = 10;
   maxEquippedItems: number = 2;
   inventoryApp!: PIXI.Application;
@@ -232,7 +233,7 @@ export class Inventory {
     }
   }
 
-  showLootPopup(entity: Dummy | HeavyDummy) {
+  showLootPopup(entity: any) {
     if (this.lootOverlay) {
       return Promise.resolve(false);
     }
@@ -256,12 +257,12 @@ export class Inventory {
       const itemButton = document.createElement('button');
       itemButton.className = 'loot-item-btn';
       itemButton.textContent = item.name;
-      // itemButton.onclick = () => {
-      //   this.pickUp(item);
-      //   itemButton.disabled = true;
-      //   entity.lootTable.splice(i, 1);
-      //   itemLootBox.removeChild(itemButton);
-      // };
+      itemButton.onclick = () => {
+        this.pickUp(item);
+        itemButton.disabled = true;
+        entity.lootTable.splice(i, 1);
+        itemLootBox.removeChild(itemButton);
+      };
       itemLootBox.appendChild(itemButton);
     }
 
@@ -494,6 +495,9 @@ export class Inventory {
         this.equippedItems.push(item);
         this.items.splice(index, 1);
       }
+      if (item instanceof Weapon) {
+        this.equippedWeapon = item;
+      }
     }
     this.displayInventory();
     this.equipTabDisplay();
@@ -542,8 +546,6 @@ export class Inventory {
       GameController.current.spawnItem(x, y, item);
     }
   }
-
-  equipItem(itemIndex: number) {}
 
   getItems(): Item[] {
     return this.items;

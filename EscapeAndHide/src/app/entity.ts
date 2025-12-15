@@ -1,40 +1,45 @@
 import { GameController } from './game.controller';
-export abstract class Entity{
+export abstract class Entity {
+  id = 0;
+  name = '';
+  sprite = 'placeholder.png';
+  deadSprite = '';
+  tags: string[] | null = null;
+  connectsWith: string | null = null;
+  spriteTopCap = '';
+  spriteBottomCap = '';
+  spriteLeftCap = '';
+  spriteRightCap = '';
+  spriteTopLeftCorner = '';
+  spriteTopRightCorner = '';
+  spriteBottomLeftCorner = '';
+  spriteBottomRightCorner = '';
+  posX = 0;
+  posY = 0;
+  zIndex = 4;
+  collidable = false;
+  damageable = false;
+  health = 0;
+  hiddenOutsideLOS = false;
+  blockLOS = false;
+  flammable = false;
+  maxHealth = this.health;
+  destroyed = false;
+  fireValue = 0;
+  isDead = false;
 
-    id=0;
-    name = "";
-    sprite = "placeholder.png";
-    tags: string[] | null = null;
-    connectsWith: string | null = null
-    spriteTopCap = "";
-    spriteBottomCap = "";
-    spriteLeftCap = "";
-    spriteRightCap = "";
-    spriteTopLeftCorner = "";
-    spriteTopRightCorner = "";
-    spriteBottomLeftCorner = "";
-    spriteBottomRightCorner = "";
-    posX = 0;
-    posY = 0;
-    zIndex = 4;
-    collidable = false;
-    damageable = false;
-    health = 0;
-    hiddenOutsideLOS = false
-    blockLOS = false;
-    flammable = false;
-    maxHealth = this.health
-    destroyed = false;
-    fireValue = 0;
-
-    takeDamage(damage:number, damageType: string){
-        this.onTakeDamage(damage,damageType)
-        if (this.damageable==true && this.destroyed==false){
-            this.health -= damage;
-            if (this.health!<=0){
-                this.destroy(damage,damageType)
-            }
+  takeDamage(damage: number, damageType: string, target: Entity) {
+    console.log(target);
+    this.onTakeDamage(damage, damageType);
+    if (this.damageable == true && this.destroyed == false) {
+      this.health -= damage;
+      if (this.health! <= 0) {
+        if (target.tags?.includes('dummy')) {
+          this.kill(damage, damageType, target);
+        } else {
+          this.destroy(damage, damageType);
         }
+      }
     }
   }
 
@@ -52,8 +57,15 @@ export abstract class Entity{
     if (this.destroyed == false) {
       this.destroyed = true;
       this.onDestroyed(damage, damageType);
-      GameController.current?.RemoveEntities(this.posX, this.posY);
+      if (this.tags?.includes('dummy')) {
+      }
+      GameController.current?.removeEntities(this.posX, this.posY);
     }
+  }
+
+  kill(damage: number, damageType: string, target: Entity) {
+    target.isDead = true;
+    this.onDestroyed(damage, damageType);
   }
 
   onTakeDamage(damage: number, damageType: string) {}
@@ -64,9 +76,7 @@ export abstract class Entity{
 
   onSteppedOn(user: Entity | null) {}
 
-    onSteppedOn(user: Entity | null){}
-
-    onEndTurn(){}
+  onEndTurn() {}
 
   onHeal(amountHealed: number) {}
 }
