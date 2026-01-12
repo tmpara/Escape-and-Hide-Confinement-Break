@@ -7,7 +7,12 @@ import {
   Torso,
   Limbs,
 } from './limbs';
-import { Hypoxemia, Bleeding, Lacerations, Fracture, Bloodloss } from './afflictions';
+import { Hypoxemia, Bleeding, Lacerations, Fracture, Bloodloss, Afflcition } from './afflictions';
+
+export type LimbName = 'leftArm' | 'rightArm' | 'leftLeg' | 'rightLeg' | 'head' | 'torso';
+
+type affliction = [string,number]
+
 export class Health {
   maxBlood: number = 5000;
   currentBlood: number = 5000;
@@ -29,6 +34,7 @@ export class Health {
     this.head,
     this.torso,
   ];
+  
 
   constructor(maxBlood: number, currentHealth: number) {
     this.maxBlood = maxBlood;
@@ -39,7 +45,30 @@ export class Health {
     
   }
 
+  
+
+  damageLimb(limb: LimbName, afflictions: affliction[]) {  
+  for (let affliction of afflictions) {
+      if (affliction[0] == 'Lacerations') {
+        this[limb].lacerations.increaseSeverity(affliction[1]);
+      }
+      if (affliction[0] == 'Bleeding') {
+        this[limb].bleeding.increaseSeverity(affliction[1]);
+      }
+      if (affliction[0] == 'GunshotWound') {
+        this[limb].gunshotWound.increaseSeverity(affliction[1]);
+      }
+      if (affliction[0] == 'Burn') {
+        this[limb].burn.increaseSeverity(affliction[1]);
+      }
+      if (affliction[0] == 'Fracture') {
+        this[limb].addFracture();
+      }
+  }
+}
+
   updateAfflictions() {
+    this.bloodLoss.severity = 0;
     for (let limb of this.limbs) {
       this.bloodLoss.increaseSeverity(limb.bleeding.severity);
     }

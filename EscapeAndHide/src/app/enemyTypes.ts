@@ -1,4 +1,4 @@
-import { BasicEnemyAI, LightInterferanceUnitAI } from './enemyAI';
+import { BasicEnemyAI, LightInterferanceUnitAI, MediumInterferanceUnitAI } from './enemyAI';
 import { Entity } from './entity';
 import { Item } from './items/items';
 import { Items } from './items/items';
@@ -41,6 +41,27 @@ export class LightInterferanceUnit extends LightInterferanceUnitAI{
   override collidable = true;
   override damageable = true;
   override health = 50;
+  override hiddenOutsideLOS = true;
+  override blockLOS = false;
+  override flammable = true;
+  override parentEntity = this;
+  override ai = true;
+  
+  isDead = false;
+  lootTable = [new Items().gun, new Items().bandage];
+
+  override async onEndTurn(){
+   await this.Main();
+  }
+
+}
+export class MediumInterferanceUnit extends MediumInterferanceUnitAI{
+  override name = "Medium Interferance Unit";
+  override description = "A 4-legged robot with two double-cannons on mounted at its sides, lethal."
+  override sprite = "/sprites/npc/heavyDummy.png";
+  override collidable = true;
+  override damageable = true;
+  override health = 100;
   override hiddenOutsideLOS = true;
   override blockLOS = false;
   override flammable = true;
