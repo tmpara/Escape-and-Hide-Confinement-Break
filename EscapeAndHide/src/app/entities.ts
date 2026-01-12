@@ -150,3 +150,13 @@ export class ExplosiveBarrel extends Entity {
     GameController.current?.createExplosion(this.posX, this.posY, 3, 200, true);
   }
 }
+
+export class GlassShards extends Entity {
+  override name = 'Glass Shards';
+  override sprite = '/sprites/entities/glass_shards.png';
+  override collidable = false;
+  override damageable = false;
+  override hiddenOutsideLOS = true;
+  override blockLOS = false;
+  override flammable = false;
+}

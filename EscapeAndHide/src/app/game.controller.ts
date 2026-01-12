@@ -12,7 +12,7 @@ import { WeaponFunctionality } from './items/weapon_functionality';
 import { Inventory } from './inventory/inventory';
 import { Dummy, HeavyDummy } from './enemyTypes';
 import { Entity } from './entity';
-import { RoomTransition } from './entities';
+import { GlassShards, RoomTransition } from './entities';
 
 export class GameController {
   static current: GameController | null = null;
@@ -25,6 +25,7 @@ export class GameController {
   player1 = new Player();
   dummy1 = new Dummy();
   heavyDummy1 = new HeavyDummy();
+  glassshards = new GlassShards();
   world = new World();
   spriteContainer = new Container();
   effectContainer = new Container();
@@ -185,6 +186,7 @@ export class GameController {
     this.loadPlayer(1, 1, this.player1, 1);
     this.loadEntity(5, 2, this.dummy1, this.map);
     this.loadEntity(5, 3, this.heavyDummy1, this.map);
+    this.loadEntity(2, 2, this.glassshards, this.map);
     this.spawnItem(1, 3, new Items().gun);
     this.spawnItem(2, 3, new Items().bigGun);
 
@@ -920,41 +922,53 @@ export class GameController {
     const baseY = 50; // Adjusted for healthUIApp canvas
     const limbSize = 50;
 
-    this.addHealthLimbSprite('head', baseX, baseY, limbSize, limbSize);
+    this.addHealthLimbSprite(
+      'head',
+      baseX,
+      baseY,
+      limbSize,
+      limbSize,
+      this.selectedLimb === 'head'
+    );
     this.addHealthLimbSprite(
       'torso',
       baseX,
       baseY + limbSize,
       limbSize,
-      limbSize
+      limbSize,
+      this.selectedLimb === 'torso'
     );
     this.addHealthLimbSprite(
       'leftarm',
       baseX - limbSize,
       baseY + limbSize,
       limbSize,
-      limbSize
+      limbSize,
+      this.selectedLimb === 'leftarm'
     );
     this.addHealthLimbSprite(
       'rightarm',
       baseX + limbSize,
       baseY + limbSize,
       limbSize,
-      limbSize
+      limbSize,
+      this.selectedLimb === 'rightarm'
     );
     this.addHealthLimbSprite(
       'leftleg',
       baseX - limbSize / 2,
       baseY + limbSize * 2,
       limbSize,
-      limbSize
+      limbSize,
+      this.selectedLimb === 'leftleg'
     );
     this.addHealthLimbSprite(
       'rightleg',
       baseX + limbSize / 2,
       baseY + limbSize * 2,
       limbSize,
-      limbSize
+      limbSize,
+      this.selectedLimb === 'rightleg'
     );
   }
 
@@ -963,7 +977,8 @@ export class GameController {
     x: number,
     y: number,
     width: number,
-    height: number
+    height: number,
+    selected: boolean = false
   ) {
     const texture = Assets.get(`${limbName}.png`);
     const sprite = new PIXI.Sprite(texture);
@@ -974,8 +989,10 @@ export class GameController {
     sprite.interactive = true;
     sprite.cursor = 'pointer';
     sprite._zIndex = 1000;
+    sprite.alpha = selected ? 0.5 : 1;
     sprite.on('pointerdown', () => {
       this.selectedLimb = limbName;
+      this.drawHealthUI();
       console.log(limbName);
     });
     this.healthLimbContainer.addChild(sprite);
@@ -1111,24 +1128,24 @@ export class GameController {
       player.posY = targetY;
       this.animatePlayerMove(player, targetX, targetY);
       this.player1.playerAction(0);
-      this.checkTileForItem(player);
+      // this.checkTileForItem(player);
     }
   }
 
-  async checkTileForItem(player: Player) {
-    if (this.map.tiles[player.posX][player.posY].item != null) {
-      const item = this.map.tiles[player.posX][player.posY].item;
-      if (item) {
-        const pickedUp = await this.inventory.showPickUpPrompt(item);
-        if (pickedUp) {
-          this.inventory.pickUp(item);
-          this.removeItem(player.posX, player.posY);
-        }
-      }
-    } else if (this.inventory.pickUpOverlay != null) {
-      this.inventory.hidePickUpPrompt();
-    }
-  }
+  // async checkTileForItem(player: Player) {
+  //   if (this.map.tiles[player.posX][player.posY].item != null) {
+  //     const item = this.map.tiles[player.posX][player.posY].item;
+  //     if (item) {
+  //       const pickedUp = await this.inventory.showPickUpPrompt(item);
+  //       if (pickedUp) {
+  //         this.inventory.pickUp(item);
+  //         this.removeItem(player.posX, player.posY);
+  //       }
+  //     }
+  //   } else if (this.inventory.pickUpOverlay != null) {
+  //     this.inventory.hidePickUpPrompt();
+  //   }
+  // }
 
   findRoom(player: Player, transition: RoomTransition) {
     let playerPosX = player.posX;
@@ -1521,6 +1538,11 @@ export class GameController {
         this.tileSize
       );
       if (coords) {
+        const tileInfo = this.map.tiles[coords.x][coords.y].getTileInfo();
+        console.log(coords, tileInfo);
+
+        this.onTileClick(coords.x, coords.y, tileInfo);
+
         this.getAllEntitiesOnTile(coords.x, coords.y)?.forEach(
           (entity: any) => {
             entity.onUse(player);
@@ -1587,6 +1609,15 @@ export class GameController {
     }
 
     // run tile checks for the new room
-    this.checkTileForItem(this.player1);
+    // this.checkTileForItem(this.player1);
+  }
+
+  async onTileClick(x: number, y: number, tileInfo: any) {
+    if (this.map.tiles[x][y].item != null) {
+      const pickedUp = await this.inventory.floorItemActionPrompt(x, y);
+      if (pickedUp) {
+        this.removeItem(x, y);
+      }
+    }
   }
 }
