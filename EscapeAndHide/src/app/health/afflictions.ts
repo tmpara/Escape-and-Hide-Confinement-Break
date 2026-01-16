@@ -27,7 +27,7 @@ export class Hypoxemia extends Afflcition {
 
 export class Bleeding extends Afflcition {
   name: string = 'Bleeding';
-  override maxSeverity: number = 110;
+  override maxSeverity: number = 100;
   constructor() {
     super();
   }

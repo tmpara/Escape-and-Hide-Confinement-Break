@@ -25,7 +25,7 @@ type affliction = [string, number];
 export class Health {
   maxBlood: number = 5000;
   currentBlood: number = 5000;
-  regeneration: number = 10;
+  regeneration: number = 1;
   isUnconscious: boolean = false;
   leftArm: LeftArm = new LeftArm();
   rightArm: RightArm = new RightArm();

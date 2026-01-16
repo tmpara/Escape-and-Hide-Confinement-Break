@@ -10,7 +10,7 @@ import { Item, Items } from './items/items';
 import { WorldMapRenderer } from './worldMapRenderer';
 import { WeaponFunctionality } from './items/weapon_functionality';
 import { Inventory } from './inventory/inventory';
-import { GlassShards, RoomTransition } from './entities';
+import { GlassShards } from './entities';
 import { Dummy, HeavyDummy, LightInterferanceUnit} from './enemyTypes'
 import { Entity } from './entity';
 import { BasicEnemyAI } from './enemyAI';
@@ -1238,6 +1238,10 @@ export class GameController {
       player.posY = targetY;
       this.animatePlayerMove(player, targetX, targetY);
       this.player1.playerAction(0);
+      let entities = this.getAllEntitiesOnTile(targetX, targetY);
+      for (let i = 0; i < entities.length; i++) {
+        entities[i].onSteppedOn(player);
+      }
       // this.checkTileForItem(player);
     }
   }
@@ -1601,9 +1605,9 @@ export class GameController {
     let entities = this.getAllEntitiesOnTile(x, y);
     for (let i = 0; i < entities.length; i++) {
       if (ignoredId != null && ignoredId != entities[i].id) {
-        entities[i].takeDamage(damage, damageType, entities[i]);
+        entities[i].takeDamage(damage, damageType);
       } else if (ignoredId == null) {
-        entities[i].takeDamage(damage, damageType, entities[i]);
+        entities[i].takeDamage(damage, damageType);
       }
     }
   }
@@ -1708,7 +1712,7 @@ export class GameController {
           }
         );
         const entity = this.map.tiles[coords.x][coords.y].entity;
-        if (entity[0].tags?.includes('lootable') && entity[0].isDead) {
+        if (entity[0].lootable) {
           this.inventory.showLootPopup(entity[0]);
         }
         if (this.aimMode) {
