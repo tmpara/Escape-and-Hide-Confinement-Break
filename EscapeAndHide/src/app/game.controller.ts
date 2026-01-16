@@ -6,10 +6,11 @@ import { World } from './world';
 import { Player } from './player';
 import { Health } from './health/health';
 import { Energy } from './energy/energy';
-import { Item,Items} from './items/items';
+import { Item, Items } from './items/items';
 import { WorldMapRenderer } from './worldMapRenderer';
 import { WeaponFunctionality } from './items/weapon_functionality';
 import { Inventory } from './inventory/inventory';
+import { GlassShards, RoomTransition } from './entities';
 import { Dummy, HeavyDummy, LightInterferanceUnit} from './enemyTypes'
 import { Entity } from './entity';
 import { BasicEnemyAI } from './enemyAI';
@@ -28,6 +29,7 @@ export class GameController {
   player1 = new Player();
   dummy1 = new Dummy();
   heavyDummy1 = new HeavyDummy();
+  glassshards = new GlassShards();
   liu = new LightInterferanceUnit();
   world = new World();
   spriteContainer = new Container();
@@ -74,9 +76,13 @@ export class GameController {
     await Assets.load('/sprites/entities/wall_placeholder_leftcap.png');
     await Assets.load('/sprites/entities/wall_placeholder_rightcap.png');
     await Assets.load('/sprites/entities/wall_placeholder_toprightcorner.png');
-    await Assets.load('/sprites/entities/wall_placeholder_bottomleftcorner.png');
+    await Assets.load(
+      '/sprites/entities/wall_placeholder_bottomleftcorner.png'
+    );
     await Assets.load('/sprites/entities/wall_placeholder_topleftcorner.png');
-    await Assets.load('/sprites/entities/wall_placeholder_bottomrightcorner.png');
+    await Assets.load(
+      '/sprites/entities/wall_placeholder_bottomrightcorner.png'
+    );
     await Assets.load('/sprites/entities/door1.png');
     await Assets.load('/sprites/entities/glass_shards.png');
     await Assets.load('/sprites/entities/explosiveBarrel.png');
@@ -115,6 +121,7 @@ export class GameController {
     
     // Create map and player
     this.map = this.world.rooms[this.playerWorldX][this.playerWorldY];
+    console.log(this.map.width + ' ' + this.map.height);
     this.loadPlayer(1, 1, this.player1,1);
     this.loadEntity(6,6, this.liu, this.map);
 
@@ -186,6 +193,7 @@ export class GameController {
     this.loadPlayer(1, 1, this.player1, 1);
     this.loadEntity(5, 2, this.dummy1, this.map);
     this.loadEntity(5, 3, this.heavyDummy1, this.map);
+    this.loadEntity(2, 2, this.glassshards, this.map);
     this.spawnItem(1, 3, new Items().gun);
     this.spawnItem(2, 3, new Items().bigGun);
 
@@ -568,7 +576,7 @@ export class GameController {
     const barWidth = 200;
     const barHeight = 20;
     const x = 10;
-    const y = 400;
+    const y = 570;
 
     const myText = new Text({
       text: Math.round(this.player1.Health.currentBlood) + ' ml',
@@ -652,7 +660,7 @@ export class GameController {
     const barWidth = 200;
     const barHeight = 20;
     const x = 10;
-    const y = 430;
+    const y = 600;
 
     // Background
     this.energyBar.beginFill(0x555555);
@@ -742,6 +750,14 @@ export class GameController {
           if (entity.sprite != '') {
             let entityTexture = Assets.get(entity.sprite.toString());
             let entitySprite = new PIXI.Sprite(entityTexture);
+            if (
+              entity.isDead &&
+              entity.tags.includes('dummy') &&
+              entity.deadSprite
+            ) {
+              entity.texture = Assets.get(entity.deadSprite.toString());
+              entitySprite.texture = entity.texture;
+            }
             entitySprite.x = x * this.tileSize;
             entitySprite.y = y * this.tileSize;
             entitySprite.width = this.tileSize;
@@ -749,19 +765,19 @@ export class GameController {
             entitySprite._zIndex = entity.zIndex;
             this.spriteContainer.addChild(entitySprite);
             // handle wall connections
-            const shouldSpawnCap = (x: number, y: number) => { 
-              if(this.map.isValidTile(x,y)){
-                let entities = this.getAllEntitiesOnTile(x,y)
-                for(let i=0;i<entities.length;i++){
-                  if (entities[i].connectsWith == entity.connectsWith){
+            const shouldSpawnCap = (x: number, y: number) => {
+              if (this.map.isValidTile(x, y)) {
+                let entities = this.getAllEntitiesOnTile(x, y);
+                for (let i = 0; i < entities.length; i++) {
+                  if (entities[i].connectsWith == entity.connectsWith) {
                     return false;
                   }
                 }
               }
-              return true
-            }
-            if (shouldSpawnCap(x,y-1) && entity.spriteTopCap!=""){
-              let capTexture = Assets.get((entity.spriteTopCap).toString())
+              return true;
+            };
+            if (shouldSpawnCap(x, y - 1) && entity.spriteTopCap != '') {
+              let capTexture = Assets.get(entity.spriteTopCap.toString());
               let capSprite = new PIXI.Sprite(capTexture);
               capSprite.x = x * this.tileSize;
               capSprite.y = y * this.tileSize;
@@ -770,8 +786,8 @@ export class GameController {
               capSprite._zIndex = entity.zIndex + 0.1;
               this.spriteContainer.addChild(capSprite);
             }
-            if (shouldSpawnCap(x,y+1) && entity.spriteBottomCap!=""){
-              let capTexture = Assets.get((entity.spriteBottomCap).toString())
+            if (shouldSpawnCap(x, y + 1) && entity.spriteBottomCap != '') {
+              let capTexture = Assets.get(entity.spriteBottomCap.toString());
               let capSprite = new PIXI.Sprite(capTexture);
               capSprite.x = x * this.tileSize;
               capSprite.y = y * this.tileSize;
@@ -780,8 +796,8 @@ export class GameController {
               capSprite._zIndex = entity.zIndex + 0.1;
               this.spriteContainer.addChild(capSprite);
             }
-            if (shouldSpawnCap(x-1,y) && entity.spriteLeftCap!=""){
-              let capTexture = Assets.get((entity.spriteLeftCap).toString())
+            if (shouldSpawnCap(x - 1, y) && entity.spriteLeftCap != '') {
+              let capTexture = Assets.get(entity.spriteLeftCap.toString());
               let capSprite = new PIXI.Sprite(capTexture);
               capSprite.x = x * this.tileSize;
               capSprite.y = y * this.tileSize;
@@ -790,8 +806,8 @@ export class GameController {
               capSprite._zIndex = entity.zIndex + 0.1;
               this.spriteContainer.addChild(capSprite);
             }
-            if (shouldSpawnCap(x+1,y) && entity.spriteRightCap!=""){
-              let capTexture = Assets.get((entity.spriteRightCap).toString())
+            if (shouldSpawnCap(x + 1, y) && entity.spriteRightCap != '') {
+              let capTexture = Assets.get(entity.spriteRightCap.toString());
               let capSprite = new PIXI.Sprite(capTexture);
               capSprite.x = x * this.tileSize;
               capSprite.y = y * this.tileSize;
@@ -802,8 +818,15 @@ export class GameController {
             }
             //corners
             //top left
-            if (shouldSpawnCap(x-1,y) == false && shouldSpawnCap(x,y-1) == false && shouldSpawnCap(x-1,y-1) && entity.spriteTopLeftCorner!=""){
-              let capTexture = Assets.get((entity.spriteTopLeftCorner).toString())
+            if (
+              shouldSpawnCap(x - 1, y) == false &&
+              shouldSpawnCap(x, y - 1) == false &&
+              shouldSpawnCap(x - 1, y - 1) &&
+              entity.spriteTopLeftCorner != ''
+            ) {
+              let capTexture = Assets.get(
+                entity.spriteTopLeftCorner.toString()
+              );
               let capSprite = new PIXI.Sprite(capTexture);
               capSprite.x = x * this.tileSize;
               capSprite.y = y * this.tileSize;
@@ -813,8 +836,15 @@ export class GameController {
               this.spriteContainer.addChild(capSprite);
             }
             //top right
-            if (shouldSpawnCap(x+1,y) == false && shouldSpawnCap(x,y-1) == false && shouldSpawnCap(x+1,y-1) && entity.spriteTopRightCorner!=""){
-              let capTexture = Assets.get((entity.spriteTopRightCorner).toString())
+            if (
+              shouldSpawnCap(x + 1, y) == false &&
+              shouldSpawnCap(x, y - 1) == false &&
+              shouldSpawnCap(x + 1, y - 1) &&
+              entity.spriteTopRightCorner != ''
+            ) {
+              let capTexture = Assets.get(
+                entity.spriteTopRightCorner.toString()
+              );
               let capSprite = new PIXI.Sprite(capTexture);
               capSprite.x = x * this.tileSize;
               capSprite.y = y * this.tileSize;
@@ -824,8 +854,15 @@ export class GameController {
               this.spriteContainer.addChild(capSprite);
             }
             //bottom left
-            if (shouldSpawnCap(x-1,y) == false && shouldSpawnCap(x,y+1) == false && shouldSpawnCap(x-1,y+1) && entity.spriteBottomLeftCorner!=""){
-              let capTexture = Assets.get((entity.spriteBottomLeftCorner).toString())
+            if (
+              shouldSpawnCap(x - 1, y) == false &&
+              shouldSpawnCap(x, y + 1) == false &&
+              shouldSpawnCap(x - 1, y + 1) &&
+              entity.spriteBottomLeftCorner != ''
+            ) {
+              let capTexture = Assets.get(
+                entity.spriteBottomLeftCorner.toString()
+              );
               let capSprite = new PIXI.Sprite(capTexture);
               capSprite.x = x * this.tileSize;
               capSprite.y = y * this.tileSize;
@@ -835,8 +872,15 @@ export class GameController {
               this.spriteContainer.addChild(capSprite);
             }
             //bottom right
-            if (shouldSpawnCap(x+1,y) == false && shouldSpawnCap(x,y+1) == false && shouldSpawnCap(x+1,y+1) && entity.spriteBottomRightCorner!=""){
-              let capTexture = Assets.get((entity.spriteBottomRightCorner).toString())
+            if (
+              shouldSpawnCap(x + 1, y) == false &&
+              shouldSpawnCap(x, y + 1) == false &&
+              shouldSpawnCap(x + 1, y + 1) &&
+              entity.spriteBottomRightCorner != ''
+            ) {
+              let capTexture = Assets.get(
+                entity.spriteBottomRightCorner.toString()
+              );
               let capSprite = new PIXI.Sprite(capTexture);
               capSprite.x = x * this.tileSize;
               capSprite.y = y * this.tileSize;
@@ -845,12 +889,29 @@ export class GameController {
               capSprite._zIndex = entity.zIndex + 0.2;
               this.spriteContainer.addChild(capSprite);
             }
-            if (entity.hiddenOutsideLOS){
-              if (this.isLOSObstructed(this.player1.posX, this.player1.posY, x, y,true,true)==true){
-                entitySprite.alpha = 0
-              }
-              else if(this.isLOSObstructed(this.player1.posX, this.player1.posY, x, y,true,true)==false){
-                entitySprite.alpha = 1
+            if (entity.hiddenOutsideLOS) {
+              if (
+                this.isLOSObstructed(
+                  this.player1.posX,
+                  this.player1.posY,
+                  x,
+                  y,
+                  true,
+                  true
+                ) == true
+              ) {
+                entitySprite.alpha = 0;
+              } else if (
+                this.isLOSObstructed(
+                  this.player1.posX,
+                  this.player1.posY,
+                  x,
+                  y,
+                  true,
+                  true
+                ) == false
+              ) {
+                entitySprite.alpha = 1;
               }
             }
           }
@@ -935,7 +996,7 @@ export class GameController {
     reticleSprite.alpha = 0;
     if (
       this.aimMode &&
-      !this.checkForCollision(tileX,tileY) && 
+      !this.checkForCollision(tileX, tileY) &&
       this.map.tiles[tileX][tileY].name != 'door'
     ) {
       reticleSprite.width = this.tileSize;
@@ -971,41 +1032,53 @@ export class GameController {
     const baseY = 50; // Adjusted for healthUIApp canvas
     const limbSize = 50;
 
-    this.addHealthLimbSprite('head', baseX, baseY, limbSize, limbSize);
+    this.addHealthLimbSprite(
+      'head',
+      baseX,
+      baseY,
+      limbSize,
+      limbSize,
+      this.selectedLimb === 'head'
+    );
     this.addHealthLimbSprite(
       'torso',
       baseX,
       baseY + limbSize,
       limbSize,
-      limbSize
+      limbSize,
+      this.selectedLimb === 'torso'
     );
     this.addHealthLimbSprite(
       'leftarm',
       baseX - limbSize,
       baseY + limbSize,
       limbSize,
-      limbSize
+      limbSize,
+      this.selectedLimb === 'leftarm'
     );
     this.addHealthLimbSprite(
       'rightarm',
       baseX + limbSize,
       baseY + limbSize,
       limbSize,
-      limbSize
+      limbSize,
+      this.selectedLimb === 'rightarm'
     );
     this.addHealthLimbSprite(
       'leftleg',
       baseX - limbSize / 2,
       baseY + limbSize * 2,
       limbSize,
-      limbSize
+      limbSize,
+      this.selectedLimb === 'leftleg'
     );
     this.addHealthLimbSprite(
       'rightleg',
       baseX + limbSize / 2,
       baseY + limbSize * 2,
       limbSize,
-      limbSize
+      limbSize,
+      this.selectedLimb === 'rightleg'
     );
   }
 
@@ -1014,7 +1087,8 @@ export class GameController {
     x: number,
     y: number,
     width: number,
-    height: number
+    height: number,
+    selected: boolean = false
   ) {
     const texture = Assets.get(`${limbName}.png`);
     const sprite = new PIXI.Sprite(texture);
@@ -1025,8 +1099,10 @@ export class GameController {
     sprite.interactive = true;
     sprite.cursor = 'pointer';
     sprite._zIndex = 1000;
+    sprite.alpha = selected ? 0.5 : 1;
     sprite.on('pointerdown', () => {
       this.selectedLimb = limbName;
+      this.drawHealthUI();
       console.log(limbName);
     });
     this.healthLimbContainer.addChild(sprite);
@@ -1126,8 +1202,8 @@ export class GameController {
     this.map.tiles[targetX][targetY].entity!.push(player);
     player.posX = targetX;
     player.posY = targetY;
-    player.renderX = targetX
-    player.renderY = targetY
+    player.renderX = targetX;
+    player.renderY = targetY;
     if (playerPosX < this.map.width && playerPosY < this.map.height) {
       this.removePlayer(playerPosX, playerPosY);
     }
@@ -1162,85 +1238,82 @@ export class GameController {
       player.posY = targetY;
       this.animatePlayerMove(player, targetX, targetY);
       this.player1.playerAction(0);
-      this.checkTileForItem(player);
+      // this.checkTileForItem(player);
     }
   }
 
-  async checkTileForItem(player: Player) {
-    if (this.map.tiles[player.posX][player.posY].item != null) {
-      const item = this.map.tiles[player.posX][player.posY].item;
-      if (item) {
-        const pickedUp = await this.inventory.showPickUpPrompt(item);
-        if (pickedUp) {
-          this.inventory.pickUp(item);
-          this.removeItem(player.posX, player.posY);
-        }
-      }
-    } else if (this.inventory.pickUpOverlay != null) {
-      this.inventory.hidePickUpPrompt();
-    }
-  }
+  // async checkTileForItem(player: Player) {
+  //   if (this.map.tiles[player.posX][player.posY].item != null) {
+  //     const item = this.map.tiles[player.posX][player.posY].item;
+  //     if (item) {
+  //       const pickedUp = await this.inventory.showPickUpPrompt(item);
+  //       if (pickedUp) {
+  //         this.inventory.pickUp(item);
+  //         this.removeItem(player.posX, player.posY);
+  //       }
+  //     }
+  //   } else if (this.inventory.pickUpOverlay != null) {
+  //     this.inventory.hidePickUpPrompt();
+  //   }
+  // }
 
-findRoom(player: Player, transition: RoomTransition){
- 
+  findRoom(player: Player, transition: RoomTransition) {
     let playerPosX = player.posX;
     let playerPosY = player.posY;
 
     let mapX = this.map.width;
     let mapY = this.map.height;
 
-    if (transition.type=="left") {
+    if (transition.type == 'left') {
       //left
-      if (this.playerWorldX - 1  >= 0){
-        this.removePlayer(playerPosX,playerPosY)
-        this.map = this.world.rooms[this.playerWorldX-1][this.playerWorldY];
+      if (this.playerWorldX - 1 >= 0) {
+        this.removePlayer(playerPosX, playerPosY);
+        this.map = this.world.rooms[this.playerWorldX - 1][this.playerWorldY];
         this.playerWorldX -= 1;
-        let x = this.findEntrance("right")!.x
-        let y = this.findEntrance("right")!.y
+        let x = this.findEntrance('right')!.x;
+        let y = this.findEntrance('right')!.y;
         this.teleportPlayer(this.player1, x, y);
         console.log('Moved to left room');
         console.log(
           'World coordinates: ' + this.playerWorldX + ', ' + this.playerWorldY
         );
       }
-    } else if (transition.type=="right") {
+    } else if (transition.type == 'right') {
       //right
-      if (this.playerWorldX + 1  <= 10){
-        this.removePlayer(playerPosX,playerPosY)
-        this.map = this.world.rooms[this.playerWorldX+1][this.playerWorldY];
+      if (this.playerWorldX + 1 <= 10) {
+        this.removePlayer(playerPosX, playerPosY);
+        this.map = this.world.rooms[this.playerWorldX + 1][this.playerWorldY];
         this.playerWorldX += 1;
-        let x = this.findEntrance("left")!.x
-        let y = this.findEntrance("left")!.y
+        let x = this.findEntrance('left')!.x;
+        let y = this.findEntrance('left')!.y;
         this.teleportPlayer(this.player1, x, y);
         console.log('Moved to right room');
         console.log(
           'World coordinates: ' + this.playerWorldX + ', ' + this.playerWorldY
         );
       }
-    }
-    else if(transition.type=="up"){
-      //up 
-      if (this.playerWorldY - 1  >= 0){
-        this.removePlayer(playerPosX,playerPosY)
-        this.map = this.world.rooms[this.playerWorldX][this.playerWorldY-1];
+    } else if (transition.type == 'up') {
+      //up
+      if (this.playerWorldY - 1 >= 0) {
+        this.removePlayer(playerPosX, playerPosY);
+        this.map = this.world.rooms[this.playerWorldX][this.playerWorldY - 1];
         this.playerWorldY -= 1;
-        let x = this.findEntrance("down")!.x
-        let y = this.findEntrance("down")!.y
+        let x = this.findEntrance('down')!.x;
+        let y = this.findEntrance('down')!.y;
         this.teleportPlayer(this.player1, x, y);
         console.log('Moved to up room');
         console.log(
           'World coordinates: ' + this.playerWorldX + ', ' + this.playerWorldY
         );
       }
-    } else if (transition.type=="down"){
+    } else if (transition.type == 'down') {
       //down
-      if (this.playerWorldY + 1  <= 10){
-      
-        this.removePlayer(playerPosX,playerPosY)
-        this.map = this.world.rooms[this.playerWorldX][this.playerWorldY+1];
+      if (this.playerWorldY + 1 <= 10) {
+        this.removePlayer(playerPosX, playerPosY);
+        this.map = this.world.rooms[this.playerWorldX][this.playerWorldY + 1];
         this.playerWorldY += 1;
-        let x = this.findEntrance("up")!.x
-        let y = this.findEntrance("up")!.y
+        let x = this.findEntrance('up')!.x;
+        let y = this.findEntrance('up')!.y;
         this.teleportPlayer(this.player1, x, y);
         console.log('Moved to down room');
         console.log(
@@ -1250,49 +1323,61 @@ findRoom(player: Player, transition: RoomTransition){
     }
   }
 
-  findEntrance(side: string){
-    let entities = []
+  findEntrance(side: string) {
+    let entities = [];
     for (let x = 0; x <= this.map.width; x++) {
       for (let y = 0; y <= this.map.height; y++) {
-        switch(side){
-          case "left":
-            entities = GameController.current?.getAllEntitiesOnTile(x,y)!
-            for(let i=0;i<entities.length!;i++){
-              if (entities[i] instanceof RoomTransition && (entities[i] as RoomTransition).type=="left"){
-                return {x: x+1, y: y};  
+        switch (side) {
+          case 'left':
+            entities = GameController.current?.getAllEntitiesOnTile(x, y)!;
+            for (let i = 0; i < entities.length!; i++) {
+              if (
+                entities[i] instanceof RoomTransition &&
+                (entities[i] as RoomTransition).type == 'left'
+              ) {
+                return { x: x + 1, y: y };
               }
             }
             break;
-          case "right":
-            entities = GameController.current?.getAllEntitiesOnTile(x,y)!
-            for(let i=0;i<entities.length!;i++){
-              if (entities[i] instanceof RoomTransition && (entities[i] as RoomTransition).type=="right"){
-                return {x: x-1, y: y};  
+          case 'right':
+            entities = GameController.current?.getAllEntitiesOnTile(x, y)!;
+            for (let i = 0; i < entities.length!; i++) {
+              if (
+                entities[i] instanceof RoomTransition &&
+                (entities[i] as RoomTransition).type == 'right'
+              ) {
+                return { x: x - 1, y: y };
               }
             }
             break;
-          case "up":
-            entities = GameController.current?.getAllEntitiesOnTile(x,y)!
-            for(let i=0;i<entities.length!;i++){
-              if (entities[i] instanceof RoomTransition && (entities[i] as RoomTransition).type=="up"){
-                return {x: x, y: y+1};  
+          case 'up':
+            entities = GameController.current?.getAllEntitiesOnTile(x, y)!;
+            for (let i = 0; i < entities.length!; i++) {
+              if (
+                entities[i] instanceof RoomTransition &&
+                (entities[i] as RoomTransition).type == 'up'
+              ) {
+                return { x: x, y: y + 1 };
               }
             }
             break;
-          case "down":
-            entities = GameController.current?.getAllEntitiesOnTile(x,y)!
-            for(let i=0;i<entities.length!;i++){
-              if (entities[i] instanceof RoomTransition && (entities[i] as RoomTransition).type=="down"){
-                return {x: x, y: y-1};  
+          case 'down':
+            entities = GameController.current?.getAllEntitiesOnTile(x, y)!;
+            for (let i = 0; i < entities.length!; i++) {
+              if (
+                entities[i] instanceof RoomTransition &&
+                (entities[i] as RoomTransition).type == 'down'
+              ) {
+                return { x: x, y: y - 1 };
               }
             }
             break;
           default:
-            return {x: 0, y: 0};
-         }
-       }
-     }
-     return;
+            return { x: 0, y: 0 };
+        }
+      }
+    }
+    return;
   }
 
    updateAllTiles() {
@@ -1478,7 +1563,7 @@ findRoom(player: Player, transition: RoomTransition){
     }
   }
 
-  RemoveEntities(x: number, y: number) {
+  removeEntities(x: number, y: number) {
     this.map.tiles[x][y].entity = [];
   }
 
@@ -1516,9 +1601,9 @@ findRoom(player: Player, transition: RoomTransition){
     let entities = this.getAllEntitiesOnTile(x, y);
     for (let i = 0; i < entities.length; i++) {
       if (ignoredId != null && ignoredId != entities[i].id) {
-        entities[i].takeDamage(damage, damageType);
+        entities[i].takeDamage(damage, damageType, entities[i]);
       } else if (ignoredId == null) {
-        entities[i].takeDamage(damage, damageType);
+        entities[i].takeDamage(damage, damageType, entities[i]);
       }
     }
   }
@@ -1612,11 +1697,30 @@ findRoom(player: Player, transition: RoomTransition){
         this.tileSize
       );
       if (coords) {
+        const tileInfo = this.map.tiles[coords.x][coords.y].getTileInfo();
+        console.log(coords, tileInfo);
+
+        this.onTileClick(coords.x, coords.y, tileInfo);
+
         this.getAllEntitiesOnTile(coords.x, coords.y)?.forEach(
           (entity: any) => {
             entity.onUse(player);
           }
         );
+        const entity = this.map.tiles[coords.x][coords.y].entity;
+        if (entity[0].tags?.includes('lootable') && entity[0].isDead) {
+          this.inventory.showLootPopup(entity[0]);
+        }
+        if (this.aimMode) {
+          if (entity && entity.length > 0) {
+            this.weaponFunctionality.attack(
+              coords,
+              this.map,
+              this.inventory,
+              entity[0]
+            );
+          }
+        }
       }
     });
   }
@@ -1630,8 +1734,14 @@ findRoom(player: Player, transition: RoomTransition){
     if (!this.world.rooms[worldX] || !this.world.rooms[worldX][worldY]) return;
 
     // clear player from current room (if within bounds)
-    if (this.map && this.player1.posX >= 0 && this.player1.posY >= 0 && this.player1.posX < this.map.width && this.player1.posY < this.map.height) {
-      this.removePlayer(this.player1.posX,this.player1.posY)
+    if (
+      this.map &&
+      this.player1.posX >= 0 &&
+      this.player1.posY >= 0 &&
+      this.player1.posX < this.map.width &&
+      this.player1.posY < this.map.height
+    ) {
+      this.removePlayer(this.player1.posX, this.player1.posY);
     }
 
     // switch to target room
@@ -1658,6 +1768,15 @@ findRoom(player: Player, transition: RoomTransition){
     }
 
     // run tile checks for the new room
-    this.checkTileForItem(this.player1);
+    // this.checkTileForItem(this.player1);
+  }
+
+  async onTileClick(x: number, y: number, tileInfo: any) {
+    if (this.map.tiles[x][y].item != null) {
+      const pickedUp = await this.inventory.floorItemActionPrompt(x, y);
+      if (pickedUp) {
+        this.removeItem(x, y);
+      }
+    }
   }
 }

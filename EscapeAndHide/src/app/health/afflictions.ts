@@ -8,6 +8,7 @@ export class Afflcition {
     } else {
       this.severity += amount;
     }
+    1;
   }
   decreaseSeverity(amount: number) {
     if (this.severity - amount < 0) {
@@ -26,6 +27,7 @@ export class Hypoxemia extends Afflcition {
 
 export class Bleeding extends Afflcition {
   name: string = 'Bleeding';
+  override maxSeverity: number = 110;
   constructor() {
     super();
   }

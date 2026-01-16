@@ -2,6 +2,8 @@ import * as PIXI from 'pixi.js';
 import { Entity } from './entity';
 import { Health } from './health/health';
 import { Energy } from './energy/energy';
+import { GlassShards } from './entities';
+import { GameController } from './game.controller';
 
 export class Player extends Entity {
   override name = "";
@@ -22,5 +24,25 @@ export class Player extends Entity {
     this.Health.updateAfflictions();
     this.Energy.loseEnergy(energyCost);
     this.Health.bleedingRegen();
+    this.checkBeneathForGlassShard();
+  }
+
+  checkBeneathForGlassShard() {
+    const grid = GameController.current?.map;
+    if (grid) {
+      const tile = grid.tiles[this.posX]?.[this.posY];
+      if (tile) {
+        if (tile.entity[0] instanceof GlassShards) {
+          this.Health.damageLimb('leftLeg', [
+            ['Lacerations', 15],
+            ['Bleeding', 20],
+          ]);
+          this.Health.damageLimb('rightLeg', [
+            ['Lacerations', 15],
+            ['Bleeding', 20],
+          ]);
+        }
+      }
+    }
   }
 }

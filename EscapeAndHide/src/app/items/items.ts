@@ -1,15 +1,38 @@
 export class Items {
-  gun = new Weapon('gun', 'weapon', false, 'gun.png', null, 2, 5);
-  bigGun = new Weapon('bigGun', 'weapon', false, 'biggun.png', null, 5, 7);
+  gun = new Weapon(
+    'gun',
+    'weapon',
+    false,
+    '/sprites/items/gun.png',
+    null,
+    2,
+    5
+  );
+  bigGun = new Weapon(
+    'bigGun',
+    'weapon',
+    false,
+    '/sprites/items/biggun.png',
+    null,
+    5,
+    7
+  );
   bandage = new Healing(
     'bandage',
     'consumable',
     false,
-    'bandage.png',
+    '/sprites/items/bandage.png',
     null,
     0.5
   );
-  medkit = new Healing('medkit', 'consumable', false, 'medkit.png', null, 1.0);
+  medkit = new Healing(
+    'medkit',
+    'consumable',
+    false,
+    '/sprites/items/medkit.png',
+    null,
+    1.0
+  );
   helmet = new Armor(
     'helmet',
     'armor',
