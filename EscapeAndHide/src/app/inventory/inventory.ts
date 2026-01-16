@@ -333,7 +333,7 @@ export class Inventory {
       equipButton.textContent = 'Equip';
       equipButton.onclick = () => {
         const itemIndex = this.items.indexOf(item);
-        if (itemIndex !== -1) {
+        if (itemIndex !== -1 && this.equippedItems.length < this.maxEquippedItems) {
           this.equip(itemIndex);
         }
       };

@@ -2,8 +2,9 @@ import { GameController } from './game.controller';
 export abstract class Entity {
   id = 0;
   name = '';
+  description = '';
   sprite = 'placeholder.png';
-  deadSprite = '';
+  deadSprite = 'placeholder.png';
   tags: string[] | null = null;
   connectsWith: string | null = null;
   spriteTopCap = '';
@@ -23,22 +24,18 @@ export abstract class Entity {
   hiddenOutsideLOS = false;
   blockLOS = false;
   flammable = false;
+  lootable = false;
   maxHealth = this.health;
   destroyed = false;
   fireValue = 0;
-  isDead = false;
+  ai = false;
 
-  takeDamage(damage: number, damageType: string, target: Entity) {
-    console.log(target);
+  takeDamage(damage: number, damageType: string) {
     this.onTakeDamage(damage, damageType);
     if (this.damageable == true && this.destroyed == false) {
       this.health -= damage;
       if (this.health! <= 0) {
-        if (target.tags?.includes('dummy')) {
-          this.kill(damage, damageType, target);
-        } else {
           this.destroy(damage, damageType);
-        }
       }
     }
   }
@@ -57,15 +54,8 @@ export abstract class Entity {
     if (this.destroyed == false) {
       this.destroyed = true;
       this.onDestroyed(damage, damageType);
-      if (this.tags?.includes('dummy')) {
-      }
       GameController.current?.removeEntities(this.posX, this.posY);
     }
-  }
-
-  kill(damage: number, damageType: string, target: Entity) {
-    target.isDead = true;
-    this.onDestroyed(damage, damageType);
   }
 
   onTakeDamage(damage: number, damageType: string) {}

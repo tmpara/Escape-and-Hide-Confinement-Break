@@ -16,7 +16,7 @@ export class WeaponFunctionality {
       }
       console.log(damage);
       if (target.damageable == true) {
-        target.takeDamage(damage, 'gunshot', target);
+        target.takeDamage(damage, 'gunshot');
       }
     }
   }

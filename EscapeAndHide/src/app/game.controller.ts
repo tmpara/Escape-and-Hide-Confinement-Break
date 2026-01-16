@@ -750,8 +750,7 @@ export class GameController {
             let entityTexture = Assets.get(entity.sprite.toString());
             let entitySprite = new PIXI.Sprite(entityTexture);
             if (
-              entity.isDead &&
-              entity.tags.includes('dummy') &&
+              entity.destroyed &&
               entity.deadSprite
             ) {
               entity.texture = Assets.get(entity.deadSprite.toString());
@@ -1600,9 +1599,9 @@ export class GameController {
     let entities = this.getAllEntitiesOnTile(x, y);
     for (let i = 0; i < entities.length; i++) {
       if (ignoredId != null && ignoredId != entities[i].id) {
-        entities[i].takeDamage(damage, damageType, entities[i]);
+        entities[i].takeDamage(damage, damageType);
       } else if (ignoredId == null) {
-        entities[i].takeDamage(damage, damageType, entities[i]);
+        entities[i].takeDamage(damage, damageType);
       }
     }
   }
@@ -1707,10 +1706,10 @@ export class GameController {
           }
         );
         const entity = this.map.tiles[coords.x][coords.y].entity;
-        if (entity[0].tags?.includes('lootable') && entity[0].isDead) {
+        if (entity[0].lootable) {
           this.inventory.showLootPopup(entity[0]);
         }
-        if (this.aimMode) {
+        if (this.aimMode && !this.isLineObstructed(this.player1.posX, this.player1.posY, coords.x, coords.y, true, true)) {
           if (entity && entity.length > 0) {
             this.weaponFunctionality.attack(
               coords,

@@ -15,9 +15,19 @@ export class Dummy extends Entity {
   override hiddenOutsideLOS = true;
   override blockLOS = false;
   override flammable = true;
-  override tags: string[] | null = ['dummy', 'lootable'];
-  override isDead = false;
+  override tags: string[] | null = ['dummy'];
   lootTable = [new Items().gun, new Items().bandage];
+
+  override destroy(damage: number, damageType: string): void {
+    if (this.destroyed == false) {
+      this.destroyed = true;
+      this.onDestroyed(damage, damageType);
+      this.sprite = this.deadSprite;
+    }
+  }
+  override onDestroyed(damage: number, damageType: string): void {
+    this.lootable = true;
+  }
 }
 
 export class HeavyDummy extends Entity {
@@ -32,15 +42,26 @@ export class HeavyDummy extends Entity {
   override hiddenOutsideLOS = true;
   override blockLOS = false;
   override flammable = true;
-  override tags: string[] | null = ['dummy', 'lootable'];
-  override isDead = false;
+  override tags: string[] | null = ['dummy'];
   lootTable = [new Items().bigGun, new Items().medkit];
+
+  override destroy(damage: number, damageType: string): void {
+    if (this.destroyed == false) {
+      this.destroyed = true;
+      this.onDestroyed(damage, damageType);
+      this.sprite = this.deadSprite;
+    }
+  }
+  override onDestroyed(damage: number, damageType: string): void {
+    this.lootable = true;
+  }
 }
 
 export class LightInterferanceUnit extends BasicEnemyAI{
   override name = "Light Interferance Unit";
   override description = "A small robotic unit made to stop you in your tracks. Nonlethal."
   override sprite = "/sprites/npc/heavyDummy.png";
+  override deadSprite = '/sprites/npc/heavyDummyDead.png';
   override collidable = true;
   override damageable = true;
   override health = 50;
@@ -49,12 +70,20 @@ export class LightInterferanceUnit extends BasicEnemyAI{
   override flammable = true;
   override parentEntity = this;
   override ai = true;
-  
-  isDead = false;
   lootTable = [new Items().gun, new Items().bandage];
 
   override onEndTurn(){
     this.Main();
   }
 
+  override destroy(damage: number, damageType: string): void {
+    if (this.destroyed == false) {
+      this.destroyed = true;
+      this.onDestroyed(damage, damageType);
+      this.sprite = this.deadSprite;
+    }
+  }
+  override onDestroyed(damage: number, damageType: string): void {
+    this.lootable = true;
+  }
 }

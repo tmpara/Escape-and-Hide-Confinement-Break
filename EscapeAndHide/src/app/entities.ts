@@ -11,14 +11,10 @@ export class Wall1 extends Entity {
   override spriteBottomCap = '/sprites/entities/wall_placeholder_bottomcap.png';
   override spriteLeftCap = '/sprites/entities/wall_placeholder_leftcap.png';
   override spriteRightCap = '/sprites/entities/wall_placeholder_rightcap.png';
-  override spriteTopLeftCorner =
-    '/sprites/entities/wall_placeholder_topleftcorner.png';
-  override spriteTopRightCorner =
-    '/sprites/entities/wall_placeholder_toprightcorner.png';
-  override spriteBottomLeftCorner =
-    '/sprites/entities/wall_placeholder_bottomleftcorner.png';
-  override spriteBottomRightCorner =
-    '/sprites/entities/wall_placeholder_bottomrightcorner.png';
+  override spriteTopLeftCorner = '/sprites/entities/wall_placeholder_topleftcorner.png';
+  override spriteTopRightCorner = '/sprites/entities/wall_placeholder_toprightcorner.png';
+  override spriteBottomLeftCorner = '/sprites/entities/wall_placeholder_bottomleftcorner.png';
+  override spriteBottomRightCorner = '/sprites/entities/wall_placeholder_bottomrightcorner.png';
   override collidable = true;
   override damageable = true;
   override health = 500;
@@ -36,14 +32,10 @@ export class WallCorner1 extends Entity {
   override spriteBottomCap = '/sprites/entities/wall_placeholder_bottomcap.png';
   override spriteLeftCap = '/sprites/entities/wall_placeholder_leftcap.png';
   override spriteRightCap = '/sprites/entities/wall_placeholder_rightcap.png';
-  override spriteTopLeftCorner =
-    '/sprites/entities/wall_placeholder_topleftcorner.png';
-  override spriteTopRightCorner =
-    '/sprites/entities/wall_placeholder_toprightcorner.png';
-  override spriteBottomLeftCorner =
-    '/sprites/entities/wall_placeholder_bottomleftcorner.png';
-  override spriteBottomRightCorner =
-    '/sprites/entities/wall_placeholder_bottomrightcorner.png';
+  override spriteTopLeftCorner = '/sprites/entities/wall_placeholder_topleftcorner.png';
+  override spriteTopRightCorner = '/sprites/entities/wall_placeholder_toprightcorner.png';
+  override spriteBottomLeftCorner = '/sprites/entities/wall_placeholder_bottomleftcorner.png';
+  override spriteBottomRightCorner = '/sprites/entities/wall_placeholder_bottomrightcorner.png';
   override collidable = true;
   override damageable = false;
   override health = 0;
