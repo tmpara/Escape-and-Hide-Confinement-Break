@@ -14,6 +14,7 @@ import { GlassShards, RoomTransition } from './entities';
 import { Dummy, HeavyDummy, LightInterferanceUnit} from './enemyTypes'
 import { Entity } from './entity';
 import { BasicEnemyAI } from './enemyAI';
+import { RoomTransition } from './entities';
 
 
 
@@ -1386,7 +1387,6 @@ export class GameController {
         this.updateTile(x, y);
       }
     }
-
    
     for (const entity of this.enemyTurnList) {
       try {
@@ -1400,6 +1400,7 @@ export class GameController {
       this.drawGrid();
       this.drawPlayer();
     }
+    
   }
 
   updateTile(x: number, y: number) {

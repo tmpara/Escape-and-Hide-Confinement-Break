@@ -1,44 +1,40 @@
 import { GameController } from './game.controller';
 export abstract class Entity {
-  id = 0;
-  name = '';
-  sprite = 'placeholder.png';
-  deadSprite = '';
+  
+  id=0;
+  name = "";
+  description = "";
+  sprite = "placeholder.png";
   tags: string[] | null = null;
-  connectsWith: string | null = null;
-  spriteTopCap = '';
-  spriteBottomCap = '';
-  spriteLeftCap = '';
-  spriteRightCap = '';
-  spriteTopLeftCorner = '';
-  spriteTopRightCorner = '';
-  spriteBottomLeftCorner = '';
-  spriteBottomRightCorner = '';
+  connectsWith: string | null = null
+  spriteTopCap = "";
+  spriteBottomCap = "";
+  spriteLeftCap = "";
+  spriteRightCap = "";
+  spriteTopLeftCorner = "";
+  spriteTopRightCorner = "";
+  spriteBottomLeftCorner = "";
+  spriteBottomRightCorner = "";
   posX = 0;
   posY = 0;
   zIndex = 4;
   collidable = false;
   damageable = false;
   health = 0;
-  hiddenOutsideLOS = false;
+  hiddenOutsideLOS = false
   blockLOS = false;
   flammable = false;
-  maxHealth = this.health;
+  ai=false
+  maxHealth = this.health
   destroyed = false;
   fireValue = 0;
-  isDead = false;
 
-  takeDamage(damage: number, damageType: string, target: Entity) {
-    console.log(target);
-    this.onTakeDamage(damage, damageType);
-    if (this.damageable == true && this.destroyed == false) {
+  takeDamage(damage:number, damageType: string){
+    this.onTakeDamage(damage,damageType)
+    if (this.damageable==true && this.destroyed==false){
       this.health -= damage;
-      if (this.health! <= 0) {
-        if (target.tags?.includes('dummy')) {
-          this.kill(damage, damageType, target);
-        } else {
-          this.destroy(damage, damageType);
-        }
+      if (this.health!<=0){
+        this.destroy(damage,damageType)
       }
     }
   }
@@ -76,7 +72,8 @@ export abstract class Entity {
 
   onSteppedOn(user: Entity | null) {}
 
-  onEndTurn() {}
+  onEndTurn(){}
 
-  onHeal(amountHealed: number) {}
+  onHeal(amountHealed: number){}
+
 }

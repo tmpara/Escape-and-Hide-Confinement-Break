@@ -15,8 +15,9 @@ export class WeaponFunctionality {
         damage = inventory.equippedWeapon.damage;
       }
       console.log(damage);
-      if (target.damageable == true) {
-        target.takeDamage(damage, 'gunshot', target);
+      console.log(target.name)
+      if (target.damageable==true) {
+        target.takeDamage(damage,"gunshot");
       }
     }
   }
