@@ -71,31 +71,20 @@ export class GameGrid {
     let effect = ""
     let flammable = false
 
-      case 'glass_shards':
-        tileName = 'glass_shards';
-        hasCollision = false;
-        effect = 'glass_shards';
-        destroyable = true;
-        health = 5;
-        flammable = true;
-        brokenTile = null;
-        sprite = 'glass_shards.png';
-        hiddenOutsideLOS = true;
+    switch(name) {
+      case 'empty':
+        tileName="empty"
+        sprite=""
+        effect = ""
+        flammable=true
         break;
-
-    case 'empty':
-      tileName="empty"
-      sprite=""
-      effect = ""
-      flammable=true
-      break;
-      
-    case 'ash':
-      tileName="ash"
-      effect = ""
-      sprite="/sprites/tiles/ash.png"
-      flammable=false
-      break;
+        
+      case 'ash':
+        tileName="ash"
+        effect = ""
+        sprite="/sprites/tiles/ash.png"
+        flammable=false
+        break;
     }
 
     let info = new tile(tileName,sprite,effect,flammable,0,null,[]);

@@ -9,6 +9,7 @@ import * as PIXI from 'pixi.js';
 export class Inventory {
   items: Item[] = [];
   equippedItems: Item[] = [];
+  equippedWeapon: Weapon | null = null;
   inventorySize: number = 10;
   maxEquippedItems: number = 2;
   inventoryApp!: PIXI.Application;

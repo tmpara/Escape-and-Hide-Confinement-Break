@@ -123,9 +123,6 @@ export class RoomTransition extends Entity {
     GameController.current?.findRoom(user,this);
   }
 
-  override onUse(user: Player) {
-    GameController.current?.findRoom(user);
-  }
 }
 
 export class ExplosiveBarrel extends Entity {

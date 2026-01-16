@@ -25,19 +25,17 @@ export abstract class Entity{
     blockLOS = false;
     flammable = false;
     ai=false
-
     maxHealth = this.health
     destroyed = false;
     fireValue = 0;
 
-    takeDamage(damage:number, damageType: string){
-        this.onTakeDamage(damage,damageType)
-        if (this.damageable==true && this.destroyed==false){
-            this.health -= damage;
-            if (this.health!<=0){
-                this.destroy(damage,damageType)
-            }
-        }
+  takeDamage(damage:number, damageType: string){
+    this.onTakeDamage(damage,damageType)
+    if (this.damageable==true && this.destroyed==false){
+      this.health -= damage;
+      if (this.health!<=0){
+        this.destroy(damage,damageType)
+      }
     }
   }
 
@@ -67,9 +65,8 @@ export abstract class Entity{
 
   onSteppedOn(user: Entity | null) {}
 
-    onSteppedOn(user: Entity | null){}
+  onEndTurn(){}
 
-    onEndTurn(){}
+  onHeal(amountHealed: number){}
 
-  onHeal(amountHealed: number) {}
 }
