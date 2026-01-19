@@ -10,7 +10,7 @@ import { Items, Item} from './items/items';
 import { WorldMapRenderer } from './worldMapRenderer';
 import { WeaponFunctionality } from './items/weapon_functionality';
 import { Inventory } from './inventory/inventory';
-import { Dummy, HeavyDummy, LightInterferanceUnit, MediumInterferanceUnit} from './enemyTypes'
+import { Dummy, HeavyDummy, LightInterferanceUnit, MediumInterferanceUnit, HeavyInterferanceUnit, OppressorUnit, ScorcherUnit} from './enemyTypes'
 import { Entity } from './entity';
 import { BasicEnemyAI } from './enemyAI';
 import { RoomTransition } from './entities';
@@ -29,7 +29,10 @@ export class GameController {
   dummy1 = new Dummy();
   heavyDummy1 = new HeavyDummy();
   liu = new LightInterferanceUnit();
-  hiu = new MediumInterferanceUnit();
+  miu = new MediumInterferanceUnit();
+  hiu = new HeavyInterferanceUnit();
+  oppressor = new OppressorUnit();
+  scorcher = new ScorcherUnit();
   world = new World();
   spriteContainer = new Container();
   effectContainer = new Container();
@@ -117,8 +120,10 @@ export class GameController {
     // Create map and player
     this.map = this.world.rooms[this.playerWorldX][this.playerWorldY];
     this.loadPlayer(1, 1, this.player1,1);
-    this.loadEntity(6,6, this.liu, this.map);
-    this.loadEntity(5,5, this.hiu, this.map);
+    //this.loadEntity(6,6, this.liu, this.map);
+   // this.loadEntity(5,5, this.miu, this.map);
+   // this.loadEntity(5,5, this.hiu, this.map);
+    this.loadEntity(7,7, this.scorcher, this.map);
 
     // Create PIXI app
     this.app = new Application();
@@ -1068,6 +1073,7 @@ export class GameController {
           y: i * 24 + 10,
           x: 10,
         });
+        i++
     this.afflictionsApp.stage.addChild(afflictionText);
     for (let affliction in this.afflictions) {
       const afflictionValue = this.afflictions[affliction];
@@ -1078,7 +1084,7 @@ export class GameController {
             fontSize: 16,
             fill: '#ffffff',
           },
-          y: i+1 * 24 + 10,
+          y: i * 24 + 10,
           x: 10,
         });
         this.afflictionsApp.stage.addChild(afflictionText);
@@ -1448,7 +1454,7 @@ findRoom(player: Player, transition: RoomTransition){
               // this.player1.Health.Damage(strength / size / 10);
             }
             var firechance = this.generateRandomNumber(1, 5);
-            if (firechance == 1) {
+            if (firechance == 1 && startFires) {
               this.ignite(tile[0], tile[1], strength / 4, true, true);
             }
           }

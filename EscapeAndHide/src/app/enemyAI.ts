@@ -7,21 +7,31 @@ import { Lacerations } from "./health/afflictions";
 import { LimbName } from "./health/health";
 
 export class BasicEnemyAI extends Entity{
+    
     parentEntity: Entity | null = null;
     alerted = false;
     hostile = false;
     meleePreference = false;
+    nonMelee = false;
     TargetCoords: Entity[] = [];
     LastKnownTargetCoords: [number, number] | null = null;
     energy = 3;
     sightRange = 7;
     attackRange = 3;
+    optimalRange = 2;
     damage = 1;
     accuracy = 0.1; //chance to miss
-
-
+    stunned = 0;
+    
        async Main(): Promise<void> {
         
+        if (this.stunned > 0){
+            this.stunned -= 1;
+            if (this.stunned < 0){
+                this.stunned = 0;
+            }
+            return;
+        }
         if (!GameController.current) return;
         // update target list
         this.findTargets();
@@ -29,14 +39,42 @@ export class BasicEnemyAI extends Entity{
         const controller = GameController.current;
         const pauseMs = (controller as any).enemyStepDelay ?? 160;
 
+        
+
         if (this.alerted && this.TargetCoords.length > 0) {
             // Has current targets: pursue and attack as before
             const target = this.TargetCoords[0] as Player;
 
-            const distanceToTarget = Math.max(Math.abs(this.posX - target.posX), Math.abs(this.posY - target.posY));
+            const dx = Math.abs(this.posX - target.posX);
+            const dy = Math.abs(this.posY - target.posY);
+            const distanceToTarget = Math.ceil(Math.max(dx, dy) + 0.5 * Math.min(dx, dy));
+            
+            // If too close for ranged attack, move away
+            if (this.meleePreference == false && distanceToTarget < this.optimalRange) {
+                console.log("Moving away to maintain attack range");
+                // For ranged enemies, if player is too close, move away to optimal range
+                const dx = this.posX - target.posX;
+                const dy = this.posY - target.posY;
+                const nx = this.posX + (dx > 0 ? 1 : dx < 0 ? -1 : 0);
+                const ny = this.posY + (dy > 0 ? 1 : dy < 0 ? -1 : 0);
+                
+                // Check if the new position is valid and walkable
+                if (controller.map && controller.map.isValidTile(nx, ny) && controller.isTileWalkable(nx, ny)) {
+                    // Move away
+                    this.removeEntity(this.posX, this.posY);
+                    controller.loadEntity(nx, ny, this, controller.map);
+                    // Redraw and pause
+                    controller.drawGrid?.();
+                    controller.drawPlayer?.();
+                    await (controller.delay?.(pauseMs) ?? new Promise(res => setTimeout(res,pauseMs)));
+                }
+                return;
+            }
 
-            // If in ranged attack window (but not adjacent) -> ranged attack
-            if (distanceToTarget <= this.attackRange && distanceToTarget > 1) {
+            // If in ranged attack window -> ranged attack
+            if (distanceToTarget <= this.attackRange && distanceToTarget >= this.optimalRange && this.meleePreference == false) {
+                console.log("In ranged attack range");
+                console.log("Distance to target: " + distanceToTarget);
                 this.RangedAttack();
                // show action
                controller.drawGrid?.();
@@ -44,10 +82,32 @@ export class BasicEnemyAI extends Entity{
                await (controller.delay?.(pauseMs) ?? new Promise(res => setTimeout(res,pauseMs)));
               return;
             }
-
+            
+           
             // If adjacent -> melee
-            if (distanceToTarget === 1) {
-                this.MeleeAttack();
+            if (distanceToTarget === 1 ) {
+                if (this.nonMelee == true){
+                    // For non-melee enemies, if player is too close, move away to attack range
+                    const dx = this.posX - target.posX;
+                    const dy = this.posY - target.posY;
+                    const nx = this.posX + (dx > 0 ? 1 : dx < 0 ? -1 : 0);
+                    const ny = this.posY + (dy > 0 ? 1 : dy < 0 ? -1 : 0);
+                    
+                    // Check if the new position is valid and walkable
+                    if (controller.map && controller.map.isValidTile(nx, ny) && controller.isTileWalkable(nx, ny)) {
+                        // Move away
+                        this.removeEntity(this.posX, this.posY);
+                        controller.loadEntity(nx, ny, this, controller.map);
+                        // Redraw and pause
+                        controller.drawGrid?.();
+                        controller.drawPlayer?.();
+                        await (controller.delay?.(pauseMs) ?? new Promise(res => setTimeout(res,pauseMs)));
+                    }
+                }else{
+                    this.MeleeAttack();
+                    return
+                }
+                
                controller.drawGrid?.();
                controller.drawPlayer?.();
                await (controller.delay?.(pauseMs) ?? new Promise(res => setTimeout(res,pauseMs)));
@@ -166,6 +226,7 @@ export class BasicEnemyAI extends Entity{
         }
         // else: no targets and no last known, do nothing
     }
+    
 
     removeEntity(x: number, y: number) {
         const controller = GameController.current;
@@ -331,7 +392,7 @@ export class MediumInterferanceUnitAI extends BasicEnemyAI {
     override accuracy = 0.4; //chance to miss
     burst = 4; //number of shots in a burst
 
-    override RangedAttack(){
+    override async RangedAttack(){
         
         let targetLimb: LimbName = "head";
         for (let i=0;i<this.burst;i++){
@@ -350,6 +411,8 @@ export class MediumInterferanceUnitAI extends BasicEnemyAI {
         const target = this.TargetCoords[0] as Player;
         let damageDealt = this.damage;
         target.Health.damageLimb(targetLimb,[['GunshotWound',damageDealt],['Bleeding',damageDealt*5]]);
+        // Add 0.5 second cooldown between shots
+        await controller.delay?.(200) ?? new Promise(res => setTimeout(res,200));
         }
         
         
@@ -376,3 +439,155 @@ export class MediumInterferanceUnitAI extends BasicEnemyAI {
     }
 }
 
+export class HeavyInterferanceUnitAI extends BasicEnemyAI {
+    override hostile = true;
+    override meleePreference = false;
+    override energy = 2;
+    override sightRange = 8
+    override attackRange = 5;
+    override optimalRange = this.attackRange-2;
+    override damage = 10
+    override accuracy = 0.6; //chance to miss
+    burst = 4; //number of shots in a burst
+    controller = GameController.current;
+    
+
+    getRandomTileInRadius(radius: number){
+        const target = this.TargetCoords[0] as Player;
+        if (!this.controller) return null;
+        const tiles = this.controller.getTilesInSphere(target.posX,target.posY,radius);
+        if (tiles.length == 0) return null;
+        const randomIndex = Math.floor(Math.random() * tiles.length);
+        return tiles[randomIndex];
+    }
+
+    override async RangedAttack(){
+        this.controller = GameController.current;
+        if (this.controller == null) {
+            return
+        };
+        let explosionRadius = 2;
+        let missRadius = 3;
+        let attackRadius = 2;
+
+        
+        for (let i=0;i<this.burst;i++){
+            
+            let miss = Math.random(); //chance to miss or hit random limb
+        if (miss < this.accuracy){
+            let missTile = this.getRandomTileInRadius(missRadius);
+            if (missTile) {
+                this.controller.createExplosion(missTile[0], missTile[1], explosionRadius, this.damage);
+            }
+        }
+        else {
+            let attackTile = this.getRandomTileInRadius(attackRadius);
+            if (attackTile) {
+                this.controller.createExplosion(attackTile[0], attackTile[1], explosionRadius, this.damage);
+            }
+           
+        }
+        // Add 0.5 second cooldown between shots
+        await this.controller.delay?.(200) ?? new Promise(res => setTimeout(res,200));
+        
+        if (this.TargetCoords.length == 0) return;
+       
+        }
+        this.stunned += 1; //heavy unit stuns itself after attack
+    }
+}
+
+export class OppressorUnitAI extends BasicEnemyAI {
+    override hostile = true;
+    override meleePreference = true;
+    override energy = 2;
+    override sightRange = 6;
+    override damage = 30;
+    override accuracy = 0.05; //chance to miss
+ 
+    override MeleeAttack(){
+        let damageDealt = this.damage;
+        let targetLimb: LimbName = "torso";
+        let miss = Math.random(); //chance to miss or hit random limb
+        let stunChance = Math.random(); //chance to stun
+        if (miss < this.accuracy){
+            return; //missed attack
+        }
+        else if (miss < this.accuracy*2){
+            const limbs: LimbName[] = ["head","leftArm","rightArm","leftLeg","rightLeg"];
+            const randomIndex = Math.floor(Math.random() * limbs.length);
+            targetLimb = limbs[randomIndex];
+            damageDealt = damageDealt / 2;
+        }
+        const controller = GameController.current;
+        if (!controller) return;
+        if (this.TargetCoords.length == 0) return;
+        const target = this.TargetCoords[0] as Player;
+        
+        target.Health.damageLimb(targetLimb,[['Fracture',damageDealt]]);
+        if (stunChance < 0.3){
+            target.Health.torso.zapped.increaseSeverity(20);//change to stun affliction later
+        }
+  
+    }
+}
+ export class ScorcherUnitAI extends BasicEnemyAI {
+    override hostile = true;
+    override meleePreference = false
+    override nonMelee = true;
+    override energy = 3;
+    override sightRange = 6;
+    override attackRange = 2;
+    override damage = 5;
+    override accuracy = 0.5; //chance to start fire
+
+    getConeTiles(centerX: number, centerY: number, range: number, angle: number, coneAngle: number): [number, number][] {
+        const tiles: [number, number][] = [];
+        for (let x = centerX - range; x <= centerX + range; x++) {
+            for (let y = centerY - range; y <= centerY + range; y++) {
+                const dx = Math.abs(x - centerX);
+                const dy = Math.abs(y - centerY);
+                const dist = Math.ceil(Math.max(dx, dy) + 0.5 * Math.min(dx, dy));
+                if (dist > range || dist === 0) continue; // exclude center
+
+                const angleToTile = Math.atan2(y - centerY, x - centerX);
+                let angleDiff = angleToTile - angle;
+                angleDiff = ((angleDiff + Math.PI) % (2 * Math.PI)) - Math.PI; // normalize to -pi to pi
+                if (Math.abs(angleDiff) <= coneAngle / 2) {
+                    tiles.push([x, y]);
+                }
+            }
+        }
+        return tiles;
+    }
+
+    override RangedAttack(){
+        const controller = GameController.current;
+        if (!controller || this.TargetCoords.length === 0) return;
+        const target = this.TargetCoords[0] as Player;
+        const dx = target.posX - this.posX;
+        const dy = target.posY - this.posY;
+        const angleToTarget = Math.atan2(dy, dx);
+        const coneTiles = this.getConeTiles(this.posX, this.posY, this.attackRange+2, angleToTarget, Math.PI / 3); // 60 degree cone
+
+        for (const [x, y] of coneTiles) {
+            // Apply damage or effect, e.g., create fire or damage entities
+            const entities = controller.getAllEntitiesOnTile(x, y);
+            let fireChance = Math.random();
+            if (fireChance < this.accuracy){
+                controller.ignite(x, y, 75, true, true); 
+            }
+            for (const entity of entities) {
+                if (entity instanceof Player) {
+                    // Damage player, perhaps with fire damage
+                    // For now, use existing damage logic
+                   
+                   
+                }
+            }
+        }
+        this.stunned += 1; //scorcher stuns itself after attack
+    }
+
+
+ }
