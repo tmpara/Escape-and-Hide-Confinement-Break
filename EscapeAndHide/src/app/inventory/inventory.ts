@@ -1,21 +1,20 @@
-import { Dummy, HeavyDummy } from '../enemyTypes';
-import { Item, Items } from '../items/items';
-import { Weapon } from '../items/items';
-import { GameGrid } from '../grid';
+import { Item } from '../items/items';
 import { GameController } from '../game.controller';
-import { Player } from '../player';
 import * as PIXI from 'pixi.js';
 
 export class Inventory {
-  items: Item[] = [];
-  equippedItems: Item[] = [];
-  equippedWeapon: Weapon | null = null;
+  inventorySlots: (Item | null)[] = Array(10).fill(null);
   inventorySize: number = 10;
-  maxEquippedItems: number = 2;
+  weaponSlot: Item | null = null;
+  headArmorSlot: Item | null = null;
+  torsoArmorSlot: Item | null = null;
+  fullbodyArmorSlot: Item | null = null;
+
   inventoryApp!: PIXI.Application;
   equippedApp!: PIXI.Application;
   inventoryContainer: HTMLDivElement;
   equippedContainer: HTMLDivElement;
+  slotsContainer: HTMLDivElement | null = null;
   pickUpOverlay: HTMLDivElement | null = null;
   lootOverlay: HTMLDivElement | null = null;
   itemActionOverlay: HTMLDivElement | null = null;
@@ -52,29 +51,35 @@ export class Inventory {
       this.equippedApp.canvas as HTMLCanvasElement
     );
     this.equipTabDisplay();
+    await PIXI.Assets.load('/placeholder.png');
+    await PIXI.Assets.load('/headSlot.png');
+    await PIXI.Assets.load('/torsoSlot.png');
+    await PIXI.Assets.load('/fullbodySlot.png');
   }
 
   displayInventory() {
     this.inventoryApp.stage.removeChildren();
-    for (let i = 0; i < this.items.length; i++) {
-      this.items[i].displayed = false;
+    for (let i = 0; i < this.inventorySlots.length; i++) {
+      const item = this.inventorySlots[i];
+      if (item) {
+        item.displayed = false;
+      }
     }
 
-    for (let i = 0; i < this.items.length; i++) {
-      if (!this.items[i].displayed) {
-        this.items[i].displayed = true;
-        const texture = PIXI.Assets.get(
-          this.items[i].sprite as string
-        ) as PIXI.Texture;
+    for (let i = 0; i < this.inventorySlots.length; i++) {
+      const item = this.inventorySlots[i];
+      if (item && !item.displayed) {
+        item.displayed = true;
+        const texture = PIXI.Assets.get(item.sprite as string) as PIXI.Texture;
         const sprite = new PIXI.Sprite(texture);
         sprite.x = 0;
         sprite.y = 0;
 
         const text = new PIXI.Text({
-          text: this.items[i].name,
+          text: item.name,
           style: {
             fontFamily: 'Arial',
-            fontSize: 28,
+            fontSize: 20,
             wordWrap: true,
           },
         });
@@ -91,7 +96,7 @@ export class Inventory {
           const scaleY = canvasRect.height / this.inventoryApp.screen.height;
           const screenX = canvasRect.left + globalPos.x * scaleX;
           const screenY = canvasRect.top + globalPos.y * scaleY;
-          this.itemActionPrompt(this.items[i], screenX, screenY);
+          this.itemActionPrompt(item, screenX, screenY);
         };
 
         const itemContainer = new PIXI.Container();
@@ -106,52 +111,82 @@ export class Inventory {
 
   equipTabDisplay() {
     this.equippedApp.stage.removeChildren();
-    for (let i = 0; i < this.equippedItems.length; i++) {
-      this.equippedItems[i].displayed = false;
+    if (this.weaponSlot) {
+      this.displayEquippedItem(this.weaponSlot, 'Weapon', 0);
+    } else {
+      this.displayEmptySlot('Weapon', 0);
     }
-
-    for (let i = 0; i < this.equippedItems.length; i++) {
-      if (!this.equippedItems[i].displayed) {
-        this.equippedItems[i].displayed = true;
-        const texture = PIXI.Assets.get(
-          this.equippedItems[i].sprite as string
-        ) as PIXI.Texture;
-        const sprite = new PIXI.Sprite(texture);
-        sprite.x = 0;
-        sprite.y = 0;
-
-        const text = new PIXI.Text({
-          text: this.equippedItems[i].name,
-          style: {
-            fontFamily: 'Arial',
-            fontSize: 28,
-            wordWrap: true,
-          },
-        });
-        text.anchor.set(0);
-        text.x = sprite.width + 10;
-        text.y = 0;
-        text.eventMode = 'static';
-        text.onclick = () => {
-          const globalPos = text.getGlobalPosition();
-          const canvasRect = (
-            this.equippedApp.view as HTMLCanvasElement
-          ).getBoundingClientRect();
-          const scaleX = canvasRect.width / this.equippedApp.screen.width;
-          const scaleY = canvasRect.height / this.equippedApp.screen.height;
-          const screenX = canvasRect.left + globalPos.x * scaleX;
-          const screenY = canvasRect.top + globalPos.y * scaleY;
-          this.itemActionPrompt(this.equippedItems[i], screenX, screenY);
-        };
-
-        const itemContainer = new PIXI.Container();
-        itemContainer.x = 10;
-        itemContainer.y = 10 + i * 40;
-        itemContainer.addChild(sprite);
-        itemContainer.addChild(text);
-        this.equippedApp.stage.addChild(itemContainer);
-      }
+    if (this.headArmorSlot) {
+      this.displayEquippedItem(this.headArmorSlot, 'Head Armor', 1);
+    } else {
+      this.displayEmptySlot('Head Armor', 1);
     }
+    if (this.torsoArmorSlot) {
+      this.displayEquippedItem(this.torsoArmorSlot, 'Torso Armor', 2);
+    } else {
+      this.displayEmptySlot('Torso Armor', 2);
+    }
+    if (this.fullbodyArmorSlot) {
+      this.displayEquippedItem(this.fullbodyArmorSlot, 'Fullbody Armor', 3);
+    } else {
+      this.displayEmptySlot('Fullbody Armor', 3);
+    }
+  }
+
+  displayEquippedItem(item: Item, slotName: string, slotIndex: number) {
+    const texture = PIXI.Assets.get(item.sprite as string) as PIXI.Texture;
+    const sprite = new PIXI.Sprite(texture);
+    sprite.x = 0;
+    sprite.y = 0;
+
+    const text = new PIXI.Text({
+      text: `${slotName}: ${item.name}`,
+      style: {
+        fontFamily: 'Arial',
+        fontSize: 20,
+      },
+    });
+    text.anchor.set(0);
+    text.x = sprite.width + 10;
+    text.y = 0;
+    text.eventMode = 'static';
+    text.onclick = () => {
+      const globalPos = text.getGlobalPosition();
+      const canvasRect = (
+        this.equippedApp.view as HTMLCanvasElement
+      ).getBoundingClientRect();
+      const scaleX = canvasRect.width / this.equippedApp.screen.width;
+      const scaleY = canvasRect.height / this.equippedApp.screen.height;
+      const screenX = canvasRect.left + globalPos.x * scaleX;
+      const screenY = canvasRect.top + globalPos.y * scaleY;
+      this.itemActionPrompt(item, screenX, screenY);
+    };
+
+    const itemContainer = new PIXI.Container();
+    itemContainer.x = 10;
+    itemContainer.y = 10 + slotIndex * 40;
+    itemContainer.addChild(sprite);
+    itemContainer.addChild(text);
+    this.equippedApp.stage.addChild(itemContainer);
+  }
+
+  // Helper to display empty slot
+  displayEmptySlot(slotName: string, slotIndex: number) {
+    const text = new PIXI.Text({
+      text: `${slotName}: empty`,
+      style: {
+        fontFamily: 'Arial',
+        fontSize: 20,
+      },
+    });
+    text.anchor.set(0);
+    text.x = 10;
+    text.y = 0;
+    const itemContainer = new PIXI.Container();
+    itemContainer.x = 10;
+    itemContainer.y = 10 + slotIndex * 40;
+    itemContainer.addChild(text);
+    this.equippedApp.stage.addChild(itemContainer);
   }
 
   hidePickUpPrompt() {
@@ -177,14 +212,6 @@ export class Inventory {
     title.className = 'prompt-title';
     title.textContent = 'Pick up ' + item.name + '?';
 
-    // const name = document.createElement('div');
-    // name.className = 'prompt-item-name';
-    // name.textContent = item.name;
-
-    // const msg = document.createElement('div');
-    // msg.className = 'prompt-msg';
-    // msg.textContent = ''; used for errors like "Inventory full"
-
     const buttons = document.createElement('div');
     buttons.className = 'prompt-buttons';
 
@@ -200,8 +227,7 @@ export class Inventory {
     buttons.appendChild(cancel);
 
     box.appendChild(title);
-    // box.appendChild(name);
-    // box.appendChild(msg);
+
     box.appendChild(buttons);
     overlay.appendChild(box);
 
@@ -318,30 +344,18 @@ export class Inventory {
     if (item.isEquipped) {
       equipButton.textContent = 'Unequip';
       equipButton.onclick = () => {
-        const itemIndex = this.equippedItems.indexOf(item);
-        if (itemIndex !== -1) {
-          this.unequip(itemIndex);
-        }
+        this.unequip(item);
       };
       dropButton.onclick = () => {
-        const itemIndex = this.equippedItems.indexOf(item);
-        if (itemIndex !== -1) {
-          this.drop(itemIndex, true);
-        }
+        this.drop(item, true);
       };
     } else {
       equipButton.textContent = 'Equip';
       equipButton.onclick = () => {
-        const itemIndex = this.items.indexOf(item);
-        if (itemIndex !== -1 && this.equippedItems.length < this.maxEquippedItems) {
-          this.equip(itemIndex);
-        }
+        this.equip(item);
       };
       dropButton.onclick = () => {
-        const itemIndex = this.items.indexOf(item);
-        if (itemIndex !== -1) {
-          this.drop(itemIndex, false);
-        }
+        this.drop(item, false);
       };
     }
 
@@ -572,68 +586,99 @@ export class Inventory {
     document.head.appendChild(style);
   }
 
-  equip(index: number) {
-    const item = this.items[index];
-    item.isEquipped = true;
-    if (item) {
-      if (this.equippedItems.length < this.maxEquippedItems) {
-        this.equippedItems.push(item);
-        this.items.splice(index, 1);
+  equip(item: Item) {
+    // Find item in inventorySlots
+    const index = this.inventorySlots.indexOf(item);
+    if (index === -1) return;
+    // Determine slot type
+    if (item.slot === 'weapon') {
+      if (!this.weaponSlot) {
+        this.weaponSlot = item;
+        this.inventorySlots[index] = null;
+        item.isEquipped = true;
       }
-      if (item instanceof Weapon) {
-        this.equippedWeapon = item;
+    } else if (item.slot === 'head') {
+      if (!this.headArmorSlot) {
+        this.headArmorSlot = item;
+        this.inventorySlots[index] = null;
+        item.isEquipped = true;
+      }
+    } else if (item.slot === 'torso') {
+      if (!this.torsoArmorSlot) {
+        this.torsoArmorSlot = item;
+        this.inventorySlots[index] = null;
+        item.isEquipped = true;
+      }
+    } else if (item.slot === 'fullbody') {
+      if (!this.fullbodyArmorSlot) {
+        this.fullbodyArmorSlot = item;
+        this.inventorySlots[index] = null;
+        item.isEquipped = true;
       }
     }
     this.displayInventory();
     this.equipTabDisplay();
   }
 
-  unequip(index: number) {
-    const item = this.equippedItems[index];
+  unequip(item: Item) {
+    // Remove from equipped slot and add back to inventorySlots
+    if (this.weaponSlot === item) {
+      this.weaponSlot = null;
+    } else if (this.headArmorSlot === item) {
+      this.headArmorSlot = null;
+    } else if (this.torsoArmorSlot === item) {
+      this.torsoArmorSlot = null;
+    } else if (this.fullbodyArmorSlot === item) {
+      this.fullbodyArmorSlot = null;
+    }
     item.isEquipped = false;
-    if (item) {
-      this.equippedItems.splice(index, 1);
-      this.items.push(item);
+    // Find first empty slot in inventorySlots
+    const emptyIndex = this.inventorySlots.indexOf(null);
+    if (emptyIndex !== -1) {
+      this.inventorySlots[emptyIndex] = item;
     }
     this.displayInventory();
     this.equipTabDisplay();
   }
 
   pickUp(item: Item) {
-    if (this.items.length < this.inventorySize) {
-      this.items.push(item);
+    const emptyIndex = this.inventorySlots.indexOf(null);
+    if (emptyIndex !== -1) {
+      this.inventorySlots[emptyIndex] = item;
     }
     this.displayInventory();
     this.equipTabDisplay();
   }
 
-  drop(index: number, isEquipped: boolean) {
+  drop(item: Item, isEquipped: boolean) {
     const x = GameController.current?.player1.posX;
     const y = GameController.current?.player1.posY;
-    let item = null;
-    if (GameController.current?.map.tiles[x!][y!].item == null) {
+    if (typeof x !== 'number' || typeof y !== 'number') return;
+    if (GameController.current?.map.tiles[x][y].item == null) {
       if (isEquipped) {
-        item = this.equippedItems[index];
-        item.isEquipped = false;
-        this.equippedItems.splice(index, 1);
+        // Remove from equipped slot
+        this.unequip(item);
       } else {
-        item = this.items[index];
-        this.items.splice(index, 1);
+        // Remove from inventorySlots
+        const index = this.inventorySlots.indexOf(item);
+        if (index !== -1) {
+          this.inventorySlots[index] = null;
+        }
       }
       this.displayInventory();
       this.equipTabDisplay();
-
-      if (
-        typeof x === 'number' &&
-        typeof y === 'number' &&
-        GameController.current?.map
-      ) {
+      if (GameController.current) {
         GameController.current.spawnItem(x, y, item);
       }
     }
   }
 
   getItems(): Item[] {
-    return this.items;
+    // Return all non-null items in inventorySlots
+    return this.inventorySlots.filter((item): item is Item => item !== null);
+  }
+
+  getEquippedWeapon() {
+    return this.weaponSlot;
   }
 }

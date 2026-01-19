@@ -35,7 +35,7 @@ export abstract class Entity {
     if (this.damageable == true && this.destroyed == false) {
       this.health -= damage;
       if (this.health! <= 0) {
-          this.destroy(damage, damageType);
+        this.destroy(damage, damageType);
       }
     }
   }

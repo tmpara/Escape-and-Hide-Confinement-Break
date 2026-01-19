@@ -65,6 +65,16 @@ export class Health {
     }
   }
 
+  healLimb(limb: LimbName, afflictionType: affliction[], amount: number) {
+    for (let affliction of afflictionType) {
+      if (affliction[0] === 'Lacerations') {
+        this[limb].lacerations.decreaseSeverity(amount);
+      }
+      if (affliction[0] === 'Bleeding') {
+        this[limb].bleeding.decreaseSeverity(amount);
+      }
+    }
+  }
   updateAfflictions() {
     this.bloodLoss.severity = 0;
     for (let limb of this.limbs) {

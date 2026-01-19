@@ -6,16 +6,13 @@ import { World } from './world';
 import { Player } from './player';
 import { Health } from './health/health';
 import { Energy } from './energy/energy';
-import { Item, Items } from './items/items';
+import { bigGun, gun, Item } from './items/items';
 import { WorldMapRenderer } from './worldMapRenderer';
-import { WeaponFunctionality } from './items/weapon_functionality';
 import { Inventory } from './inventory/inventory';
 import { GlassShards, RoomTransition } from './entities';
-import { Dummy, HeavyDummy, LightInterferanceUnit} from './enemyTypes'
+import { Dummy, HeavyDummy, LightInterferanceUnit } from './enemyTypes';
 import { Entity } from './entity';
 import { BasicEnemyAI } from './enemyAI';
-
-
 
 export class GameController {
   static current: GameController | null = null;
@@ -24,7 +21,6 @@ export class GameController {
   healthUIApp!: PIXI.Application;
   afflictionsApp!: PIXI.Application;
   inventory!: Inventory;
-  weaponFunctionality = new WeaponFunctionality();
   player1 = new Player();
   dummy1 = new Dummy();
   heavyDummy1 = new HeavyDummy();
@@ -117,12 +113,12 @@ export class GameController {
       this.playerWorldX = this.world.startX;
       this.playerWorldY = this.world.startY;
     }
-    
+
     // Create map and player
     this.map = this.world.rooms[this.playerWorldX][this.playerWorldY];
     console.log(this.map.width + ' ' + this.map.height);
-    this.loadPlayer(1, 1, this.player1,1);
-    this.loadEntity(6,6, this.liu, this.map);
+    this.loadPlayer(1, 1, this.player1, 1);
+    this.loadEntity(6, 6, this.liu, this.map);
 
     // Create PIXI app
     this.app = new Application();
@@ -193,8 +189,8 @@ export class GameController {
     this.loadEntity(5, 2, this.dummy1, this.map);
     this.loadEntity(5, 3, this.heavyDummy1, this.map);
     this.loadEntity(2, 2, this.glassshards, this.map);
-    this.spawnItem(1, 3, new Items().gun);
-    this.spawnItem(2, 3, new Items().bigGun);
+    this.spawnItem(1, 3, new gun());
+    this.spawnItem(2, 3, new bigGun());
 
     // Draw grid, player
     this.drawGrid();
@@ -358,7 +354,7 @@ export class GameController {
     if (!this.map.isValidTile(x, y)) return false;
     const ents = this.map.tiles[x][y].entity;
     if (!ents || ents.length === 0) return true;
-    return ents.every(e => !e.collidable);
+    return ents.every((e) => !e.collidable);
   }
 
   /**
@@ -370,7 +366,7 @@ export class GameController {
     const ents = this.map.tiles[x][y].entity;
     if (!ents) return null;
     for (const e of ents) {
-      if (e && (e.name == "Door" )) return e;
+      if (e && e.name == 'Door') return e;
     }
     return null;
   }
@@ -387,20 +383,31 @@ export class GameController {
   }
 
   // A* pathfinder — no diagonal moves, allows stepping on tiles that only contain non-collidable entities.
-  findPathAStar(startX: number, startY: number, goalX: number, goalY: number): [number, number][] {
+  findPathAStar(
+    startX: number,
+    startY: number,
+    goalX: number,
+    goalY: number
+  ): [number, number][] {
     if (!this.map) return [];
     // bounds checks
-    if (!this.map.isValidTile(startX, startY) || !this.map.isValidTile(goalX, goalY)) return [];
+    if (
+      !this.map.isValidTile(startX, startY) ||
+      !this.map.isValidTile(goalX, goalY)
+    )
+      return [];
     // same tile
     if (startX === goalX && startY === goalY) return [[startX, startY]];
 
     // goal must be walkable (unless it's the start)
     // allow goal if walkable OR is a door tile (AI will open it)
-    if (!this.isTileWalkable(goalX, goalY) && !this.getDoorOnTile(goalX, goalY)) return [];
+    if (!this.isTileWalkable(goalX, goalY) && !this.getDoorOnTile(goalX, goalY))
+      return [];
 
     const key = (x: number, y: number) => `${x},${y}`;
 
-    const heuristic = (x: number, y: number) => Math.abs(x - goalX) + Math.abs(y - goalY); // Manhattan
+    const heuristic = (x: number, y: number) =>
+      Math.abs(x - goalX) + Math.abs(y - goalY); // Manhattan
 
     const neighbors = (cx: number, cy: number) => [
       [cx - 1, cy],
@@ -411,7 +418,9 @@ export class GameController {
 
     const openSet: Set<string> = new Set([key(startX, startY)]);
     const gScore: Map<string, number> = new Map([[key(startX, startY), 0]]);
-    const fScore: Map<string, number> = new Map([[key(startX, startY), heuristic(startX, startY)]]);
+    const fScore: Map<string, number> = new Map([
+      [key(startX, startY), heuristic(startX, startY)],
+    ]);
     const cameFrom: Map<string, string> = new Map();
 
     while (openSet.size > 0) {
@@ -427,13 +436,13 @@ export class GameController {
       }
       if (!currentKey) break;
 
-      const [cx, cy] = currentKey.split(',').map(n => parseInt(n, 10));
+      const [cx, cy] = currentKey.split(',').map((n) => parseInt(n, 10));
       if (cx === goalX && cy === goalY) {
         // reconstruct
         const path: [number, number][] = [];
         let cur: string | undefined = currentKey;
         while (cur) {
-          const [px, py] = cur.split(',').map(n => parseInt(n, 10));
+          const [px, py] = cur.split(',').map((n) => parseInt(n, 10));
           path.push([px, py]);
           cur = cameFrom.get(cur);
         }
@@ -447,7 +456,11 @@ export class GameController {
         if (!this.map.isValidTile(nx, ny)) continue;
         // allow stepping on start even if it contains collidable (player sits there).
         // For other tiles allow if walkable OR contains a door (we plan to open it).
-        if (!(nx === startX && ny === startY) && !this.canPathThroughTile(nx, ny)) continue;
+        if (
+          !(nx === startX && ny === startY) &&
+          !this.canPathThroughTile(nx, ny)
+        )
+          continue;
 
         const tentativeG = (gScore.get(currentKey) ?? Infinity) + 1;
         const nKey = key(nx, ny);
@@ -462,8 +475,14 @@ export class GameController {
 
     return [];
   }
-  isLineObstructed(x1: number, y1: number, x2: number, y2: number, ignoreStart: boolean = true, ignoreEnd: boolean = false): boolean {
-
+  isLineObstructed(
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number,
+    ignoreStart: boolean = true,
+    ignoreEnd: boolean = false
+  ): boolean {
     const tiles = this.castRay(x1, y1, x2, y2, false);
     if (tiles.length === 0) return false;
 
@@ -749,10 +768,7 @@ export class GameController {
           if (entity.sprite != '') {
             let entityTexture = Assets.get(entity.sprite.toString());
             let entitySprite = new PIXI.Sprite(entityTexture);
-            if (
-              entity.destroyed &&
-              entity.deadSprite
-            ) {
+            if (entity.destroyed && entity.deadSprite) {
               entity.texture = Assets.get(entity.deadSprite.toString());
               entitySprite.texture = entity.texture;
             }
@@ -1378,7 +1394,7 @@ export class GameController {
     return;
   }
 
-   updateAllTiles() {
+  updateAllTiles() {
     this.enemyTurnList = [];
     for (let x = 0; x < this.map.width; x++) {
       for (let y = 0; y < this.map.height; y++) {
@@ -1386,7 +1402,6 @@ export class GameController {
       }
     }
 
-   
     for (const entity of this.enemyTurnList) {
       try {
         // Let the entity take its turn (may be synchronous)
@@ -1444,34 +1459,32 @@ export class GameController {
         );
       }
     }
-      this.map.tiles[x][y].entity!.forEach((entity) => {
-        if (entity.ai){
-          this.enemyTurnList.push(entity);
-        }
-        
+    this.map.tiles[x][y].entity!.forEach((entity) => {
+      if (entity.ai) {
+        this.enemyTurnList.push(entity);
+      }
     });
   }
 
-  aiTargetUpdate(){
-     for (let x = 0; x < this.map.width; x++) {
+  aiTargetUpdate() {
+    for (let x = 0; x < this.map.width; x++) {
       for (let y = 0; y < this.map.height; y++) {
         this.updateTarget(x, y);
       }
     }
   }
 
-  updateTarget(x: number, y: number){
-  this.map.tiles[x][y].entity!.forEach((entity) => {
-        if (entity.ai){
-          if (entity instanceof BasicEnemyAI){
-            entity.findTargets();
-            console.log(entity.LastKnownTargetCoords)
-            console.log("ai find targerts")
-          }else{
-            console.log("no ai find targerts")
-          }
+  updateTarget(x: number, y: number) {
+    this.map.tiles[x][y].entity!.forEach((entity) => {
+      if (entity.ai) {
+        if (entity instanceof BasicEnemyAI) {
+          entity.findTargets();
+          console.log(entity.LastKnownTargetCoords);
+          console.log('ai find targerts');
+        } else {
+          console.log('no ai find targerts');
         }
-
+      }
     });
   }
 
@@ -1533,12 +1546,12 @@ export class GameController {
   }
 
   loadPlayer(x: number, y: number, player: Player, playerId: number) {
-    player.posX = x
-    player.posY = y
-    player.renderX = x
-    player.renderY = y
-    this.map.tiles[x][y].entity!.push(player)
-    player.playerId = playerId
+    player.posX = x;
+    player.posY = y;
+    player.renderX = x;
+    player.renderY = y;
+    this.map.tiles[x][y].entity!.push(player);
+    player.playerId = playerId;
   }
 
   removePlayer(x: number, y: number) {
@@ -1628,19 +1641,19 @@ export class GameController {
       switch (event.key.toLowerCase()) {
         case 'w':
           targetY -= 1;
-          this.aiTargetUpdate()
+          this.aiTargetUpdate();
           break;
         case 'a':
           targetX -= 1;
-          this.aiTargetUpdate()
+          this.aiTargetUpdate();
           break;
         case 's':
           targetY += 1;
-          this.aiTargetUpdate()
+          this.aiTargetUpdate();
           break;
         case 'd':
           targetX += 1;
-          this.aiTargetUpdate()
+          this.aiTargetUpdate();
           break;
         default:
           return;
@@ -1709,14 +1722,22 @@ export class GameController {
         if (entity[0].lootable) {
           this.inventory.showLootPopup(entity[0]);
         }
-        if (this.aimMode && !this.isLineObstructed(this.player1.posX, this.player1.posY, coords.x, coords.y, true, true)) {
+        if (
+          this.aimMode &&
+          !this.isLineObstructed(
+            this.player1.posX,
+            this.player1.posY,
+            coords.x,
+            coords.y,
+            true,
+            true
+          )
+        ) {
           if (entity && entity.length > 0) {
-            this.weaponFunctionality.attack(
-              coords,
-              this.map,
-              this.inventory,
-              entity[0]
-            );
+            const weapon = this.inventory.getEquippedWeapon();
+            if (weapon) {
+              weapon.dealDamage(entity[0]);
+            }
           }
         }
       }
