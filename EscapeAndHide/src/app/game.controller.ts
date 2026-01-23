@@ -1445,6 +1445,7 @@ export class GameController {
       }
     }
       this.map.tiles[x][y].entity!.forEach((entity) => {
+        entity.onEndTurn()
         if (entity.ai){
           this.enemyTurnList.push(entity);
         }
@@ -1521,7 +1522,7 @@ export class GameController {
               // this.player1.Health.Damage(strength / size / 10);
             }
             var firechance = this.generateRandomNumber(1, 5);
-            if (firechance == 1) {
+            if (firechance == 1 && startFires == true) {
               this.ignite(tile[0], tile[1], strength / 4, true, true);
             }
           }
