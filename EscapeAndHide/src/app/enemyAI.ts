@@ -5,6 +5,7 @@ import { Player } from "./player";
 import { Torso } from "./health/limbs";
 import { Lacerations } from "./health/afflictions";
 import { LimbName } from "./health/health";
+import { tile } from "./tile";
 
 export class BasicEnemyAI extends Entity{
     
@@ -537,9 +538,9 @@ export class OppressorUnitAI extends BasicEnemyAI {
     override nonMelee = true;
     override energy = 3;
     override sightRange = 6;
-    override attackRange = 2;
+    override attackRange = 3;
     override damage = 5;
-    override accuracy = 0.5; //chance to start fire
+   
 
     getConeTiles(centerX: number, centerY: number, range: number, angle: number, coneAngle: number): [number, number][] {
         const tiles: [number, number][] = [];
@@ -568,15 +569,17 @@ export class OppressorUnitAI extends BasicEnemyAI {
         const dx = target.posX - this.posX;
         const dy = target.posY - this.posY;
         const angleToTarget = Math.atan2(dy, dx);
-        const coneTiles = this.getConeTiles(this.posX, this.posY, this.attackRange+2, angleToTarget, Math.PI / 3); // 60 degree cone
+        const coneTiles = this.getConeTiles(this.posX, this.posY, this.attackRange+2, angleToTarget, Math.PI / 3 ); // 60 degree cone
 
         for (const [x, y] of coneTiles) {
             // Apply damage or effect, e.g., create fire or damage entities
             const entities = controller.getAllEntitiesOnTile(x, y);
-            let fireChance = Math.random();
-            if (fireChance < this.accuracy){
-                controller.ignite(x, y, 75, true, true); 
+            let tileRange = Math.max(Math.abs(x - this.posX), Math.abs(y - this.posY));
+            let fireChance = controller.generateRandomNumber(1, tileRange);
+            if (fireChance <= 2){
+                controller.ignite(x, y, (100 - tileRange*15), true, true); 
             }
+            
             for (const entity of entities) {
                 if (entity instanceof Player) {
                     // Damage player, perhaps with fire damage
@@ -586,6 +589,7 @@ export class OppressorUnitAI extends BasicEnemyAI {
                 }
             }
         }
+        
         this.stunned += 1; //scorcher stuns itself after attack
     }
 
