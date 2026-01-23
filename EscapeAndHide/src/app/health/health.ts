@@ -43,6 +43,7 @@ export class Health {
     this.head,
     this.torso,
   ];
+  
 
   constructor(maxBlood: number, currentHealth: number) {
     this.maxBlood = maxBlood;
@@ -64,6 +65,28 @@ export class Health {
       }
     }
   }
+
+  
+
+  damageLimb(limb: LimbName, afflictions: affliction[]) {  
+  for (let affliction of afflictions) {
+      if (affliction[0] == 'Lacerations') {
+        this[limb].lacerations.increaseSeverity(affliction[1]);
+      }
+      if (affliction[0] == 'Bleeding') {
+        this[limb].bleeding.increaseSeverity(affliction[1]);
+      }
+      if (affliction[0] == 'GunshotWound') {
+        this[limb].gunshotWound.increaseSeverity(affliction[1]);
+      }
+      if (affliction[0] == 'Burn') {
+        this[limb].burn.increaseSeverity(affliction[1]);
+      }
+      if (affliction[0] == 'Fracture') {
+        this[limb].addFracture();
+      }
+  }
+}
 
   updateAfflictions() {
     this.bloodLoss.severity = 0;

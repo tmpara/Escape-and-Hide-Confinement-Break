@@ -57,3 +57,24 @@ export class Fracture extends Afflcition {
     super();
   }
 }
+
+export class Burn extends Afflcition {
+  name: string = 'Burn';
+  constructor() {
+    super();
+  }
+}
+
+export class GunshotWound extends Afflcition {
+  name: string = 'GunshotWound';
+  constructor() {
+    super();
+  }
+}
+
+export class Zapped extends Afflcition {
+  name: string = 'Zapped';
+  constructor() {
+    super();
+  }
+}

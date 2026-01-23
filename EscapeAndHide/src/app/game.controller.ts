@@ -6,12 +6,12 @@ import { World } from './world';
 import { Player } from './player';
 import { Health } from './health/health';
 import { Energy } from './energy/energy';
-import { Item, Items } from './items/items';
+import { Items, Item} from './items/items';
 import { WorldMapRenderer } from './worldMapRenderer';
 import { WeaponFunctionality } from './items/weapon_functionality';
 import { Inventory } from './inventory/inventory';
+import { Dummy, HeavyDummy, LightInterferanceUnit, MediumInterferanceUnit, HeavyInterferanceUnit, OppressorUnit, ScorcherUnit} from './enemyTypes'
 import { GlassShards } from './entities';
-import { Dummy, HeavyDummy, LightInterferanceUnit} from './enemyTypes'
 import { Entity } from './entity';
 import { BasicEnemyAI } from './enemyAI';
 import { RoomTransition } from './entities';
@@ -30,6 +30,10 @@ export class GameController {
   dummy1 = new Dummy();
   heavyDummy1 = new HeavyDummy();
   liu = new LightInterferanceUnit();
+  miu = new MediumInterferanceUnit();
+  hiu = new HeavyInterferanceUnit();
+  oppressor = new OppressorUnit();
+  scorcher = new ScorcherUnit();
   world = new World();
   spriteContainer = new Container();
   effectContainer = new Container();
@@ -124,7 +128,10 @@ export class GameController {
     this.map = this.world.rooms[this.playerWorldX][this.playerWorldY];
     console.log(this.map.width + ' ' + this.map.height);
     this.loadPlayer(1, 1, this.player1,1);
-    this.loadEntity(6,6, this.liu, this.map);
+    //this.loadEntity(6,6, this.liu, this.map);
+   // this.loadEntity(5,5, this.miu, this.map);
+   // this.loadEntity(5,5, this.hiu, this.map);
+    this.loadEntity(7,7, this.scorcher, this.map);
 
     // Create PIXI app
     this.app = new Application();
@@ -194,8 +201,6 @@ export class GameController {
     this.loadPlayer(1, 1, this.player1, 1);
     this.loadEntity(5, 2, this.dummy1, this.map);
     this.loadEntity(5, 3, this.heavyDummy1, this.map);
-    this.spawnItem(1, 3, new Items().gun);
-    this.spawnItem(2, 3, new Items().bigGun);
 
     // Draw grid, player
     this.drawGrid();
@@ -1129,6 +1134,17 @@ export class GameController {
     this.getAfflictionsForLimb(this.selectedLimb);
     this.afflictionsApp.stage.removeChildren();
     let i = 0;
+     const afflictionText = new Text({
+          text: this.selectedLimb,
+          style: {
+            fontSize: 16,
+            fill: '#ffffff',
+          },
+          y: i * 24 + 10,
+          x: 10,
+        });
+        i++
+    this.afflictionsApp.stage.addChild(afflictionText);
     for (let affliction in this.afflictions) {
       const afflictionValue = this.afflictions[affliction];
       if (afflictionValue.severity > 0 && afflictionValue.severity <= 100) {
@@ -1522,7 +1538,7 @@ export class GameController {
               // this.player1.Health.Damage(strength / size / 10);
             }
             var firechance = this.generateRandomNumber(1, 5);
-            if (firechance == 1 && startFires == true) {
+            if (firechance == 1 && startFires) {
               this.ignite(tile[0], tile[1], strength / 4, true, true);
             }
           }
@@ -1618,6 +1634,14 @@ export class GameController {
   endTurn() {
     this.updateAllTiles();
     this.player1.Energy.setEnergy(100);
+    if (this.player1.Health.torso.zapped.severity > 0) {
+      this.player1.Energy.loseEnergy(this.player1.Health.torso.zapped.severity)
+      if (this.player1.Health.torso.zapped.severity >= 5){
+      this.player1.Health.torso.zapped.severity = this.player1.Health.torso.zapped.severity - 5;
+    } else {
+      this.player1.Health.torso.zapped.severity = 0;
+    }
+    }
     this.player1.playerAction(0);
   }
 
