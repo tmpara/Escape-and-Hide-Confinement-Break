@@ -5,7 +5,7 @@ export class Items {
     false,
     '/sprites/items/gun.png',
     null,
-    2,
+    50,
     5
   );
   bigGun = new Weapon(
@@ -14,7 +14,7 @@ export class Items {
     false,
     '/sprites/items/biggun.png',
     null,
-    5,
+    100,
     7
   );
   bandage = new Healing(

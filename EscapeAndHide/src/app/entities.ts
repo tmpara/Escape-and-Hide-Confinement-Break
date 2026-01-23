@@ -1,6 +1,7 @@
 import { Entity } from './entity';
 import { Player } from './player';
 import { GameController } from './game.controller';
+import { Items } from './items/items';
 
 export class Wall1 extends Entity {
   override name = 'Wall';
@@ -11,14 +12,10 @@ export class Wall1 extends Entity {
   override spriteBottomCap = '/sprites/entities/wall_placeholder_bottomcap.png';
   override spriteLeftCap = '/sprites/entities/wall_placeholder_leftcap.png';
   override spriteRightCap = '/sprites/entities/wall_placeholder_rightcap.png';
-  override spriteTopLeftCorner =
-    '/sprites/entities/wall_placeholder_topleftcorner.png';
-  override spriteTopRightCorner =
-    '/sprites/entities/wall_placeholder_toprightcorner.png';
-  override spriteBottomLeftCorner =
-    '/sprites/entities/wall_placeholder_bottomleftcorner.png';
-  override spriteBottomRightCorner =
-    '/sprites/entities/wall_placeholder_bottomrightcorner.png';
+  override spriteTopLeftCorner = '/sprites/entities/wall_placeholder_topleftcorner.png';
+  override spriteTopRightCorner = '/sprites/entities/wall_placeholder_toprightcorner.png';
+  override spriteBottomLeftCorner = '/sprites/entities/wall_placeholder_bottomleftcorner.png';
+  override spriteBottomRightCorner = '/sprites/entities/wall_placeholder_bottomrightcorner.png';
   override collidable = true;
   override damageable = true;
   override health = 500;
@@ -36,14 +33,10 @@ export class WallCorner1 extends Entity {
   override spriteBottomCap = '/sprites/entities/wall_placeholder_bottomcap.png';
   override spriteLeftCap = '/sprites/entities/wall_placeholder_leftcap.png';
   override spriteRightCap = '/sprites/entities/wall_placeholder_rightcap.png';
-  override spriteTopLeftCorner =
-    '/sprites/entities/wall_placeholder_topleftcorner.png';
-  override spriteTopRightCorner =
-    '/sprites/entities/wall_placeholder_toprightcorner.png';
-  override spriteBottomLeftCorner =
-    '/sprites/entities/wall_placeholder_bottomleftcorner.png';
-  override spriteBottomRightCorner =
-    '/sprites/entities/wall_placeholder_bottomrightcorner.png';
+  override spriteTopLeftCorner = '/sprites/entities/wall_placeholder_topleftcorner.png';
+  override spriteTopRightCorner = '/sprites/entities/wall_placeholder_toprightcorner.png';
+  override spriteBottomLeftCorner = '/sprites/entities/wall_placeholder_bottomleftcorner.png';
+  override spriteBottomRightCorner = '/sprites/entities/wall_placeholder_bottomrightcorner.png';
   override collidable = true;
   override damageable = false;
   override health = 0;
@@ -137,7 +130,7 @@ export class ExplosiveBarrel extends Entity {
   override sprite = '/sprites/entities/explosiveBarrel.png';
   override collidable = true;
   override damageable = true;
-  override health = 2;
+  override health = 10;
   override hiddenOutsideLOS = true;
   override blockLOS = false;
   override flammable = false;
@@ -151,6 +144,66 @@ export class ExplosiveBarrel extends Entity {
   }
 }
 
+export class Crate extends Entity {
+  override name = 'Crate';
+  override sprite = '/sprites/entities/crate.png';
+  override lootable = true;
+  override collidable = true;
+  override damageable = true;
+  override health = 25;
+  override hiddenOutsideLOS = true;
+  override blockLOS = false;
+  override flammable = true;
+  lootTable = [];
+}
+
+export class WeaponCrate extends Entity {
+  override name = 'Weapon Crate';
+  override sprite = '/sprites/entities/crate_weapon.png';
+  override lootable = true;
+  override collidable = true;
+  override damageable = true;
+  override health = 25;
+  override hiddenOutsideLOS = true;
+  override blockLOS = false;
+  override flammable = true;
+  lootTable = [new Items().gun];
+}
+
+export class MedicalCrate extends Entity {
+  override name = 'Medical Crate';
+  override sprite = '/sprites/entities/crate_medical.png';
+  override lootable = true;
+  override collidable = true;
+  override damageable = true;
+  override health = 25;
+  override hiddenOutsideLOS = true;
+  override blockLOS = false;
+  override flammable = true;
+  lootTable = [new Items().bandage];
+}
+
+export class Mine extends Entity {
+  override name = 'Mine';
+  override sprite = '/sprites/entities/mine.png';
+  override lootable = false;
+  override collidable = false;
+  override damageable = true;
+  override health = 10;
+  override hiddenOutsideLOS = true;
+  override blockLOS = false;
+  override flammable = true;
+
+  override onSteppedOn(user: Entity | null) {
+    GameController.current?.createExplosion(this.posX, this.posY, 3, 200, false);
+  }
+
+  override onEndTurn(){
+    this.sprite = "/sprites/effects/hidden.png";
+  }
+
+}
+
 export class GlassShards extends Entity {
   override name = 'Glass Shards';
   override sprite = '/sprites/entities/glass_shards.png';
@@ -159,4 +212,18 @@ export class GlassShards extends Entity {
   override hiddenOutsideLOS = true;
   override blockLOS = false;
   override flammable = false;
+
+  override onSteppedOn(user: Entity | null) {
+    if (user instanceof Player) {
+      user.Health.damageLimb('leftLeg', [
+        ['Lacerations', 15],
+        ['Bleeding', 20],
+      ]);
+      user.Health.damageLimb('rightLeg', [
+        ['Lacerations', 15],
+        ['Bleeding', 20],
+      ]);
+    }
+  }
+  
 }

@@ -5,6 +5,7 @@ export abstract class Entity {
   name = "";
   description = "";
   sprite = "placeholder.png";
+  deadSprite = "";
   tags: string[] | null = null;
   connectsWith: string | null = null
   spriteTopCap = "";
@@ -21,12 +22,14 @@ export abstract class Entity {
   collidable = false;
   damageable = false;
   health = 0;
-  hiddenOutsideLOS = false
+  maxHealth = this.health;
+  hiddenOutsideLOS = false;
   blockLOS = false;
   flammable = false;
-  ai=false
-  maxHealth = this.health
+  lootable = false
+  ai=false;
   destroyed = false;
+  removeOnDestroy = true;
   fireValue = 0;
 
   takeDamage(damage:number, damageType: string){
@@ -53,15 +56,12 @@ export abstract class Entity {
     if (this.destroyed == false) {
       this.destroyed = true;
       this.onDestroyed(damage, damageType);
-      if (this.tags?.includes('dummy')) {
+      if (this.removeOnDestroy == true){
+        GameController.current?.removeEntities(this.posX, this.posY);
+      }else{
+        this.sprite = this.deadSprite;
       }
-      GameController.current?.removeEntities(this.posX, this.posY);
     }
-  }
-
-  kill(damage: number, damageType: string, target: Entity) {
-    target.isDead = true;
-    this.onDestroyed(damage, damageType);
   }
 
   onTakeDamage(damage: number, damageType: string) {}
