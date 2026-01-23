@@ -4,8 +4,6 @@ import { Text, Assets } from 'pixi.js';
 import { GameGrid } from './grid';
 import { World } from './world';
 import { Player } from './player';
-import { Health } from './health/health';
-import { Energy } from './energy/energy';
 import { bigGun, gun, Item } from './items/items';
 import { WorldMapRenderer } from './worldMapRenderer';
 import { Inventory } from './inventory/inventory';
@@ -20,28 +18,37 @@ export class GameController {
   map!: GameGrid;
   healthUIApp!: PIXI.Application;
   afflictionsApp!: PIXI.Application;
+  inventoryApp!: PIXI.Application;
+
   inventory!: Inventory;
+
   player1 = new Player();
   dummy1 = new Dummy();
   heavyDummy1 = new HeavyDummy();
   glassshards = new GlassShards();
   liu = new LightInterferanceUnit();
+
   world = new World();
   spriteContainer = new Container();
   effectContainer = new Container();
   pickUpPopUp = new Container();
+  reticleContainer = new Container();
+  healthLimbContainer = new Container();
+  inventoryContainer = new Container();
+  equippedContainer = new Container();
+
   playerSprite = new Graphics();
   healthBar = new Graphics();
   energyBar = new Graphics();
-  reticleContainer = new Container();
   tile = new Graphics();
+
   aimMode: boolean = false;
   mouseX: number = 0;
   mouseY: number = 0;
   mouseTileX: number = 0;
   mouseTileY: number = 0;
 
-  healthLimbContainer = new Container();
+  
   limbSprites: Record<string, PIXI.Sprite> = {};
   selectedLimb: string = '';
   afflictions: any = {};
@@ -196,6 +203,7 @@ export class GameController {
     this.drawGrid();
     this.drawPlayer();
     this.drawHealthUI();
+  // inventoryApp is created later; drawInventory must be called after it is initialized
 
     // Add containers to stage
     this.app.stage.addChild(this.spriteContainer);
@@ -205,29 +213,16 @@ export class GameController {
     this.app.stage.addChild(this.energyBar);
     this.app.stage.addChild(this.reticleContainer);
 
-    // Create inventory and equipped containers side by side
     const inventoryRow = document.createElement('div');
+    inventoryRow.id = 'inventory-row';
     inventoryRow.style.display = 'flex';
     inventoryRow.style.flexDirection = 'row';
     inventoryRow.style.width = '30vw';
-    inventoryRow.style.height = '80vh';
+    inventoryRow.style.height = '70vh';
     inventoryRow.style.position = 'absolute';
     inventoryRow.style.right = '0';
     inventoryRow.style.top = '0';
     container.appendChild(inventoryRow);
-
-    const invDiv = document.createElement('div');
-    invDiv.id = 'inventory-container';
-    invDiv.style.flex = '1';
-    invDiv.style.height = '100%';
-    inventoryRow.appendChild(invDiv);
-
-    const equippedDiv = document.createElement('div');
-    equippedDiv.id = 'equipped-container';
-    equippedDiv.style.flex = '1';
-    equippedDiv.style.height = '100%';
-    inventoryRow.appendChild(equippedDiv);
-    this.inventory = new Inventory(invDiv, equippedDiv);
 
     // Create status row for health and afflictions side by side below main game canvas
     const statusRow = document.createElement('div');
@@ -238,6 +233,17 @@ export class GameController {
     statusRow.style.height = 'window.innerHeight * 0.29';
     // Append statusRow after main game canvas
     container.appendChild(statusRow);
+
+    this.inventoryApp = new PIXI.Application();
+    await this.inventoryApp.init({
+      width: inventoryRow.clientWidth,
+      height: window.innerHeight,
+      antialias: true,
+    });
+    this.inventoryApp.view.style.display = 'block';
+
+    // Now that inventoryApp exists, draw the inventory UI
+    this.drawInventory();
 
     this.healthUIApp = new PIXI.Application();
     await this.healthUIApp.init({
@@ -257,6 +263,10 @@ export class GameController {
     });
     this.afflictionsApp.view.style.display = 'block';
     this.afflictionsApp.view.style.flexDirection = 'row';
+
+    // Append inventory canvas to inventoryRow
+    inventoryRow.appendChild(this.inventoryApp.view as HTMLCanvasElement);
+    this.inventoryApp.stage.addChild(this.inventoryContainer);
 
     // Append both canvases to the statusRow for side-by-side display
     statusRow.appendChild(this.healthUIApp.view as HTMLCanvasElement);
@@ -1037,6 +1047,19 @@ export class GameController {
       }
     }
     this.reticleContainer.addChild(reticleSprite);
+  }
+
+  drawInventory() {
+    this.inventoryApp.stage.removeChildren();
+    
+    const inventoryBackground = new PIXI.Graphics();
+    inventoryBackground.fill(0x222222);
+    inventoryBackground.rect(
+      0, 0,
+      this.inventoryApp.view.width,
+      this.inventoryApp.view.height
+    );
+    this.inventoryApp.stage.addChild(inventoryBackground);
   }
 
   drawHealthUI() {

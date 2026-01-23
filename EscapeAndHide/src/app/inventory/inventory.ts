@@ -4,12 +4,12 @@ import * as PIXI from 'pixi.js';
 
 export class Inventory {
   inventorySlots: (Item | null)[] = Array(10).fill(null);
-  inventorySize: number = 10;
+  inventorySize = 10;
+  equippedSlots = 4;
   weaponSlot: Item | null = null;
   headArmorSlot: Item | null = null;
   torsoArmorSlot: Item | null = null;
   fullbodyArmorSlot: Item | null = null;
-
   inventoryApp!: PIXI.Application;
   equippedApp!: PIXI.Application;
   inventoryContainer: HTMLDivElement;
@@ -109,68 +109,139 @@ export class Inventory {
     }
   }
 
-  equipTabDisplay() {
+  equipTabDisplay(){
     this.equippedApp.stage.removeChildren();
-    if (this.weaponSlot) {
-      this.displayEquippedItem(this.weaponSlot, 'Weapon', 0);
-    } else {
-      this.displayEmptySlot('Weapon', 0);
-    }
-    if (this.headArmorSlot) {
-      this.displayEquippedItem(this.headArmorSlot, 'Head Armor', 1);
-    } else {
-      this.displayEmptySlot('Head Armor', 1);
-    }
-    if (this.torsoArmorSlot) {
-      this.displayEquippedItem(this.torsoArmorSlot, 'Torso Armor', 2);
-    } else {
-      this.displayEmptySlot('Torso Armor', 2);
-    }
-    if (this.fullbodyArmorSlot) {
-      this.displayEquippedItem(this.fullbodyArmorSlot, 'Fullbody Armor', 3);
-    } else {
-      this.displayEmptySlot('Fullbody Armor', 3);
+    const slotSize = 64;
+    const padding = 10;
+    const startX = 10;
+    const startY = 10;
+
+    const slots: { name: string; item: Item | null }[] = [
+      { name: 'Weapon', item: this.weaponSlot },
+      { name: 'Head Armor', item: this.headArmorSlot },
+      { name: 'Torso Armor', item: this.torsoArmorSlot },
+      { name: 'Fullbody Armor', item: this.fullbodyArmorSlot },
+    ];
+
+    for (let i = 0; i < slots.length; i++) {
+      const slotContainer = new PIXI.Container();
+      slotContainer.x = startX;
+      slotContainer.y = startY + i * (slotSize + padding);
+
+      const bg = new PIXI.Graphics();
+      bg.lineStyle(2, 0x666666);
+      bg.beginFill(0x222222);
+      bg.drawRect(0, 0, slotSize, slotSize);
+      bg.endFill();
+      bg.interactive = true;
+      bg.eventMode = 'static';
+      (bg as any).cursor = 'pointer';
+      bg.on('pointerdown', () => {
+        const item = slots[i].item;
+        if (item) {
+          const globalPos = bg.getGlobalPosition();
+          const canvasRect = (this.equippedApp.view as HTMLCanvasElement).getBoundingClientRect();
+          const scaleX = canvasRect.width / this.equippedApp.screen.width;
+          const scaleY = canvasRect.height / this.equippedApp.screen.height;
+          const screenX = canvasRect.left + globalPos.x * scaleX;
+          const screenY = canvasRect.top + globalPos.y * scaleY;
+          this.itemActionPrompt(item, screenX, screenY);
+        }
+      });
+
+      slotContainer.addChild(bg);
+      const item = slots[i].item;
+      if (item) {
+        try {
+          const tex = PIXI.Assets.get(item.sprite as string) as PIXI.Texture;
+          if (tex) {
+            const spr = new PIXI.Sprite(tex);
+            const maxDim = Math.max(spr.width, spr.height);
+            if (maxDim > 0) {
+              const scale = Math.min(slotSize / spr.width, slotSize / spr.height, 1);
+              spr.width *= scale;
+              spr.height *= scale;
+            }
+            spr.x = (slotSize - spr.width) / 2;
+            spr.y = (slotSize - spr.height) / 2;
+            spr.interactive = true;
+            spr.eventMode = 'static';
+            (spr as any).cursor = 'pointer';
+            spr.on('pointerdown', () => {
+              const globalPos = spr.getGlobalPosition();
+              const canvasRect = (this.equippedApp.view as HTMLCanvasElement).getBoundingClientRect();
+              const scaleX = canvasRect.width / this.equippedApp.screen.width;
+              const scaleY = canvasRect.height / this.equippedApp.screen.height;
+              const screenX = canvasRect.left + globalPos.x * scaleX;
+              const screenY = canvasRect.top + globalPos.y * scaleY;
+              this.itemActionPrompt(item, screenX, screenY);
+            });
+            slotContainer.addChild(spr);
+          }
+        } catch (e) {}
+      }
+      this.equippedApp.stage.addChild(slotContainer);
     }
   }
+
 
   displayEquippedItem(item: Item, slotName: string, slotIndex: number) {
-    const texture = PIXI.Assets.get(item.sprite as string) as PIXI.Texture;
-    const sprite = new PIXI.Sprite(texture);
-    sprite.x = 0;
-    sprite.y = 0;
 
-    const text = new PIXI.Text({
-      text: `${slotName}: ${item.name}`,
-      style: {
-        fontFamily: 'Arial',
-        fontSize: 20,
-      },
-    });
-    text.anchor.set(0);
-    text.x = sprite.width + 10;
-    text.y = 0;
-    text.eventMode = 'static';
-    text.onclick = () => {
-      const globalPos = text.getGlobalPosition();
-      const canvasRect = (
-        this.equippedApp.view as HTMLCanvasElement
-      ).getBoundingClientRect();
-      const scaleX = canvasRect.width / this.equippedApp.screen.width;
-      const scaleY = canvasRect.height / this.equippedApp.screen.height;
-      const screenX = canvasRect.left + globalPos.x * scaleX;
-      const screenY = canvasRect.top + globalPos.y * scaleY;
-      this.itemActionPrompt(item, screenX, screenY);
-    };
+    const slotSize = 64;
+    const pad = 10;
+    const equippedContainer = new PIXI.Container();
+    equippedContainer.x = 10;
+    equippedContainer.y = 10 + slotIndex * (slotSize + pad);
 
-    const itemContainer = new PIXI.Container();
-    itemContainer.x = 10;
-    itemContainer.y = 10 + slotIndex * 40;
-    itemContainer.addChild(sprite);
-    itemContainer.addChild(text);
-    this.equippedApp.stage.addChild(itemContainer);
+    const bg = new PIXI.Graphics();
+    bg.lineStyle(2, 0x666666);
+    bg.beginFill(0x222222);
+    bg.drawRect(0, 0, slotSize, slotSize);
+    bg.endFill();
+    bg.interactive = true;
+    bg.eventMode = 'static';
+    (bg as any).cursor = 'pointer';
+      bg.on('pointerdown', () => {
+        const globalPos = bg.getGlobalPosition();
+        const canvasRect = (this.equippedApp.view as HTMLCanvasElement).getBoundingClientRect();
+        const scaleX = canvasRect.width / this.equippedApp.screen.width;
+        const scaleY = canvasRect.height / this.equippedApp.screen.height;
+        const screenX = canvasRect.left + globalPos.x * scaleX;
+        const screenY = canvasRect.top + globalPos.y * scaleY;
+        this.itemActionPrompt(item, screenX, screenY);
+      }
+    );
+
+    equippedContainer.addChild(bg);
+
+    try {
+      const texture = PIXI.Assets.get(item.sprite as string) as PIXI.Texture;
+      if (texture) {
+        const spr = new PIXI.Sprite(texture);
+        const scale = Math.min(slotSize / spr.width, slotSize / spr.height, 1);
+        spr.width *= scale;
+        spr.height *= scale;
+        spr.x = (slotSize - spr.width) / 2;
+        spr.y = (slotSize - spr.height) / 2;
+        spr.interactive = true;
+        spr.eventMode = 'static';
+        (spr as any).cursor = 'pointer';
+          spr.on('pointerdown', () => {
+            const globalPos = spr.getGlobalPosition();
+            const canvasRect = (this.equippedApp.view as HTMLCanvasElement).getBoundingClientRect();
+            const scaleX = canvasRect.width / this.equippedApp.screen.width;
+            const scaleY = canvasRect.height / this.equippedApp.screen.height;
+            const screenX = canvasRect.left + globalPos.x * scaleX;
+            const screenY = canvasRect.top + globalPos.y * scaleY;
+            this.itemActionPrompt(item, screenX, screenY);
+          }
+        );
+        equippedContainer.addChild(spr);
+      }
+    } catch (e) {}
+    this.equippedApp.stage.addChild(equippedContainer);
   }
 
-  // Helper to display empty slot
   displayEmptySlot(slotName: string, slotIndex: number) {
     const text = new PIXI.Text({
       text: `${slotName}: empty`,
