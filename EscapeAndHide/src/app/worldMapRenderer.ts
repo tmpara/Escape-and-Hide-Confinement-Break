@@ -10,7 +10,12 @@ export class WorldMapRenderer {
   playerX?: number;
   playerY?: number;
 
-  constructor(container: PIXI.Container, world: World, cellSize = 48, padding = 4) {
+  constructor(
+    container: PIXI.Container,
+    world: World,
+    cellSize = 48,
+    padding = 4
+  ) {
     this.container = container;
     this.world = world;
     this.cellSize = cellSize;
@@ -23,7 +28,7 @@ export class WorldMapRenderer {
     this.graphics.clear();
   }
 
-draw() {
+  draw() {
     this.graphics.clear();
 
     const w = this.world.width;
@@ -41,7 +46,9 @@ draw() {
         const py = y * this.cellSize + this.padding;
         const size = this.cellSize - this.padding * 2;
 
-        const roomId = this.world.roomsIDs[x] ? this.world.roomsIDs[x][y] : undefined;
+        const roomId = this.world.roomsIDs[x]
+          ? this.world.roomsIDs[x][y]
+          : undefined;
 
         // room background
         const hasRoom = !!roomId;
@@ -54,13 +61,20 @@ draw() {
     }
 
     // draw connections for every room cell (each connection drawn once)
-    this.graphics.lineStyle(Math.max(2, Math.floor(this.cellSize / 8)), 0x66ff66, 1);
+    this.graphics.lineStyle(
+      Math.max(2, Math.floor(this.cellSize / 8)),
+      0x66ff66,
+      1
+    );
     for (let x = 0; x < w; x++) {
       for (let y = 0; y < h; y++) {
-        const roomId = this.world.roomsIDs[x] ? this.world.roomsIDs[x][y] : undefined;
+        const roomId = this.world.roomsIDs[x]
+          ? this.world.roomsIDs[x][y]
+          : undefined;
         if (!roomId) continue;
 
-        const entrances = (this.world.getRoomEntrances(roomId as any) as string[]) || [];
+        const entrances =
+          (this.world.getRoomEntrances(roomId as any) as string[]) || [];
         // center point of this minimap cell
         const cx = x * this.cellSize + this.cellSize / 2;
         const cy = y * this.cellSize + this.cellSize / 2;
@@ -74,7 +88,9 @@ draw() {
           else if (dir === 'down') ny = y + 1;
 
           if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
-          const neighborId = this.world.roomsIDs[nx] ? this.world.roomsIDs[nx][ny] : undefined;
+          const neighborId = this.world.roomsIDs[nx]
+            ? this.world.roomsIDs[nx][ny]
+            : undefined;
           if (!neighborId) continue;
 
           // draw each connection only once (skip if neighbor is before current in iteration)
@@ -99,8 +115,6 @@ draw() {
       this.graphics.endFill();
     }
   }
-    
-  
 
   // redraw (alias)
   update() {

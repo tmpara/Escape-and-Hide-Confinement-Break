@@ -1,12 +1,12 @@
 
 import { Room } from "./room";
-import { Wall1,WallCorner1,ExplosiveBarrel,DoorHorizontal,DoorVertical,RoomTransition} from './entities'
+import { Wall1,WallCorner1,ExplosiveBarrel,DoorHorizontal,DoorVertical,RoomTransition,Crate,WeaponCrate,MedicalCrate,Mine} from './entities'
 import { LightInterferanceUnit } from "./enemyTypes";
 
 export class RoomsData {
 
     startingRoom: Room;
-    labComplex1: Room;
+    storageComplex1: Room;
     crossHall1: Room;
     verticalHall: Room;
     horizontalHall: Room;
@@ -26,7 +26,7 @@ export class RoomsData {
     noRoom: Room;
     
     roomList: string[] = [
-        "labComplex1",
+        "storageComplex1",
         "crossHall1",
         "verticalHall",
         "horizontalHall",
@@ -55,57 +55,80 @@ export class RoomsData {
 
     constructor() {
         
-        this.labComplex1 = new Room(15, 15, ["up", "left", "right", "down"], []);
-        this.labComplex1.layout = Array.from({ length: this.labComplex1.width }, () => Array.from({ length: this.labComplex1.height}));
-        this.labComplex1.layout[0][7] = new RoomTransition("left");
-        this.labComplex1.layout[7][0] = new RoomTransition("up");
-        this.labComplex1.layout[7][14] = new RoomTransition("down");
-        this.labComplex1.layout[7][7] = new LightInterferanceUnit() 
-        this.labComplex1.layout[14][7] = new RoomTransition("right");
-        this.labComplex1.layout[1][5] = new Wall1();
-        this.labComplex1.layout[2][5] = new Wall1();
-        this.labComplex1.layout[3][5] = new DoorVertical();
-        this.labComplex1.layout[4][5] = new Wall1();
-        this.labComplex1.layout[5][5] = new Wall1();
-        this.labComplex1.layout[9][5] = new Wall1();
-        this.labComplex1.layout[10][5] = new Wall1();
-        this.labComplex1.layout[12][5] = new Wall1();
-        this.labComplex1.layout[13][5] = new Wall1();
-        this.labComplex1.layout[1][9] = new Wall1();
-        this.labComplex1.layout[2][9] = new Wall1();
-        this.labComplex1.layout[3][9] = new DoorVertical();
-        this.labComplex1.layout[4][9] = new Wall1();
-        this.labComplex1.layout[5][9] = new Wall1();
-        this.labComplex1.layout[9][9] = new Wall1();
-        this.labComplex1.layout[10][9] = new Wall1();
-        this.labComplex1.layout[12][9] = new Wall1();
-        this.labComplex1.layout[13][9] = new Wall1();
-        this.labComplex1.layout[5][1] = new Wall1();
-        this.labComplex1.layout[5][2] = new Wall1();
-        this.labComplex1.layout[5][3] = new DoorHorizontal();
-        this.labComplex1.layout[5][4] = new Wall1();
-        this.labComplex1.layout[5][5] = new Wall1();
-        this.labComplex1.layout[5][9] = new Wall1();
-        this.labComplex1.layout[5][10] = new Wall1();
-        this.labComplex1.layout[5][11] = new DoorHorizontal();
-        this.labComplex1.layout[5][12] = new Wall1();
-        this.labComplex1.layout[5][13] = new Wall1();
-        this.labComplex1.layout[9][1] = new Wall1();
-        this.labComplex1.layout[9][2] = new Wall1();
-        this.labComplex1.layout[9][3] = new DoorHorizontal();
-        this.labComplex1.layout[9][4] = new Wall1();
-        this.labComplex1.layout[9][5] = new Wall1();
-        this.labComplex1.layout[9][9] = new Wall1();
-        this.labComplex1.layout[9][10] = new Wall1();
-        this.labComplex1.layout[9][11] = new DoorHorizontal();
-        this.labComplex1.layout[9][12] = new Wall1();
-        this.labComplex1.layout[9][13] = new Wall1();
-        this.labComplex1.layout[11][5] = new DoorVertical()
-        this.labComplex1.layout[11][9] = new DoorVertical()
-        this.labComplex1.layout[1][1] = new ExplosiveBarrel
-        this.labComplex1.layout[1][2] = new ExplosiveBarrel
-        this.labComplex1.layout[2][1] = new ExplosiveBarrel
-        this.labComplex1.layout[2][2] = new ExplosiveBarrel
+        this.storageComplex1 = new Room(15, 15, ["up", "left", "right", "down"], []);
+        this.storageComplex1.layout = Array.from({ length: this.storageComplex1.width }, () => Array.from({ length: this.storageComplex1.height}));
+        this.storageComplex1.layout[0][7] = new RoomTransition("left");
+        this.storageComplex1.layout[7][0] = new RoomTransition("up");
+        this.storageComplex1.layout[7][14] = new RoomTransition("down");
+        this.storageComplex1.layout[14][7] = new RoomTransition("right");
+        this.storageComplex1.layout[5][7] = new Mine() 
+        this.storageComplex1.layout[1][5] = new Wall1();
+        this.storageComplex1.layout[2][5] = new Wall1();
+        this.storageComplex1.layout[3][5] = new DoorVertical();
+        this.storageComplex1.layout[4][5] = new Wall1();
+        this.storageComplex1.layout[5][5] = new Wall1();
+        this.storageComplex1.layout[9][5] = new Wall1();
+        this.storageComplex1.layout[10][5] = new Wall1();
+        this.storageComplex1.layout[12][5] = new Wall1();
+        this.storageComplex1.layout[13][5] = new Wall1();
+        this.storageComplex1.layout[1][9] = new Wall1();
+        this.storageComplex1.layout[2][9] = new Wall1();
+        this.storageComplex1.layout[3][9] = new DoorVertical();
+        this.storageComplex1.layout[4][9] = new Wall1();
+        this.storageComplex1.layout[5][9] = new Wall1();
+        this.storageComplex1.layout[9][9] = new Wall1();
+        this.storageComplex1.layout[10][9] = new Wall1();
+        this.storageComplex1.layout[12][9] = new Wall1();
+        this.storageComplex1.layout[13][9] = new Wall1();
+        this.storageComplex1.layout[5][1] = new Wall1();
+        this.storageComplex1.layout[5][2] = new Wall1();
+        this.storageComplex1.layout[5][3] = new DoorHorizontal();
+        this.storageComplex1.layout[5][4] = new Wall1();
+        this.storageComplex1.layout[5][5] = new Wall1();
+        this.storageComplex1.layout[5][9] = new Wall1();
+        this.storageComplex1.layout[5][10] = new Wall1();
+        this.storageComplex1.layout[5][11] = new DoorHorizontal();
+        this.storageComplex1.layout[5][12] = new Wall1();
+        this.storageComplex1.layout[5][13] = new Wall1();
+        this.storageComplex1.layout[9][1] = new Wall1();
+        this.storageComplex1.layout[9][2] = new Wall1();
+        this.storageComplex1.layout[9][3] = new DoorHorizontal();
+        this.storageComplex1.layout[9][4] = new Wall1();
+        this.storageComplex1.layout[9][5] = new Wall1();
+        this.storageComplex1.layout[9][9] = new Wall1();
+        this.storageComplex1.layout[9][10] = new Wall1();
+        this.storageComplex1.layout[9][11] = new DoorHorizontal();
+        this.storageComplex1.layout[9][12] = new Wall1();
+        this.storageComplex1.layout[9][13] = new Wall1();
+        this.storageComplex1.layout[11][5] = new DoorVertical()
+        this.storageComplex1.layout[11][9] = new DoorVertical()
+        this.storageComplex1.layout[1][1] = new ExplosiveBarrel
+        this.storageComplex1.layout[1][2] = new ExplosiveBarrel
+        this.storageComplex1.layout[1][4] = new ExplosiveBarrel
+        this.storageComplex1.layout[2][1] = new ExplosiveBarrel
+        this.storageComplex1.layout[2][2] = new ExplosiveBarrel
+        this.storageComplex1.layout[3][1] = new ExplosiveBarrel
+        this.storageComplex1.layout[3][2] = new ExplosiveBarrel
+        this.storageComplex1.layout[4][1] = new ExplosiveBarrel
+        this.storageComplex1.layout[4][2] = new ExplosiveBarrel
+        this.storageComplex1.layout[12][1] = new Crate
+        this.storageComplex1.layout[12][2] = new Crate
+        this.storageComplex1.layout[13][1] = new Crate
+        this.storageComplex1.layout[13][2] = new Crate
+        this.storageComplex1.layout[13][10] = new MedicalCrate
+        this.storageComplex1.layout[11][12] = new MedicalCrate
+        this.storageComplex1.layout[13][13] = new Crate
+        this.storageComplex1.layout[10][10] = new Crate
+        this.storageComplex1.layout[4][10] = new WeaponCrate
+        this.storageComplex1.layout[4][13] = new Crate
+        this.storageComplex1.layout[2][11] = new Crate
+        this.storageComplex1.layout[2][12] = new WeaponCrate
+        this.storageComplex1.layout[1][10] = new Crate
+        this.storageComplex1.layout[1][13] = new ExplosiveBarrel
+        this.storageComplex1.layout[1][6] = new Crate
+        this.storageComplex1.layout[13][6] = new Crate
+        this.storageComplex1.layout[12][6] = new ExplosiveBarrel
+        this.storageComplex1.layout[10][7] = new Crate
 
         this.startingRoom = new Room(15, 9, ["up", "left", "right", "down"], []);
         this.startingRoom.layout = Array.from({ length: this.startingRoom.width }, () => Array.from({ length: this.startingRoom.height }));

@@ -9,7 +9,7 @@ import * as PIXI from 'pixi.js';
 export class Inventory {
   items: Item[] = [];
   equippedItems: Item[] = [];
-  equippedWeapon: Weapon| null = null
+  equippedWeapon: Weapon | null = null;
   inventorySize: number = 10;
   maxEquippedItems: number = 2;
   inventoryApp!: PIXI.Application;
@@ -19,6 +19,7 @@ export class Inventory {
   pickUpOverlay: HTMLDivElement | null = null;
   lootOverlay: HTMLDivElement | null = null;
   itemActionOverlay: HTMLDivElement | null = null;
+  floorActionOverlay: HTMLDivElement | null = null;
 
   constructor(invContainer: HTMLDivElement, equippedContainer: HTMLDivElement) {
     this.inventoryContainer = invContainer;
@@ -233,7 +234,7 @@ export class Inventory {
     }
   }
 
-  showLootPopup(entity: Dummy | HeavyDummy) {
+  showLootPopup(entity: any) {
     if (this.lootOverlay) {
       return Promise.resolve(false);
     }
@@ -257,12 +258,12 @@ export class Inventory {
       const itemButton = document.createElement('button');
       itemButton.className = 'loot-item-btn';
       itemButton.textContent = item.name;
-      // itemButton.onclick = () => {
-      //   this.pickUp(item);
-      //   itemButton.disabled = true;
-      //   entity.lootTable.splice(i, 1);
-      //   itemLootBox.removeChild(itemButton);
-      // };
+      itemButton.onclick = () => {
+        this.pickUp(item);
+        itemButton.disabled = true;
+        entity.lootTable.splice(i, 1);
+        itemLootBox.removeChild(itemButton);
+      };
       itemLootBox.appendChild(itemButton);
     }
 
@@ -286,13 +287,11 @@ export class Inventory {
     return new Promise<boolean>((resolve) => {
       close.onclick = () => {
         this.hideLootPopup();
-        resolve(true);
       };
 
       overlay.onclick = (e) => {
         if (e.target === overlay) {
           this.hideLootPopup();
-          resolve(false);
         }
       };
     });
@@ -374,6 +373,60 @@ export class Inventory {
     }
   }
 
+  floorItemActionPrompt(x: number, y: number) {
+    if (this.floorActionOverlay) {
+      return;
+    }
+    this.floorItemActionPromptStyles();
+    const overlay = document.createElement('div');
+    overlay.className = 'item-action-overlay';
+
+    const box = document.createElement('div');
+    box.className = 'item-action-box';
+
+    const pickUpButton = document.createElement('button');
+    pickUpButton.className = 'item-action-pickup-btn';
+
+    pickUpButton.textContent = 'Pick Up';
+    pickUpButton.onclick = () => {};
+
+    box.appendChild(pickUpButton);
+    overlay.appendChild(box);
+
+    if (typeof screenX === 'number' && typeof screenY === 'number') {
+      box.style.position = 'absolute';
+      box.style.left = `${Math.max(8, Math.round(screenX + 8))}px`;
+      box.style.top = `${Math.max(8, Math.round(screenY + 8))}px`;
+    }
+
+    document.body.appendChild(overlay);
+    this.floorActionOverlay = overlay;
+
+    return new Promise<boolean>((resolve) => {
+      pickUpButton.onclick = () => {
+        const tile = GameController.current?.map.tiles[x][y];
+        if (tile && tile.item) {
+          this.pickUp(tile.item);
+        }
+        this.hideFloorItemActionPrompt();
+        resolve(true);
+      };
+      overlay.onclick = (e) => {
+        if (e.target === overlay) {
+          this.hideFloorItemActionPrompt();
+          resolve(false);
+        }
+      };
+    });
+  }
+
+  hideFloorItemActionPrompt() {
+    if (this.floorActionOverlay) {
+      this.floorActionOverlay.remove();
+      this.floorActionOverlay = null;
+    }
+  }
+
   itemActionPromptStyles() {
     const style = document.createElement('style');
     style.id = 'inventory-prompt-styles';
@@ -397,6 +450,38 @@ export class Inventory {
         font-family: Arial, Helvetica, sans-serif;
       }
       .item-action-equip-btn, .item-action-drop-btn {
+        width: 100%;
+        border: none
+        cursor: pointer;
+        font-size: 14px;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  floorItemActionPromptStyles() {
+    const style = document.createElement('style');
+    style.id = 'inventory-prompt-styles';
+    style.textContent = `
+      .item-action-overlay {
+        position: fixed;
+        left: 0; top: 0; right: 0; bottom: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 999;
+      }
+      .item-action-box {
+        background: #121212;  
+        color: #fff;
+        border-radius: 8px;
+        width: 120px;
+        max-width: calc(100% - 40px);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+        text-align: center;
+        font-family: Arial, Helvetica, sans-serif;
+      }
+      .item-action-pickup-btn {
         width: 100%;
         border: none
         cursor: pointer;
@@ -495,7 +580,7 @@ export class Inventory {
         this.equippedItems.push(item);
         this.items.splice(index, 1);
       }
-      if (item instanceof Weapon){
+      if (item instanceof Weapon) {
         this.equippedWeapon = item;
       }
     }
@@ -523,31 +608,30 @@ export class Inventory {
   }
 
   drop(index: number, isEquipped: boolean) {
-    let item = null;
-    if (isEquipped) {
-      item = this.equippedItems[index];
-      item.isEquipped = false;
-      this.equippedItems.splice(index, 1);
-    } else {
-      item = this.items[index];
-      this.items.splice(index, 1);
-    }
-    this.displayInventory();
-    this.equipTabDisplay();
-
     const x = GameController.current?.player1.posX;
     const y = GameController.current?.player1.posY;
+    let item = null;
+    if (GameController.current?.map.tiles[x!][y!].item == null) {
+      if (isEquipped) {
+        item = this.equippedItems[index];
+        item.isEquipped = false;
+        this.equippedItems.splice(index, 1);
+      } else {
+        item = this.items[index];
+        this.items.splice(index, 1);
+      }
+      this.displayInventory();
+      this.equipTabDisplay();
 
-    if (
-      typeof x === 'number' &&
-      typeof y === 'number' &&
-      GameController.current?.map
-    ) {
-      GameController.current.spawnItem(x, y, item);
+      if (
+        typeof x === 'number' &&
+        typeof y === 'number' &&
+        GameController.current?.map
+      ) {
+        GameController.current.spawnItem(x, y, item);
+      }
     }
   }
-
-  equipItem(itemIndex: number) {}
 
   getItems(): Item[] {
     return this.items;

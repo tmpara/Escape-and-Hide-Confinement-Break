@@ -1,6 +1,6 @@
 import { tile } from './tile';
-import { Entity } from "./entity";
-import { Wall1,WallCorner1} from './entities'
+import { Entity } from './entity';
+import { Wall1, WallCorner1 } from './entities';
 import { GameController } from './game.controller';
 export class GameGrid {
   width: number;
@@ -22,26 +22,26 @@ export class GameGrid {
     }
   }
 
-  loadMap(map: Entity[][]){
-    for(let i=0;i<map.length;i++){
-      for(let j=0;j<map[i].length;j++){
-        if(i==0 || j==0 || i==map.length-1 || j==map[i].length-1){
-          GameController.current?.loadEntity(i,j,new WallCorner1,this)
+  loadMap(map: Entity[][]) {
+    for (let i = 0; i < map.length; i++) {
+      for (let j = 0; j < map[i].length; j++) {
+        if (i == 0 || j == 0 || i == map.length - 1 || j == map[i].length - 1) {
+          GameController.current?.loadEntity(i, j, new WallCorner1(), this);
         }
-        if(map[i][j] != null){
-          GameController.current?.loadEntity(i,j,map[i][j],this)
+        if (map[i][j] != null) {
+          GameController.current?.loadEntity(i, j, map[i][j], this);
         }
       }
     }
   }
 
-  createTile(x: number, y: number, name: String, replace: boolean){
-    if (this.isValidTile(x,y)==true){
-      let firevalue = this.tiles[x][y].fireValue
-      let entity = this.tiles[x][y].entity
-      this.tiles[x][y] = this.getTileData(name)
-      if (this.tiles[x][y].flammable==true || name=="ash"){
-        this.tiles[x][y].fireValue = firevalue  
+  createTile(x: number, y: number, name: String, replace: boolean) {
+    if (this.isValidTile(x, y) == true) {
+      let firevalue = this.tiles[x][y].fireValue;
+      let entity = this.tiles[x][y].entity;
+      this.tiles[x][y] = this.getTileData(name);
+      if (this.tiles[x][y].flammable == true || name == 'ash') {
+        this.tiles[x][y].fireValue = firevalue;
       }
       this.tiles[x][y].entity = entity
     }
@@ -54,7 +54,7 @@ export class GameGrid {
       return true;
     }
   }
-  
+
   getTileCoords(worldX: number, worldY: number, tileSize: number) {
     const tileX = Math.floor(worldX / tileSize);
     const tileY = Math.floor(worldY / tileSize);
@@ -64,31 +64,29 @@ export class GameGrid {
     return { x: tileX, y: tileY };
   }
 
-  getTileData(name: String){
+  getTileData(name: String) {
+    let tileName = '';
+    let sprite = '';
+    let effect = '';
+    let flammable = false;
 
-    let tileName = ""
-    let sprite = ""
-    let effect = ""
-    let flammable = false
+    switch (name) {
+      case 'empty':
+        tileName = 'empty';
+        sprite = '';
+        effect = '';
+        flammable = true;
+        break;
 
-    switch (name){
-
-    case 'empty':
-      tileName="empty"
-      sprite=""
-      effect = ""
-      flammable=true
-      break;
-      
-    case 'ash':
-      tileName="ash"
-      effect = ""
-      sprite="/sprites/tiles/ash.png"
-      flammable=false
-      break;
+      case 'ash':
+        tileName = 'ash';
+        effect = '';
+        sprite = '/sprites/tiles/ash.png';
+        flammable = false;
+        break;
     }
 
-    let info = new tile(tileName,sprite,effect,flammable,0,null,[]);
+    let info = new tile(tileName, sprite, effect, flammable, 0, null, []);
     return info;
   }
 

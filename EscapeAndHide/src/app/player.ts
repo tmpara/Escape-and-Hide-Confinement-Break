@@ -2,6 +2,8 @@ import * as PIXI from 'pixi.js';
 import { Entity } from './entity';
 import { Health } from './health/health';
 import { Energy } from './energy/energy';
+import { GlassShards } from './entities';
+import { GameController } from './game.controller';
 
 export class Player extends Entity {
   override name = "";
@@ -23,4 +25,5 @@ export class Player extends Entity {
     this.Energy.loseEnergy(energyCost);
     this.Health.bleedingRegen();
   }
+
 }

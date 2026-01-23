@@ -26,4 +26,17 @@ export class tile {
     this.item = item;
     this.entity = entity;
   }
+
+  getTileInfo(): any {
+    return {
+      name: this.name,
+      sprite: this.sprite,
+      effect: this.effect,
+      flammable: this.flammable,
+      fireValue: this.fireValue,
+      item: this.item,
+      entityCount: this.entity.length,
+      entities: this.entity.map((e) => e.name),
+    };
+  }
 }
