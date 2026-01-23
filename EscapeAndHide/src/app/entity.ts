@@ -40,6 +40,7 @@ export abstract class Entity {
         this.destroy(damage,damageType)
       }
     }
+  }
   
 
   heal(amount: number) {

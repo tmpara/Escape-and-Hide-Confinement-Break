@@ -51,23 +51,7 @@ export class Health {
   }
 
   hitRandomLimb(bleedingIncrease: number) {}
-
-  damageLimb(limb: LimbName, afflictions: affliction[]) {
-    for (let affliction of afflictions) {
-      if (affliction[0] === 'Lacerations') {
-        this[limb].addLaceration(affliction[1]);
-      }
-      if (affliction[0] === 'Bleeding') {
-        this[limb].addBleeding(affliction[1]);
-      }
-      if (affliction[0] === 'Fracture') {
-        this[limb].addFracture();
-      }
-    }
-  }
-
   
-
   damageLimb(limb: LimbName, afflictions: affliction[]) {  
   for (let affliction of afflictions) {
       if (affliction[0] == 'Lacerations') {
