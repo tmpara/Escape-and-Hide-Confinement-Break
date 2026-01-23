@@ -24,7 +24,8 @@ export class RoomsData {
     DeadEndRoomRight: Room;
     endingRoom: Room;
     noRoom: Room;
-    
+    testCircle: Room;
+
     roomList: string[] = [
         "storageComplex1",
         "crossHall1",
@@ -38,6 +39,7 @@ export class RoomsData {
         "TRoomInverted",
         "TRoomMirrored",
         "TRoomInvertedMirrored",
+        "testCircle",
     ]
 
     deadEndRooms: string[] = [
@@ -137,12 +139,42 @@ export class RoomsData {
         this.startingRoom.layout[7][8] = new RoomTransition("down");
         this.startingRoom.layout[14][4] = new RoomTransition("right");
   
-        this.crossHall1 = new Room(15, 15, ["up", "left", "right", "down"], []);
-        this.crossHall1.layout = Array.from({ length: this.crossHall1.width }, () => Array.from({ length: this.crossHall1.height }));
-        this.crossHall1.layout[0][7] = new RoomTransition("left");
-        this.crossHall1.layout[7][0] = new RoomTransition("up");
-        this.crossHall1.layout[7][14] = new RoomTransition("down");
-        this.crossHall1.layout[14][7] = new RoomTransition("right");
+        
+/* ---- Room code start ---- */
+this.crossHall1 = new Room(15, 15, ["up", "left", "right", "down"], []);
+this.crossHall1.layout = Array.from({ length: this.crossHall1.width }, () => Array.from({ length: this.crossHall1.height }));
+this.crossHall1.layout[0][7] = new RoomTransition("left");
+this.crossHall1.layout[4][5] = new Crate();
+this.crossHall1.layout[4][8] = new ExplosiveBarrel();
+this.crossHall1.layout[5][8] = new WeaponCrate();
+this.crossHall1.layout[7][0] = new RoomTransition("up");
+this.crossHall1.layout[7][14] = new RoomTransition("down");
+this.crossHall1.layout[14][7] = new RoomTransition("right");
+/* ---- Room code end ---- */
+
+
+/* ---- Room code start ---- */
+this.testCircle = new Room(7, 7, ["up", "left", "right", "down"], []);
+this.testCircle.layout = Array.from({ length: this.testCircle.width }, () => Array.from({ length: this.testCircle.height }));
+this.testCircle.layout[0][2] = new Wall1();
+this.testCircle.layout[0][3] = new RoomTransition("left");
+this.testCircle.layout[0][4] = new Wall1();
+this.testCircle.layout[1][1] = new Wall1();
+this.testCircle.layout[1][5] = new Wall1();
+this.testCircle.layout[2][0] = new Wall1();
+this.testCircle.layout[2][6] = new Wall1();
+this.testCircle.layout[3][0] = new RoomTransition("up");
+this.testCircle.layout[3][6] = new RoomTransition("down");
+this.testCircle.layout[4][0] = new Wall1();
+this.testCircle.layout[4][6] = new Wall1();
+this.testCircle.layout[5][1] = new Wall1();
+this.testCircle.layout[5][5] = new Wall1();
+this.testCircle.layout[6][2] = new Wall1();
+this.testCircle.layout[6][3] = new RoomTransition("right");
+this.testCircle.layout[6][4] = new Wall1();
+/* ---- Room code end ---- */
+
+
 
         this.verticalHall = new Room(5, 15, ["up", "down"], []);
         this.verticalHall.layout = Array.from({ length: this.verticalHall.width }, () => Array.from({ length: this.verticalHall.height }));
@@ -212,7 +244,7 @@ export class RoomsData {
 
         this.DeadEndRoomRight = new Room(5, 5, ["right"], []);
         this.DeadEndRoomRight.layout = Array.from({ length: this.DeadEndRoomRight.width }, () => Array.from({ length: this.DeadEndRoomRight.height }));
-        this.DeadEndRoomRight.layout[4][2] = new RoomTransition("right");
+        this.DeadEndRoomRight.layout[4]/* ---- Room code end ---- */[2] = new RoomTransition("right");
     
         this.endingRoom = new Room(13, 13, ["up", "left", "right", "down"], []);
         this.endingRoom.layout = Array.from({ length: this.endingRoom.width }, () => Array.from({ length: this.endingRoom.height }));
