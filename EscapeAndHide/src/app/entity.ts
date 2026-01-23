@@ -19,6 +19,7 @@ export abstract class Entity {
   posX = 0;
   posY = 0;
   zIndex = 4;
+  interactable = false;
   collidable = false;
   damageable = false;
   health = 0;

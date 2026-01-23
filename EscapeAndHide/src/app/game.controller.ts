@@ -4,44 +4,37 @@ import { Text, Assets } from 'pixi.js';
 import { GameGrid } from './grid';
 import { World } from './world';
 import { Player } from './player';
-import { Health } from './health/health';
-import { Energy } from './energy/energy';
-import { Items, Item} from './items/items';
+import { Item} from './items/items';
 import { WorldMapRenderer } from './worldMapRenderer';
 import { WeaponFunctionality } from './items/weapon_functionality';
 import { Inventory } from './inventory/inventory';
-import { Dummy, HeavyDummy, LightInterferanceUnit, MediumInterferanceUnit, HeavyInterferanceUnit, OppressorUnit, ScorcherUnit} from './enemyTypes'
-import { GlassShards } from './entities';
 import { Entity } from './entity';
 import { BasicEnemyAI } from './enemyAI';
 import { RoomTransition } from './entities';
-
-
 
 export class GameController {
   static current: GameController | null = null;
   app!: Application;
   map!: GameGrid;
   healthUIApp!: PIXI.Application;
+  logUIApp!: PIXI.Application;
   afflictionsApp!: PIXI.Application;
   inventory!: Inventory;
+
   weaponFunctionality = new WeaponFunctionality();
   player1 = new Player();
-  dummy1 = new Dummy();
-  heavyDummy1 = new HeavyDummy();
-  liu = new LightInterferanceUnit();
-  miu = new MediumInterferanceUnit();
-  hiu = new HeavyInterferanceUnit();
-  oppressor = new OppressorUnit();
-  scorcher = new ScorcherUnit();
   world = new World();
+
+  mapContainer?: Container;
   spriteContainer = new Container();
   effectContainer = new Container();
   pickUpPopUp = new Container();
+
   playerSprite = new Graphics();
   healthBar = new Graphics();
   energyBar = new Graphics();
   tile = new Graphics();
+  
   aimMode: boolean = false;
   mouseX: number = 0;
   mouseY: number = 0;
@@ -52,11 +45,13 @@ export class GameController {
   limbSprites: Record<string, PIXI.Sprite> = {};
   selectedLimb: string = '';
   afflictions: any = {};
+
+  logs: String[] = [];
+
   playerWorldX = this.world.startX;
   playerWorldY = this.world.startY;
   tileSize = 32; // Size of each tile in pixels
   lastUsedId = 0;
-  mapContainer?: Container;
   mapRenderer?: WorldMapRenderer;
   enemyTurnList: Entity[] = [];
 
@@ -128,10 +123,6 @@ export class GameController {
     this.map = this.world.rooms[this.playerWorldX][this.playerWorldY];
     console.log(this.map.width + ' ' + this.map.height);
     this.loadPlayer(1, 1, this.player1,1);
-    //this.loadEntity(6,6, this.liu, this.map);
-   // this.loadEntity(5,5, this.miu, this.map);
-   // this.loadEntity(5,5, this.hiu, this.map);
-    this.loadEntity(7,7, this.scorcher, this.map);
 
     // Create PIXI app
     this.app = new Application();
@@ -149,7 +140,7 @@ export class GameController {
     const mapCellSize = 20; // pixels per world cell in minimap
     // position at top-right with a small margin
     this.mapContainer.x =
-      this.app.screen.width - this.world.width * mapCellSize - 16;
+    this.app.screen.width - this.world.width * mapCellSize - 16;
     this.mapContainer.y = 8;
     this.app.stage.addChild(this.mapContainer);
     this.mapRenderer = new WorldMapRenderer(
@@ -197,10 +188,7 @@ export class GameController {
     });
 
     // Create map and player
-
     this.loadPlayer(1, 1, this.player1, 1);
-    this.loadEntity(5, 2, this.dummy1, this.map);
-    this.loadEntity(5, 3, this.heavyDummy1, this.map);
 
     // Draw grid, player
     this.drawGrid();
@@ -213,7 +201,6 @@ export class GameController {
     this.app.stage.addChild(this.playerSprite);
     this.app.stage.addChild(this.healthBar);
     this.app.stage.addChild(this.energyBar);
-    this.app.stage.addChild(this.effectContainer);
 
     // Create inventory and equipped containers side by side
     const inventoryRow = document.createElement('div');
@@ -268,10 +255,21 @@ export class GameController {
     this.afflictionsApp.view.style.display = 'block';
     this.afflictionsApp.view.style.flexDirection = 'row';
 
+    this.logUIApp = new PIXI.Application();
+    await this.logUIApp.init({
+      width: statusRow.clientWidth * 0.4,
+      height: window.innerHeight * 0.29,
+      backgroundColor: 0x333333,
+      antialias: true,
+    });
+    this.logUIApp.view.style.display = 'block';
+
     // Append both canvases to the statusRow for side-by-side display
     statusRow.appendChild(this.healthUIApp.view as HTMLCanvasElement);
     statusRow.appendChild(this.afflictionsApp.view as HTMLCanvasElement);
     this.healthUIApp.stage.addChild(this.healthLimbContainer);
+
+    statusRow.appendChild(this.logUIApp.view as HTMLCanvasElement);
 
     // Listen for movement
     this.listenForInput(this.player1);
@@ -1147,7 +1145,7 @@ export class GameController {
     this.afflictionsApp.stage.addChild(afflictionText);
     for (let affliction in this.afflictions) {
       const afflictionValue = this.afflictions[affliction];
-      if (afflictionValue.severity > 0 && afflictionValue.severity <= 100) {
+      if (afflictionValue.severity > 0) {
         const afflictionText = new Text({
           text: afflictionValue.name + ': ' + afflictionValue.severity,
           style: {
@@ -1161,6 +1159,33 @@ export class GameController {
         i++;
       }
     }
+  }
+
+  drawLogsUI(){
+    this.logUIApp.stage.removeChildren();
+    let i = 0;
+    for (i=0; i<this.logs.length; i++){
+      const logText = new Text({
+        text: this.logs[i],
+        style: {
+          fontSize: 20,
+          fill: '#ffffff',
+        },
+        y: i * 25 + 10,
+        x: 10,
+      });
+      this.logUIApp.stage.addChild(logText);
+    }
+  }
+
+  addLog(message: string) {
+    const timestamp = new Date().toLocaleTimeString();
+    this.logs.push(`${timestamp}` + ' - ' + message);
+    if (this.logs.length > 10) {
+      this.logs.shift();
+    }
+    this.drawLogsUI();
+    console.log(`${timestamp}` + ' - ' + message);
   }
 
   animatePlayerMove(
@@ -1516,7 +1541,8 @@ export class GameController {
     y: number,
     size: number,
     strength: number,
-    startFires: boolean = false
+    startFires: boolean = false,
+    cause: string = ""
   ) {
     (async () => {
       for (let i = 0; i < size; i++) {
@@ -1547,6 +1573,12 @@ export class GameController {
       }
       this.effectContainer.removeChildren();
     })();
+    // Log exlosions
+    if(cause!=""){
+      this.addLog(cause + " caused an explosion!");
+    }else{
+      this.addLog("Something exploded!");
+    }
   }
 
   loadPlayer(x: number, y: number, player: Player, playerId: number) {
@@ -1679,6 +1711,7 @@ export class GameController {
     window.addEventListener('keydown', (event) => {
       switch (event.key.toLowerCase()) {
         case 'x':
+          this.addLog("Player ended their turn.");
           this.endTurn();
           break;
         case 'p':
@@ -1733,9 +1766,7 @@ export class GameController {
               }
             );
             const entity = this.map.tiles[coords.x][coords.y].entity;
-            if (entity[0].lootable) {
-              this.inventory.showLootPopup(entity[0]);
-            }
+            this.inventory.showLootPopup(entity[0]);
           }
         }else{
           const entity = this.map.tiles[coords.x][coords.y].entity;

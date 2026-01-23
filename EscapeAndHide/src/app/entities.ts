@@ -49,6 +49,7 @@ export class Door extends Entity {
   override name = 'Door';
   override sprite = '/sprites/entities/door_closed_horizontal.png';
   override zIndex = 9;
+  override interactable = true;
   override collidable = true;
   override damageable = true;
   override health = 400;
@@ -67,6 +68,7 @@ export class Door extends Entity {
       this.sprite = this.openSprite;
       this.collidable = false;
       this.blockLOS = false;
+      GameController.current?.addLog("A door creaks open.");
     } else {
       this.blocked = false;
       let entities = GameController.current?.getAllEntitiesOnTile(
@@ -84,6 +86,7 @@ export class Door extends Entity {
         this.sprite = this.closedSprite;
         this.collidable = true;
         this.blockLOS = true;
+        GameController.current?.addLog("A door slams shut.");
       }
     }
     console.log(this.blocked);
@@ -107,6 +110,7 @@ export class DoorVertical extends Door {
 export class RoomTransition extends Entity {
   override name = 'Door';
   override sprite = '/sprites/entities/door1.png';
+  override interactable = true;
   override collidable = true;
   override damageable = false;
   override health = 500;
@@ -128,6 +132,7 @@ export class RoomTransition extends Entity {
 export class ExplosiveBarrel extends Entity {
   override name = 'Explosive Barrel';
   override sprite = '/sprites/entities/explosiveBarrel.png';
+  override interactable = true;
   override collidable = true;
   override damageable = true;
   override health = 10;
@@ -140,7 +145,7 @@ export class ExplosiveBarrel extends Entity {
   }
 
   override onDestroyed() {
-    GameController.current?.createExplosion(this.posX, this.posY, 3, 200, true);
+    GameController.current?.createExplosion(this.posX, this.posY, 3, 200, true, this.name);
   }
 }
 
@@ -148,6 +153,7 @@ export class Crate extends Entity {
   override name = 'Crate';
   override sprite = '/sprites/entities/crate.png';
   override lootable = true;
+  override interactable = true;
   override collidable = true;
   override damageable = true;
   override health = 25;
@@ -161,6 +167,7 @@ export class WeaponCrate extends Entity {
   override name = 'Weapon Crate';
   override sprite = '/sprites/entities/crate_weapon.png';
   override lootable = true;
+  override interactable = true;
   override collidable = true;
   override damageable = true;
   override health = 25;
@@ -174,6 +181,7 @@ export class MedicalCrate extends Entity {
   override name = 'Medical Crate';
   override sprite = '/sprites/entities/crate_medical.png';
   override lootable = true;
+  override interactable = true;
   override collidable = true;
   override damageable = true;
   override health = 25;
@@ -184,9 +192,10 @@ export class MedicalCrate extends Entity {
 }
 
 export class Mine extends Entity {
-  override name = 'Mine';
+  override name = 'Landmine';
   override sprite = '/sprites/entities/mine.png';
   override lootable = false;
+  override interactable = true;
   override collidable = false;
   override damageable = true;
   override health = 10;
@@ -195,7 +204,13 @@ export class Mine extends Entity {
   override flammable = true;
 
   override onSteppedOn(user: Entity | null) {
-    GameController.current?.createExplosion(this.posX, this.posY, 3, 200, false);
+    let msg = ""
+    if (this.sprite == '/sprites/effects/hidden.png') {
+      msg = "A hidden trap"
+    }else{
+      msg = this.name
+    }
+    GameController.current?.createExplosion(this.posX, this.posY, 3, 200, false, msg);
   }
 
   override onEndTurn(){
@@ -215,6 +230,7 @@ export class GlassShards extends Entity {
 
   override onSteppedOn(user: Entity | null) {
     if (user instanceof Player) {
+      GameController.current?.addLog("You stepped on glass shards and cut up your feet!");
       user.Health.damageLimb('leftLeg', [
         ['Lacerations', 15],
         ['Bleeding', 20],
