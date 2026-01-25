@@ -1,6 +1,5 @@
 import { Item } from '../items/items';
 import { GameController } from '../game.controller';
-import * as PIXI from 'pixi.js';
 
 export class Inventory {
   inventorySlots: (Item | null)[] = Array(10).fill(null);
@@ -10,255 +9,10 @@ export class Inventory {
   headArmorSlot: Item | null = null;
   torsoArmorSlot: Item | null = null;
   fullbodyArmorSlot: Item | null = null;
-  inventoryApp!: PIXI.Application;
-  equippedApp!: PIXI.Application;
-  inventoryContainer: HTMLDivElement;
-  equippedContainer: HTMLDivElement;
-  slotsContainer: HTMLDivElement | null = null;
   pickUpOverlay: HTMLDivElement | null = null;
   lootOverlay: HTMLDivElement | null = null;
   itemActionOverlay: HTMLDivElement | null = null;
   floorActionOverlay: HTMLDivElement | null = null;
-
-  constructor(invContainer: HTMLDivElement, equippedContainer: HTMLDivElement) {
-    this.inventoryContainer = invContainer;
-    this.equippedContainer = equippedContainer;
-    this.initInventory();
-    this.initEquipped();
-  }
-
-  async initInventory() {
-    this.inventoryApp = new PIXI.Application();
-    await this.inventoryApp.init({
-      width: window.innerWidth * 0.15,
-      height: window.innerHeight * 0.7,
-      backgroundColor: 0x1099bb,
-    });
-    this.inventoryContainer.appendChild(
-      this.inventoryApp.canvas as HTMLCanvasElement
-    );
-    this.displayInventory();
-  }
-
-  async initEquipped() {
-    this.equippedApp = new PIXI.Application();
-    await this.equippedApp.init({
-      width: window.innerWidth * 0.15,
-      height: window.innerHeight * 0.7,
-      backgroundColor: 0x333399,
-    });
-    this.equippedContainer.appendChild(
-      this.equippedApp.canvas as HTMLCanvasElement
-    );
-    this.equipTabDisplay();
-    await PIXI.Assets.load('/placeholder.png');
-    await PIXI.Assets.load('/headSlot.png');
-    await PIXI.Assets.load('/torsoSlot.png');
-    await PIXI.Assets.load('/fullbodySlot.png');
-  }
-
-  displayInventory() {
-    this.inventoryApp.stage.removeChildren();
-    for (let i = 0; i < this.inventorySlots.length; i++) {
-      const item = this.inventorySlots[i];
-      if (item) {
-        item.displayed = false;
-      }
-    }
-
-    for (let i = 0; i < this.inventorySlots.length; i++) {
-      const item = this.inventorySlots[i];
-      if (item && !item.displayed) {
-        item.displayed = true;
-        const texture = PIXI.Assets.get(item.sprite as string) as PIXI.Texture;
-        const sprite = new PIXI.Sprite(texture);
-        sprite.x = 0;
-        sprite.y = 0;
-
-        const text = new PIXI.Text({
-          text: item.name,
-          style: {
-            fontFamily: 'Arial',
-            fontSize: 20,
-            wordWrap: true,
-          },
-        });
-        text.anchor.set(0);
-        text.x = sprite.width + 10;
-        text.y = 0;
-        text.eventMode = 'static';
-        text.onclick = () => {
-          const globalPos = text.getGlobalPosition();
-          const canvasRect = (
-            this.inventoryApp.view as HTMLCanvasElement
-          ).getBoundingClientRect();
-          const scaleX = canvasRect.width / this.inventoryApp.screen.width;
-          const scaleY = canvasRect.height / this.inventoryApp.screen.height;
-          const screenX = canvasRect.left + globalPos.x * scaleX;
-          const screenY = canvasRect.top + globalPos.y * scaleY;
-          this.itemActionPrompt(item, screenX, screenY);
-        };
-
-        const itemContainer = new PIXI.Container();
-        itemContainer.x = 10;
-        itemContainer.y = 10 + i * 35;
-        itemContainer.addChild(sprite);
-        itemContainer.addChild(text);
-        this.inventoryApp.stage.addChild(itemContainer);
-      }
-    }
-  }
-
-  equipTabDisplay(){
-    this.equippedApp.stage.removeChildren();
-    const slotSize = 64;
-    const padding = 10;
-    const startX = 10;
-    const startY = 10;
-
-    const slots: { name: string; item: Item | null }[] = [
-      { name: 'Weapon', item: this.weaponSlot },
-      { name: 'Head Armor', item: this.headArmorSlot },
-      { name: 'Torso Armor', item: this.torsoArmorSlot },
-      { name: 'Fullbody Armor', item: this.fullbodyArmorSlot },
-    ];
-
-    for (let i = 0; i < slots.length; i++) {
-      const slotContainer = new PIXI.Container();
-      slotContainer.x = startX;
-      slotContainer.y = startY + i * (slotSize + padding);
-
-      const bg = new PIXI.Graphics();
-      bg.lineStyle(2, 0x666666);
-      bg.beginFill(0x222222);
-      bg.drawRect(0, 0, slotSize, slotSize);
-      bg.endFill();
-      bg.interactive = true;
-      bg.eventMode = 'static';
-      (bg as any).cursor = 'pointer';
-      bg.on('pointerdown', () => {
-        const item = slots[i].item;
-        if (item) {
-          const globalPos = bg.getGlobalPosition();
-          const canvasRect = (this.equippedApp.view as HTMLCanvasElement).getBoundingClientRect();
-          const scaleX = canvasRect.width / this.equippedApp.screen.width;
-          const scaleY = canvasRect.height / this.equippedApp.screen.height;
-          const screenX = canvasRect.left + globalPos.x * scaleX;
-          const screenY = canvasRect.top + globalPos.y * scaleY;
-          this.itemActionPrompt(item, screenX, screenY);
-        }
-      });
-
-      slotContainer.addChild(bg);
-      const item = slots[i].item;
-      if (item) {
-        try {
-          const tex = PIXI.Assets.get(item.sprite as string) as PIXI.Texture;
-          if (tex) {
-            const spr = new PIXI.Sprite(tex);
-            const maxDim = Math.max(spr.width, spr.height);
-            if (maxDim > 0) {
-              const scale = Math.min(slotSize / spr.width, slotSize / spr.height, 1);
-              spr.width *= scale;
-              spr.height *= scale;
-            }
-            spr.x = (slotSize - spr.width) / 2;
-            spr.y = (slotSize - spr.height) / 2;
-            spr.interactive = true;
-            spr.eventMode = 'static';
-            (spr as any).cursor = 'pointer';
-            spr.on('pointerdown', () => {
-              const globalPos = spr.getGlobalPosition();
-              const canvasRect = (this.equippedApp.view as HTMLCanvasElement).getBoundingClientRect();
-              const scaleX = canvasRect.width / this.equippedApp.screen.width;
-              const scaleY = canvasRect.height / this.equippedApp.screen.height;
-              const screenX = canvasRect.left + globalPos.x * scaleX;
-              const screenY = canvasRect.top + globalPos.y * scaleY;
-              this.itemActionPrompt(item, screenX, screenY);
-            });
-            slotContainer.addChild(spr);
-          }
-        } catch (e) {}
-      }
-      this.equippedApp.stage.addChild(slotContainer);
-    }
-  }
-
-
-  displayEquippedItem(item: Item, slotName: string, slotIndex: number) {
-
-    const slotSize = 64;
-    const pad = 10;
-    const equippedContainer = new PIXI.Container();
-    equippedContainer.x = 10;
-    equippedContainer.y = 10 + slotIndex * (slotSize + pad);
-
-    const bg = new PIXI.Graphics();
-    bg.lineStyle(2, 0x666666);
-    bg.beginFill(0x222222);
-    bg.drawRect(0, 0, slotSize, slotSize);
-    bg.endFill();
-    bg.interactive = true;
-    bg.eventMode = 'static';
-    (bg as any).cursor = 'pointer';
-      bg.on('pointerdown', () => {
-        const globalPos = bg.getGlobalPosition();
-        const canvasRect = (this.equippedApp.view as HTMLCanvasElement).getBoundingClientRect();
-        const scaleX = canvasRect.width / this.equippedApp.screen.width;
-        const scaleY = canvasRect.height / this.equippedApp.screen.height;
-        const screenX = canvasRect.left + globalPos.x * scaleX;
-        const screenY = canvasRect.top + globalPos.y * scaleY;
-        this.itemActionPrompt(item, screenX, screenY);
-      }
-    );
-
-    equippedContainer.addChild(bg);
-
-    try {
-      const texture = PIXI.Assets.get(item.sprite as string) as PIXI.Texture;
-      if (texture) {
-        const spr = new PIXI.Sprite(texture);
-        const scale = Math.min(slotSize / spr.width, slotSize / spr.height, 1);
-        spr.width *= scale;
-        spr.height *= scale;
-        spr.x = (slotSize - spr.width) / 2;
-        spr.y = (slotSize - spr.height) / 2;
-        spr.interactive = true;
-        spr.eventMode = 'static';
-        (spr as any).cursor = 'pointer';
-          spr.on('pointerdown', () => {
-            const globalPos = spr.getGlobalPosition();
-            const canvasRect = (this.equippedApp.view as HTMLCanvasElement).getBoundingClientRect();
-            const scaleX = canvasRect.width / this.equippedApp.screen.width;
-            const scaleY = canvasRect.height / this.equippedApp.screen.height;
-            const screenX = canvasRect.left + globalPos.x * scaleX;
-            const screenY = canvasRect.top + globalPos.y * scaleY;
-            this.itemActionPrompt(item, screenX, screenY);
-          }
-        );
-        equippedContainer.addChild(spr);
-      }
-    } catch (e) {}
-    this.equippedApp.stage.addChild(equippedContainer);
-  }
-
-  displayEmptySlot(slotName: string, slotIndex: number) {
-    const text = new PIXI.Text({
-      text: `${slotName}: empty`,
-      style: {
-        fontFamily: 'Arial',
-        fontSize: 20,
-      },
-    });
-    text.anchor.set(0);
-    text.x = 10;
-    text.y = 0;
-    const itemContainer = new PIXI.Container();
-    itemContainer.x = 10;
-    itemContainer.y = 10 + slotIndex * 40;
-    itemContainer.addChild(text);
-    this.equippedApp.stage.addChild(itemContainer);
-  }
 
   hidePickUpPrompt() {
     if (this.pickUpOverlay) {
@@ -687,8 +441,8 @@ export class Inventory {
         item.isEquipped = true;
       }
     }
-    this.displayInventory();
-    this.equipTabDisplay();
+    GameController.current?.drawInventory();
+    GameController.current?.drawEquippedTab();
   }
 
   unequip(item: Item) {
@@ -708,8 +462,8 @@ export class Inventory {
     if (emptyIndex !== -1) {
       this.inventorySlots[emptyIndex] = item;
     }
-    this.displayInventory();
-    this.equipTabDisplay();
+    GameController.current?.drawInventory();
+    GameController.current?.drawEquippedTab();
   }
 
   pickUp(item: Item) {
@@ -717,8 +471,8 @@ export class Inventory {
     if (emptyIndex !== -1) {
       this.inventorySlots[emptyIndex] = item;
     }
-    this.displayInventory();
-    this.equipTabDisplay();
+    GameController.current?.drawInventory();
+    GameController.current?.drawEquippedTab();
   }
 
   drop(item: Item, isEquipped: boolean) {
@@ -736,8 +490,8 @@ export class Inventory {
           this.inventorySlots[index] = null;
         }
       }
-      this.displayInventory();
-      this.equipTabDisplay();
+      GameController.current?.drawInventory();
+      GameController.current?.drawEquippedTab();
       if (GameController.current) {
         GameController.current.spawnItem(x, y, item);
       }

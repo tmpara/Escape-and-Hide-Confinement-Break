@@ -19,7 +19,7 @@ export class GameController {
   healthUIApp!: PIXI.Application;
   afflictionsApp!: PIXI.Application;
   inventoryApp!: PIXI.Application;
-
+  equippedApp!: PIXI.Application;
   inventory!: Inventory;
 
   player1 = new Player();
@@ -203,7 +203,6 @@ export class GameController {
     this.drawGrid();
     this.drawPlayer();
     this.drawHealthUI();
-  // inventoryApp is created later; drawInventory must be called after it is initialized
 
     // Add containers to stage
     this.app.stage.addChild(this.spriteContainer);
@@ -222,33 +221,65 @@ export class GameController {
     inventoryRow.style.position = 'absolute';
     inventoryRow.style.right = '0';
     inventoryRow.style.top = '0';
+    inventoryRow.style.gap = '0';
     container.appendChild(inventoryRow);
 
-    // Create status row for health and afflictions side by side below main game canvas
+    const inventoryColumn = document.createElement('div');
+    inventoryColumn.id = 'inventory-column';
+    inventoryColumn.style.flex = '1';
+    inventoryColumn.style.display = 'flex';
+    inventoryColumn.style.flexDirection = 'column';
+    inventoryRow.appendChild(inventoryColumn);
+
+    const equippedColumn = document.createElement('div');
+    equippedColumn.id = 'equipped-column';
+    equippedColumn.style.flex = '1';
+    equippedColumn.style.display = 'flex';
+    equippedColumn.style.flexDirection = 'column';
+    inventoryRow.appendChild(equippedColumn);
+
+    this.inventoryApp = new PIXI.Application();
+    await this.inventoryApp.init({
+      width: window.innerWidth * 0.15,
+      height: window.innerHeight * 0.7,
+      antialias: true,
+      backgroundColor: 0x1099bb,
+    });
+    this.inventoryApp.view.style.display = 'block';
+    this.inventoryApp.view.style.width = '100%';
+    this.inventoryApp.view.style.height = '100%';
+    inventoryColumn.appendChild(this.inventoryApp.view as HTMLCanvasElement);
+
+    this.equippedApp = new PIXI.Application();
+    await this.equippedApp.init({
+      width: window.innerWidth * 0.15,
+      height: window.innerHeight * 0.7,
+      antialias: true,
+      backgroundColor: 0x333399,
+    });
+    this.equippedApp.view.style.display = 'block';
+    this.equippedApp.view.style.width = '100%';
+    this.equippedApp.view.style.height = '100%';
+    equippedColumn.appendChild(this.equippedApp.view as HTMLCanvasElement);
+    this.equippedContainer = this.equippedApp.stage;
+
     const statusRow = document.createElement('div');
     statusRow.id = 'status-row';
     statusRow.style.display = 'flex';
     statusRow.style.flexDirection = 'row';
-    statusRow.style.width = 'window.innerWidth * 0.3';
-    statusRow.style.height = 'window.innerHeight * 0.29';
-    // Append statusRow after main game canvas
+    statusRow.style.width = window.innerWidth * 0.7 + 'px';
+    statusRow.style.height = window.innerHeight * 0.3 + 'px';
+    statusRow.style.position = 'absolute';
+    statusRow.style.left = '0';
+    statusRow.style.bottom = '0';
     container.appendChild(statusRow);
 
-    this.inventoryApp = new PIXI.Application();
-    await this.inventoryApp.init({
-      width: inventoryRow.clientWidth,
-      height: window.innerHeight,
-      antialias: true,
-    });
-    this.inventoryApp.view.style.display = 'block';
-
-    // Now that inventoryApp exists, draw the inventory UI
-    this.drawInventory();
+    this.inventory = new Inventory();
 
     this.healthUIApp = new PIXI.Application();
     await this.healthUIApp.init({
-      width: statusRow.clientWidth * 0.1,
-      height: window.innerHeight * 0.29,
+      width: window.innerWidth * 0.15,
+      height: window.innerHeight * 0.3,
       backgroundColor: 0x333333,
       antialias: true,
     });
@@ -256,22 +287,22 @@ export class GameController {
 
     this.afflictionsApp = new PIXI.Application();
     await this.afflictionsApp.init({
-      width: statusRow.clientWidth * 0.2,
-      height: window.innerHeight * 0.29,
+      width: window.innerWidth * 0.15,
+      height: window.innerHeight * 0.3,
       backgroundColor: 0x444444,
       antialias: true,
     });
     this.afflictionsApp.view.style.display = 'block';
-    this.afflictionsApp.view.style.flexDirection = 'row';
 
-    // Append inventory canvas to inventoryRow
-    inventoryRow.appendChild(this.inventoryApp.view as HTMLCanvasElement);
     this.inventoryApp.stage.addChild(this.inventoryContainer);
 
-    // Append both canvases to the statusRow for side-by-side display
     statusRow.appendChild(this.healthUIApp.view as HTMLCanvasElement);
     statusRow.appendChild(this.afflictionsApp.view as HTMLCanvasElement);
     this.healthUIApp.stage.addChild(this.healthLimbContainer);
+
+    this.inventory = new Inventory();
+    this.drawInventory();
+    this.drawEquippedTab();
 
     // Listen for movement
     this.listenForInput(this.player1);
@@ -1050,23 +1081,154 @@ export class GameController {
   }
 
   drawInventory() {
+    if (!this.inventory) return;
     this.inventoryApp.stage.removeChildren();
-    
-    const inventoryBackground = new PIXI.Graphics();
-    inventoryBackground.fill(0x222222);
-    inventoryBackground.rect(
-      0, 0,
-      this.inventoryApp.view.width,
-      this.inventoryApp.view.height
-    );
-    this.inventoryApp.stage.addChild(inventoryBackground);
+    for (let i = 0; i < this.inventory.inventorySlots.length; i++) {
+      const item = this.inventory.inventorySlots[i];
+      if (item) {
+        item.displayed = false;
+      }
+    }
+
+    for (let i = 0; i < this.inventory.inventorySlots.length; i++) {
+      const item = this.inventory.inventorySlots[i];
+      if (item && !item.displayed) {
+        item.displayed = true;
+        const texture = PIXI.Assets.get(item.sprite as string) as PIXI.Texture;
+        const sprite = new PIXI.Sprite(texture);
+        sprite.x = 0;
+        sprite.y = 0;
+
+        const text = new PIXI.Text({
+          text: item.name,
+          style: {
+            fontFamily: 'Arial',
+            fontSize: 20,
+            wordWrap: true,
+          },
+        });
+        text.anchor.set(0);
+        text.x = sprite.width + 10;
+        text.y = 0;
+        text.eventMode = 'static';
+        text.cursor = 'pointer';
+        text.onclick = () => {
+          const globalPos = text.getGlobalPosition();
+          const canvasRect = (
+            this.inventoryApp.view as HTMLCanvasElement
+          ).getBoundingClientRect();
+          const scaleX = canvasRect.width / this.inventoryApp.screen.width;
+          const scaleY = canvasRect.height / this.inventoryApp.screen.height;
+          const screenX = canvasRect.left + globalPos.x * scaleX;
+          const screenY = canvasRect.top + globalPos.y * scaleY;
+          this.inventory.itemActionPrompt(item, screenX, screenY);
+        };
+
+        const itemContainer = new PIXI.Container();
+        itemContainer.x = 10;
+        itemContainer.y = 10 + i * 35;
+        itemContainer.interactive = true;
+        itemContainer.cursor = 'pointer';
+        itemContainer.addChild(sprite);
+        itemContainer.addChild(text);
+        itemContainer.on('pointerdown', () => {
+          const globalPos = itemContainer.getGlobalPosition();
+          const canvasRect = (
+            this.inventoryApp.view as HTMLCanvasElement
+          ).getBoundingClientRect();
+          const scaleX = canvasRect.width / this.inventoryApp.screen.width;
+          const scaleY = canvasRect.height / this.inventoryApp.screen.height;
+          const screenX = canvasRect.left + globalPos.x * scaleX;
+          const screenY = canvasRect.top + globalPos.y * scaleY;
+          this.inventory.itemActionPrompt(item, screenX, screenY);
+        });
+        this.inventoryApp.stage.addChild(itemContainer);
+      }
+    }
+  }
+
+  drawEquippedTab() {
+    if (!this.inventory) return;
+    this.equippedApp.stage.removeChildren();
+    const slotSize = 64;
+    const padding = 10;
+    const startX = 10;
+    const startY = 10;
+
+    const slots: { name: string; item: any | null }[] = [
+      { name: 'Weapon', item: this.inventory.weaponSlot },
+      { name: 'Head Armor', item: this.inventory.headArmorSlot },
+      { name: 'Torso Armor', item: this.inventory.torsoArmorSlot },
+      { name: 'Fullbody Armor', item: this.inventory.fullbodyArmorSlot },
+    ];
+
+    for (let i = 0; i < slots.length; i++) {
+      const slotContainer = new PIXI.Container();
+      slotContainer.x = startX;
+      slotContainer.y = startY + i * (slotSize + padding);
+      slotContainer.interactive = true;
+      slotContainer.cursor = 'pointer';
+
+      const bg = new PIXI.Graphics();
+      bg.lineStyle(2, 0x666666);
+      bg.beginFill(0xffffff);
+      bg.drawRect(0, 0, slotSize, slotSize);
+      bg.endFill();
+      bg.interactive = true;
+      bg.eventMode = 'static';
+      bg.on('pointerdown', () => {
+        const item = slots[i].item;
+        if (item) {
+          const globalPos = bg.getGlobalPosition();
+          const canvasRect = (this.equippedApp.view as HTMLCanvasElement).getBoundingClientRect();
+          const scaleX = canvasRect.width / this.equippedApp.screen.width;
+          const scaleY = canvasRect.height / this.equippedApp.screen.height;
+          const screenX = canvasRect.left + globalPos.x * scaleX;
+          const screenY = canvasRect.top + globalPos.y * scaleY;
+          this.inventory.itemActionPrompt(item, screenX, screenY);
+        }
+      });
+
+      slotContainer.addChild(bg);
+      const item = slots[i].item;
+      if (item) {
+        try {
+          const tex = PIXI.Assets.get(item.sprite as string) as PIXI.Texture;
+          if (tex) {
+            const spr = new PIXI.Sprite(tex);
+            const maxDim = Math.max(spr.width, spr.height);
+            if (maxDim > 0) {
+              const scale = Math.min(slotSize / spr.width, slotSize / spr.height, 1);
+              spr.width *= scale;
+              spr.height *= scale;
+            }
+            spr.x = (slotSize - spr.width) / 2;
+            spr.y = (slotSize - spr.height) / 2;
+            spr.interactive = true;
+            spr.eventMode = 'static';
+            spr.cursor = 'pointer';
+            spr.on('pointerdown', () => {
+              const globalPos = spr.getGlobalPosition();
+              const canvasRect = (this.equippedApp.view as HTMLCanvasElement).getBoundingClientRect();
+              const scaleX = canvasRect.width / this.equippedApp.screen.width;
+              const scaleY = canvasRect.height / this.equippedApp.screen.height;
+              const screenX = canvasRect.left + globalPos.x * scaleX;
+              const screenY = canvasRect.top + globalPos.y * scaleY;
+              this.inventory.itemActionPrompt(item, screenX, screenY);
+            });
+            slotContainer.addChild(spr);
+          }
+        } catch (e) {}
+      }
+      this.equippedApp.stage.addChild(slotContainer);
+    }
   }
 
   drawHealthUI() {
     this.healthLimbContainer.removeChildren();
 
     const baseX = 80;
-    const baseY = 50; // Adjusted for healthUIApp canvas
+    const baseY = 50;
     const limbSize = 50;
 
     this.addHealthLimbSprite(
