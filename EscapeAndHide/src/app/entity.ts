@@ -19,6 +19,7 @@ export abstract class Entity {
   posX = 0;
   posY = 0;
   zIndex = 4;
+  interactable = false;
   collidable = false;
   damageable = false;
   health = 0;
@@ -40,7 +41,7 @@ export abstract class Entity {
         this.destroy(damage,damageType)
       }
     }
-  }
+  }  
 
   heal(amount: number) {
     this.onHeal(amount);

@@ -4,6 +4,7 @@ import { Items } from './items/items';
 
 export class Dummy extends Entity {
   override name = 'dummy';
+  override description = "Dummy description."
   override sprite = '/sprites/npc/dummy.png';
   override deadSprite = '/sprites/npc/dummyDead.png';
   override posX = 0;
