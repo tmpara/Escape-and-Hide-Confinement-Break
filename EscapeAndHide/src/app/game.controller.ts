@@ -10,7 +10,7 @@ import { WeaponFunctionality } from './items/weapon_functionality';
 import { Inventory } from './inventory/inventory';
 import { Entity } from './entity';
 import { BasicEnemyAI } from './enemyAI';
-import { RoomTransition } from './entities';
+import { RoomTransition, Spawnpoint } from './entities';
 
 export class GameController {
   static current: GameController | null = null;
@@ -84,6 +84,8 @@ export class GameController {
     await Assets.load('/sprites/entities/crate.png');
     await Assets.load('/sprites/entities/crate_weapon.png');
     await Assets.load('/sprites/entities/crate_medical.png');
+    await Assets.load('/sprites/entities/cryochamber.png');
+    await Assets.load('/sprites/entities/elevatorsignwall.png');
     await Assets.load('/sprites/entities/mine.png');
     await Assets.load('/sprites/entities/door_open_horizontal.png');
     await Assets.load('/sprites/entities/door_closed_horizontal.png');
@@ -765,10 +767,10 @@ export class GameController {
               entity.texture = Assets.get(entity.deadSprite.toString());
               entitySprite.texture = entity.texture;
             }
-            entitySprite.x = x * this.tileSize;
-            entitySprite.y = y * this.tileSize;
-            entitySprite.width = this.tileSize;
-            entitySprite.height = this.tileSize;
+            entitySprite.x = x * this.tileSize + entity.sizeOffsetX;
+            entitySprite.y = y * this.tileSize + entity.sizeOffsetY;
+            entitySprite.width = this.tileSize + Math.abs(entity.sizeOffsetX);
+            entitySprite.height = this.tileSize + Math.abs(entity.sizeOffsetY);
             entitySprite._zIndex = entity.zIndex;
             this.spriteContainer.addChild(entitySprite);
             // handle wall connections
@@ -1312,6 +1314,7 @@ export class GameController {
         let x = this.findEntrance('right')!.x;
         let y = this.findEntrance('right')!.y;
         this.teleportPlayer(this.player1, x, y);
+        this.activateSpawners()
         console.log('Moved to left room');
         console.log(
           'World coordinates: ' + this.playerWorldX + ', ' + this.playerWorldY
@@ -1326,6 +1329,7 @@ export class GameController {
         let x = this.findEntrance('left')!.x;
         let y = this.findEntrance('left')!.y;
         this.teleportPlayer(this.player1, x, y);
+        this.activateSpawners()
         console.log('Moved to right room');
         console.log(
           'World coordinates: ' + this.playerWorldX + ', ' + this.playerWorldY
@@ -1340,6 +1344,7 @@ export class GameController {
         let x = this.findEntrance('down')!.x;
         let y = this.findEntrance('down')!.y;
         this.teleportPlayer(this.player1, x, y);
+        this.activateSpawners()
         console.log('Moved to up room');
         console.log(
           'World coordinates: ' + this.playerWorldX + ', ' + this.playerWorldY
@@ -1354,6 +1359,7 @@ export class GameController {
         let x = this.findEntrance('up')!.x;
         let y = this.findEntrance('up')!.y;
         this.teleportPlayer(this.player1, x, y);
+        this.activateSpawners()
         console.log('Moved to down room');
         console.log(
           'World coordinates: ' + this.playerWorldX + ', ' + this.playerWorldY
@@ -1417,6 +1423,17 @@ export class GameController {
       }
     }
     return;
+  }
+
+  activateSpawners(){
+    for (let x = 0; x < this.map.width; x++) {
+      for (let y = 0; y < this.map.height; y++) {
+        this.map.tiles[x][y].entity!.forEach((entity) => {
+        if (entity instanceof Spawnpoint){
+          entity.spawn()
+        }})
+      }
+    }
   }
 
    updateAllTiles() {
@@ -1599,7 +1616,7 @@ export class GameController {
     }
   }
 
-  removeEntities(x: number, y: number) {
+  removeEntities(x: number, y: number, id: number | null = null) {
     this.map.tiles[x][y].entity = [];
   }
 

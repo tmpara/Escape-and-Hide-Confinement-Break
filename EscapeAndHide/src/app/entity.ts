@@ -6,8 +6,11 @@ export abstract class Entity {
   description = "";
   sprite = "placeholder.png";
   deadSprite = "";
-  tags: string[] | null = null;
-  connectsWith: string | null = null
+  sizeOffsetX = 0;
+  sizeOffsetY = 0;
+  posX = 0;
+  posY = 0;
+  zIndex = 5;
   spriteTopCap = "";
   spriteBottomCap = "";
   spriteLeftCap = "";
@@ -16,9 +19,8 @@ export abstract class Entity {
   spriteTopRightCorner = "";
   spriteBottomLeftCorner = "";
   spriteBottomRightCorner = "";
-  posX = 0;
-  posY = 0;
-  zIndex = 4;
+  connectsWith: string | null = null
+  tags: string[] | null = null;
   interactable = false;
   collidable = false;
   damageable = false;
@@ -58,7 +60,7 @@ export abstract class Entity {
       this.destroyed = true;
       this.onDestroyed(damage, damageType);
       if (this.removeOnDestroy == true){
-        GameController.current?.removeEntities(this.posX, this.posY);
+        GameController.current?.removeEntities(this.posX, this.posY,this.id);
       }else{
         this.sprite = this.deadSprite;
       }

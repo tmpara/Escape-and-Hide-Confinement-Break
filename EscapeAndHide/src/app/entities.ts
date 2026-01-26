@@ -2,12 +2,12 @@ import { Entity } from './entity';
 import { Player } from './player';
 import { GameController } from './game.controller';
 import { Items } from './items/items';
+import { LightInterferanceUnit } from "./enemyTypes";
 
 export class Wall1 extends Entity {
   override name = 'Wall';
   override sprite = '/sprites/entities/wall_placeholder_base.png';
-  override tags = ['Wall'];
-  override connectsWith = 'Wall';
+  override zIndex = 4;
   override spriteTopCap = '/sprites/entities/wall_placeholder_topcap.png';
   override spriteBottomCap = '/sprites/entities/wall_placeholder_bottomcap.png';
   override spriteLeftCap = '/sprites/entities/wall_placeholder_leftcap.png';
@@ -16,6 +16,8 @@ export class Wall1 extends Entity {
   override spriteTopRightCorner = '/sprites/entities/wall_placeholder_toprightcorner.png';
   override spriteBottomLeftCorner = '/sprites/entities/wall_placeholder_bottomleftcorner.png';
   override spriteBottomRightCorner = '/sprites/entities/wall_placeholder_bottomrightcorner.png';
+  override connectsWith = 'Wall';
+  override tags = ['Wall'];
   override collidable = true;
   override damageable = true;
   override health = 500;
@@ -26,9 +28,8 @@ export class Wall1 extends Entity {
 
 export class WallCorner1 extends Entity {
   override name = 'Wall';
-  override tags = ['Wall'];
   override sprite = '/sprites/entities/wall_placeholder_base.png';
-  override connectsWith = 'Wall';
+  override zIndex = 4;
   override spriteTopCap = '/sprites/entities/wall_placeholder_topcap.png';
   override spriteBottomCap = '/sprites/entities/wall_placeholder_bottomcap.png';
   override spriteLeftCap = '/sprites/entities/wall_placeholder_leftcap.png';
@@ -37,6 +38,8 @@ export class WallCorner1 extends Entity {
   override spriteTopRightCorner = '/sprites/entities/wall_placeholder_toprightcorner.png';
   override spriteBottomLeftCorner = '/sprites/entities/wall_placeholder_bottomleftcorner.png';
   override spriteBottomRightCorner = '/sprites/entities/wall_placeholder_bottomrightcorner.png';
+  override connectsWith = 'Wall';
+  override tags = ['Wall'];
   override collidable = true;
   override damageable = false;
   override health = 0;
@@ -191,6 +194,42 @@ export class MedicalCrate extends Entity {
   lootTable = [new Items().bandage];
 }
 
+export class CryoChamber extends Entity {
+  override name = 'Cryo Chamber';
+  override sprite = '/sprites/entities/cryochamber.png';
+  override sizeOffsetX = 0;
+  override sizeOffsetY = -16;
+  override interactable = true;
+  override collidable = true;
+  override damageable = true;
+  override health = 50;
+  override hiddenOutsideLOS = true;
+  override blockLOS = false;
+  override flammable = true;
+}
+
+export class WallSign1 extends Entity {
+  override name = 'Wall';
+  override sprite = '/sprites/entities/elevatorsignwall.png';
+  override zIndex = 4;
+  override spriteTopCap = '/sprites/entities/wall_placeholder_topcap.png';
+  override spriteBottomCap = '/sprites/entities/wall_placeholder_bottomcap.png';
+  override spriteLeftCap = '/sprites/entities/wall_placeholder_leftcap.png';
+  override spriteRightCap = '/sprites/entities/wall_placeholder_rightcap.png';
+  override spriteTopLeftCorner = '/sprites/entities/wall_placeholder_topleftcorner.png';
+  override spriteTopRightCorner = '/sprites/entities/wall_placeholder_toprightcorner.png';
+  override spriteBottomLeftCorner = '/sprites/entities/wall_placeholder_bottomleftcorner.png';
+  override spriteBottomRightCorner = '/sprites/entities/wall_placeholder_bottomrightcorner.png';
+  override connectsWith = 'Wall';
+  override tags = ['Wall'];
+  override collidable = true;
+  override damageable = false;
+  override health = 0;
+  override hiddenOutsideLOS = false;
+  override blockLOS = true;
+  override flammable = false;
+}
+
 export class Mine extends Entity {
   override name = 'Landmine';
   override sprite = '/sprites/entities/mine.png';
@@ -215,6 +254,29 @@ export class Mine extends Entity {
 
   override onEndTurn(){
     this.sprite = "/sprites/effects/hidden.png";
+  }
+
+}
+
+export class Spawnpoint extends Entity {
+  override name = 'Spawnpoint';
+  override sprite = '/sprites/crosshair_default_invalid.png';
+  activated = false
+  type: string;
+
+  constructor(type: string) {
+    super();
+    this.type = type;
+  }
+
+  spawn(){
+    if(!this.activated){
+      this.activated = true;
+      const controller = GameController.current;
+      if (controller?.map && controller.map.isValidTile(this.posX, this.posY)) {
+        //GameController.current?.loadEntity(this.posX, this.posY,LightInterferanceUnit, GameController.current.map);
+      }
+    }
   }
 
 }
