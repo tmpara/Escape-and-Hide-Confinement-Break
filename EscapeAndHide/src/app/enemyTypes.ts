@@ -62,10 +62,6 @@ export class LightInterferanceUnit extends LightInterferanceUnitAI{
   isDead = false;
   lootTable = [];
 
-  override async onEndTurn(){
-   await this.Main();
-  }
-
   override onDestroyed(damage: number, damageType: string): void{
     this.lootable = true;
   }
@@ -86,11 +82,6 @@ export class MediumInterferanceUnit extends MediumInterferanceUnitAI{
   
   isDead = false;
   lootTable = [new Items().gun, new Items().bandage];
-
-  override async onEndTurn(){
-   await this.Main();
-  }
-
 }
 export class HeavyInterferanceUnit extends HeavyInterferanceUnitAI{
   override name = "Heavy Interferance Unit";
@@ -107,10 +98,6 @@ export class HeavyInterferanceUnit extends HeavyInterferanceUnitAI{
   
   isDead = false;
   lootTable = [new Items().gun, new Items().bandage];
-
-  override async onEndTurn(){
-   await this.Main();
-  }
 }
 
 export class OppressorUnit extends OppressorUnitAI{
@@ -127,10 +114,6 @@ export class OppressorUnit extends OppressorUnitAI{
   
   isDead = false;
   lootTable = [new Items().gun, new Items().bandage];
-
-  override async onEndTurn(){
-   await this.Main();
-  }
 }
 export class ScorcherUnit extends ScorcherUnitAI{
   override name = "Scorcher Unit";
@@ -146,9 +129,4 @@ export class ScorcherUnit extends ScorcherUnitAI{
 
   isDead = false;
   lootTable = [new Items().gun, new Items().bandage];
-  override async onEndTurn(){
-   await this.Main();
-  }
-
-
 }

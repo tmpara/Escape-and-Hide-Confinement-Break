@@ -1,2 +1,6 @@
 <div #gameContainer></div>
 <app-inventory></app-inventory>
+<div style="position: fixed; left: 800px; top: 800px; z-index: 9999; pointer-events: auto;">
+	<button style="padding:8px 12px; background:#2b6; color:#000; border:none; border-radius:4px;" (click)="toggleEditor()">Open Room Editor</button>
+</div>
+<app-room-editor *ngIf="showEditor" (close)="toggleEditor()"></app-room-editor>
