@@ -3,8 +3,6 @@ import { GameController } from '../game.controller';
 
 export class Inventory {
   inventorySlots: (Item | null)[] = Array(10).fill(null);
-  inventorySize = 10;
-  equippedSlots = 4;
   weaponSlot: Item | null = null;
   headArmorSlot: Item | null = null;
   torsoArmorSlot: Item | null = null;
@@ -13,6 +11,93 @@ export class Inventory {
   lootOverlay: HTMLDivElement | null = null;
   itemActionOverlay: HTMLDivElement | null = null;
   floorActionOverlay: HTMLDivElement | null = null;
+
+  equip(item: Item) {
+    const index = this.inventorySlots.indexOf(item);
+    if (item.slot === 'weapon') {
+      if (!this.weaponSlot) {
+        this.weaponSlot = item;
+        this.inventorySlots[index] = null;
+        item.isEquipped = true;
+      }
+    } else if (item.slot === 'head') {
+      if (!this.headArmorSlot) {
+        this.headArmorSlot = item;
+        this.inventorySlots[index] = null;
+        item.isEquipped = true;
+      }
+    } else if (item.slot === 'torso') {
+      if (!this.torsoArmorSlot) {
+        this.torsoArmorSlot = item;
+        this.inventorySlots[index] = null;
+        item.isEquipped = true;
+      }
+    } else if (item.slot === 'fullbody') {
+      if (!this.fullbodyArmorSlot) {
+        this.fullbodyArmorSlot = item;
+        this.inventorySlots[index] = null;
+        item.isEquipped = true;
+      }
+    }
+    GameController.current?.drawInventoryTab();
+    GameController.current?.drawEquippedTab();
+  }
+  unequip(item: Item) {
+    if (this.weaponSlot === item) {
+      this.weaponSlot = null;
+    } else if (this.headArmorSlot === item) {
+      this.headArmorSlot = null;
+    } else if (this.torsoArmorSlot === item) {
+      this.torsoArmorSlot = null;
+    } else if (this.fullbodyArmorSlot === item) {
+      this.fullbodyArmorSlot = null;
+    }
+    item.isEquipped = false;
+    const emptyIndex = this.inventorySlots.indexOf(null);
+    if (emptyIndex !== -1) {
+      this.inventorySlots[emptyIndex] = item;
+    }
+    GameController.current?.drawInventoryTab();
+    GameController.current?.drawEquippedTab();
+  }
+
+  pickUp(item: Item) {
+    const emptyIndex = this.inventorySlots.indexOf(null);
+    if (emptyIndex !== -1) {
+      this.inventorySlots[emptyIndex] = item;
+    }
+    GameController.current?.drawInventoryTab();
+    GameController.current?.drawEquippedTab();
+  }
+
+  drop(item: Item, isEquipped: boolean) {
+    const x = GameController.current?.player1.posX;
+    const y = GameController.current?.player1.posY;
+    if (typeof x !== 'number' || typeof y !== 'number') return;
+    if (GameController.current?.map.tiles[x][y].item == null) {
+      if (isEquipped) {
+        this.unequip(item);
+      } else {
+        const index = this.inventorySlots.indexOf(item);
+        if (index !== -1) {
+          this.inventorySlots[index] = null;
+        }
+      }
+      GameController.current?.drawInventoryTab();
+      GameController.current?.drawEquippedTab();
+      if (GameController.current) {
+        GameController.current.spawnItem(x, y, item);
+      }
+    }
+  }
+
+  getItems(): Item[] {
+    return this.inventorySlots.filter((item): item is Item => item !== null);
+  }
+
+  getEquippedWeapon() {
+    return this.weaponSlot;
+  }
 
   hidePickUpPrompt() {
     if (this.pickUpOverlay) {
@@ -104,15 +189,15 @@ export class Inventory {
     const itemLootBox = document.createElement('div');
     itemLootBox.className = 'item-loot box';
 
-    for (let i = 0; i < entity.lootTable.length; i++) {
-      const item = entity.lootTable[i];
+    for (let i = 0; i < entity.inventorySlots.length; i++) {
+      const item = entity.inventorySlots[i];
       const itemButton = document.createElement('button');
       itemButton.className = 'loot-item-btn';
       itemButton.textContent = item.name;
       itemButton.onclick = () => {
         this.pickUp(item);
         itemButton.disabled = true;
-        entity.lootTable.splice(i, 1);
+        entity.inventorySlots.splice(i, 1);
         itemLootBox.removeChild(itemButton);
       };
       itemLootBox.appendChild(itemButton);
@@ -409,101 +494,5 @@ export class Inventory {
       .loot-btn.close { background: #2e8b57; color: white; }
     `;
     document.head.appendChild(style);
-  }
-
-  equip(item: Item) {
-    // Find item in inventorySlots
-    const index = this.inventorySlots.indexOf(item);
-    if (index === -1) return;
-    // Determine slot type
-    if (item.slot === 'weapon') {
-      if (!this.weaponSlot) {
-        this.weaponSlot = item;
-        this.inventorySlots[index] = null;
-        item.isEquipped = true;
-      }
-    } else if (item.slot === 'head') {
-      if (!this.headArmorSlot) {
-        this.headArmorSlot = item;
-        this.inventorySlots[index] = null;
-        item.isEquipped = true;
-      }
-    } else if (item.slot === 'torso') {
-      if (!this.torsoArmorSlot) {
-        this.torsoArmorSlot = item;
-        this.inventorySlots[index] = null;
-        item.isEquipped = true;
-      }
-    } else if (item.slot === 'fullbody') {
-      if (!this.fullbodyArmorSlot) {
-        this.fullbodyArmorSlot = item;
-        this.inventorySlots[index] = null;
-        item.isEquipped = true;
-      }
-    }
-    GameController.current?.drawInventory();
-    GameController.current?.drawEquippedTab();
-  }
-
-  unequip(item: Item) {
-    // Remove from equipped slot and add back to inventorySlots
-    if (this.weaponSlot === item) {
-      this.weaponSlot = null;
-    } else if (this.headArmorSlot === item) {
-      this.headArmorSlot = null;
-    } else if (this.torsoArmorSlot === item) {
-      this.torsoArmorSlot = null;
-    } else if (this.fullbodyArmorSlot === item) {
-      this.fullbodyArmorSlot = null;
-    }
-    item.isEquipped = false;
-    // Find first empty slot in inventorySlots
-    const emptyIndex = this.inventorySlots.indexOf(null);
-    if (emptyIndex !== -1) {
-      this.inventorySlots[emptyIndex] = item;
-    }
-    GameController.current?.drawInventory();
-    GameController.current?.drawEquippedTab();
-  }
-
-  pickUp(item: Item) {
-    const emptyIndex = this.inventorySlots.indexOf(null);
-    if (emptyIndex !== -1) {
-      this.inventorySlots[emptyIndex] = item;
-    }
-    GameController.current?.drawInventory();
-    GameController.current?.drawEquippedTab();
-  }
-
-  drop(item: Item, isEquipped: boolean) {
-    const x = GameController.current?.player1.posX;
-    const y = GameController.current?.player1.posY;
-    if (typeof x !== 'number' || typeof y !== 'number') return;
-    if (GameController.current?.map.tiles[x][y].item == null) {
-      if (isEquipped) {
-        // Remove from equipped slot
-        this.unequip(item);
-      } else {
-        // Remove from inventorySlots
-        const index = this.inventorySlots.indexOf(item);
-        if (index !== -1) {
-          this.inventorySlots[index] = null;
-        }
-      }
-      GameController.current?.drawInventory();
-      GameController.current?.drawEquippedTab();
-      if (GameController.current) {
-        GameController.current.spawnItem(x, y, item);
-      }
-    }
-  }
-
-  getItems(): Item[] {
-    // Return all non-null items in inventorySlots
-    return this.inventorySlots.filter((item): item is Item => item !== null);
-  }
-
-  getEquippedWeapon() {
-    return this.weaponSlot;
   }
 }

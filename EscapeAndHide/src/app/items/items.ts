@@ -5,7 +5,7 @@ export abstract class Item {
   category = '';
   displayed = false;
   sprite = 'placeholder.png';
-  isEquipped: boolean = false;
+  isEquipped = false;
   damage = 0;
   range = 0;
   healAmount = 0;
@@ -39,7 +39,7 @@ export class bigGun extends Item {
   override category = 'weapon';
   override displayed = false;
   override sprite = '/sprites/items/biggun.png';
-  override damage = 50;
+  override damage = 100;
   override range = 7;
   override slot = 'weapon';
 
@@ -53,7 +53,6 @@ export class bandage extends Item {
   override displayed = false;
   override sprite = '/sprites/items/bandage.png';
   override healAmount = 50;
-  override slot = 'consumable';
 
   override heal(target: Entity) {
     target.heal(this.healAmount);
@@ -65,7 +64,6 @@ export class medkit extends Item {
   override displayed = false;
   override sprite = '/sprites/items/medkit.png';
   override healAmount = 100;
-  override slot = 'consumable';
 
   override heal(target: Entity) {
     target.heal(this.healAmount);
@@ -75,15 +73,15 @@ export class helmet extends Item {
   override name = 'helmet';
   override category = 'armor';
   override displayed = false;
-  override sprite = 'placeholder.png';
-  override defense = 2;
+  override sprite = '/sprites/items/helmet.png';
+  override defense = 10;
   override slot = 'head';
 }
-export class bodyArmor extends Item {
-  override name = 'bodyArmor';
+export class vest extends Item {
+  override name = 'vest';
   override category = 'armor';
   override displayed = false;
-  override sprite = 'placeholder.png';
-  override defense = 5;
-  override slot = 'body';
+  override sprite = '/sprites/items/vest.png';
+  override defense = 20;
+  override slot = 'torso';
 }
