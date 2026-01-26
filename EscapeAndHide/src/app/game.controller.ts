@@ -1364,8 +1364,8 @@ export class GameController {
 
   findEntrance(side: string) {
     let entities = [];
-    for (let x = 0; x <= this.map.width; x++) {
-      for (let y = 0; y <= this.map.height; y++) {
+    for (let x = 0; x < this.map.width; x++) {
+      for (let y = 0; y < this.map.height; y++) {
         switch (side) {
           case 'left':
             entities = GameController.current?.getAllEntitiesOnTile(x, y)!;
@@ -1430,7 +1430,9 @@ export class GameController {
     for (const entity of this.enemyTurnList) {
       try {
         // Let the entity take its turn (may be synchronous)
-        entity.onEndTurn();
+        if (entity instanceof BasicEnemyAI){
+          entity.aiTurn();
+        }
       } catch (err) {
         console.warn('Error during entity turn', err);
       }
@@ -1455,34 +1457,19 @@ export class GameController {
       }
       var spreadchance = this.generateRandomNumber(1, 5);
       if (spreadchance == 1) {
-        this.ignite(
-          x + 1,
-          y,
-          this.map.tiles[x + 1][y].fireValue + 25,
-          false,
-          false
-        );
-        this.ignite(
-          x - 1,
-          y,
-          this.map.tiles[x - 1][y].fireValue + 25,
-          false,
-          false
-        );
-        this.ignite(
-          x,
-          y + 1,
-          this.map.tiles[x][y + 1].fireValue + 25,
-          false,
-          false
-        );
-        this.ignite(
-          x,
-          y - 1,
-          this.map.tiles[x][y - 1].fireValue + 25,
-          false,
-          false
-        );
+        // read neighbor fire values only if the neighbor tile exists
+        if (this.map.isValidTile(x + 1, y)) {
+          this.ignite(x + 1, y, this.map.tiles[x + 1][y].fireValue + 25, false, false);
+        }
+        if (this.map.isValidTile(x - 1, y)) {
+          this.ignite(x - 1, y, this.map.tiles[x - 1][y].fireValue + 25, false, false);
+        }
+        if (this.map.isValidTile(x, y + 1)) {
+          this.ignite(x, y + 1, this.map.tiles[x][y + 1].fireValue + 25, false, false);
+        }
+        if (this.map.isValidTile(x, y - 1)) {
+          this.ignite(x, y - 1, this.map.tiles[x][y - 1].fireValue + 25, false, false);
+        }
       }
     }
       this.map.tiles[x][y].entity!.forEach((entity) => {
@@ -1507,10 +1494,10 @@ export class GameController {
         if (entity.ai){
           if (entity instanceof BasicEnemyAI){
             entity.findTargets();
-            console.log(entity.LastKnownTargetCoords)
-            console.log("ai find targerts")
+            
+           
           }else{
-            console.log("no ai find targerts")
+            
           }
         }
 
@@ -1592,9 +1579,11 @@ export class GameController {
 
   removePlayer(x: number, y: number) {
     let entities = this.getAllEntitiesOnTile(x, y);
+    // remove only Player instances from the tile's entity array
     for (let i = 0; i < entities.length; i++) {
       if (entities[i] instanceof Player) {
-        entities.splice(i);
+        entities.splice(i, 1);
+        i--; // adjust index after removal
       }
     }
   }
@@ -1615,7 +1604,10 @@ export class GameController {
   }
 
   getAllEntitiesOnTile(x: number, y: number) {
-    return this.map.tiles[x][y].entity;
+    if (!this.map) return [] as any;
+    if (!this.map.isValidTile(x, y)) return [] as any;
+    const ents = this.map.tiles[x][y].entity;
+    return ents ? ents : [] as any;
   }
 
   checkForCollision(x: number, y: number) {

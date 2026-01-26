@@ -21,6 +21,12 @@ export class World {
         this.startY = Math.floor((Math.random() * (this.height-2)) + 1);
         this.endX = Math.floor((Math.random() * (this.width-2)) + 1);
         this.endY = Math.floor((Math.random() * (this.height-2)) + 1);
+
+        while(this.startX == this.endX && this.startY == this.endY){
+            this.endX = Math.floor((Math.random() * (this.width-2)) + 1);
+            this.endY = Math.floor((Math.random() * (this.height-2)) + 1);
+
+        }
     }
 
     CreateWorld(){

@@ -1,0 +1,52 @@
+<div class="editor-overlay">
+  <div class="editor-panel">
+    <div class="left-menu">
+      <h3>Rooms</h3>
+      <select size="8" [(ngModel)]="selectedRoomKey" (change)="selectRoom(selectedRoomKey || '')">
+        <option *ngFor="let k of roomKeys" [value]="k">{{k}}</option>
+      </select>
+      <div class="room-controls">
+        <button (click)="deleteRoom(selectedRoomKey || '')" [disabled]="!selectedRoomKey">Delete</button>
+      </div>
+
+      <h4>Create New Room</h4>
+      <input placeholder="room name" [(ngModel)]="newRoomName" />
+      <div class="dim-row">
+        <label>W: <input type="number" [(ngModel)]="newRoomW" /></label>
+        <label>H: <input type="number" [(ngModel)]="newRoomH" /></label>
+      </div>
+      <button (click)="createNewRoom()">Create</button>
+
+      <h3 style="margin-top:12px">Entities & Enemies</h3>
+      <div class="palette">
+        <button *ngFor="let p of entityPalette" (click)="selectedTool = p.name" [class.active]="selectedTool === p.name">{{p.name}}</button>
+      </div>
+    </div>
+
+    <div class="main-area">
+      <div class="top-row">
+        <h3>Editor - {{selectedRoomKey}}</h3>
+        <div class="actions">
+          <button (click)="exportRoomJSON()">Export JSON</button>
+          <button (click)="exportRoomTS()">Export TypeScript</button>
+        </div>
+      </div>
+
+      <div class="grid-area" *ngIf="selectedRoom">
+        <table class="room-grid">
+          <tbody>
+            <tr *ngFor="let y of [].constructor(selectedRoom.height); let yi = index">
+              <td *ngFor="let x of [].constructor(selectedRoom.width); let xi = index">
+                <button class="tile-button" (click)="tileClicked(xi, yi)">{{ tileLabel(xi, yi) }}</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div *ngIf="!selectedRoom">No room selected</div>
+    </div>
+    <div class="close-area">
+      <button (click)="close.emit()">Close</button>
+    </div>
+  </div>
+</div>

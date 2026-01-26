@@ -41,8 +41,7 @@ export abstract class Entity {
         this.destroy(damage,damageType)
       }
     }
-  }
-  
+  }  
 
   heal(amount: number) {
     this.onHeal(amount);

@@ -77,7 +77,7 @@ export class Health {
     for (let limb of this.limbs) {
       this.bloodLoss.increaseSeverity(limb.bleeding.severity);
     }
-    console.log('bloodloss: ' + this.bloodLoss.severity);
+    //console.log('bloodloss: ' + this.bloodLoss.severity);
     this.currentBlood -= this.bloodLoss.severity;
     if (this.currentBlood < 0) {
       this.currentBlood = 0;
@@ -93,7 +93,7 @@ export class Health {
       this.hypoxemia.severity < 100
     ) {
       this.hypoxemia.increaseSeverity(this.bloodLoss.severity / 20);
-      console.log('hypoxemia: ' + this.hypoxemia.severity);
+      //console.log('hypoxemia: ' + this.hypoxemia.severity);
       if (this.hypoxemia.severity >= 100) {
         this.isUnconscious = true;
       }

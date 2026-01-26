@@ -14,10 +14,11 @@ export class GameGrid {
   }
 
   createEmptyMap() {
-    for (let x = 0; x <= this.width; x++) {
+    // create tiles for indices 0..width-1 and 0..height-1
+    for (let x = 0; x < this.width; x++) {
       this.tiles[x] = new Array();
-      for(let y=0;y<=this.height;y++){
-        this.tiles[x][y] = this.getTileData("empty")
+      for (let y = 0; y < this.height; y++) {
+        this.tiles[x][y] = this.getTileData('empty');
       }
     }
   }

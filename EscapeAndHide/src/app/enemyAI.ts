@@ -23,6 +23,10 @@ export class BasicEnemyAI extends Entity{
     damage = 1;
     accuracy = 0.1; //chance to miss
     stunned = 0;
+
+    async aiTurn(){
+        await this.Main();
+    }
     
        async Main(): Promise<void> {
         
@@ -52,7 +56,7 @@ export class BasicEnemyAI extends Entity{
             
             // If too close for ranged attack, move away
             if (this.meleePreference == false && distanceToTarget < this.optimalRange) {
-                console.log("Moving away to maintain attack range");
+               // console.log("Moving away to maintain attack range");
                 // For ranged enemies, if player is too close, move away to optimal range
                 const dx = this.posX - target.posX;
                 const dy = this.posY - target.posY;
@@ -74,8 +78,8 @@ export class BasicEnemyAI extends Entity{
 
             // If in ranged attack window -> ranged attack
             if (distanceToTarget <= this.attackRange && distanceToTarget >= this.optimalRange && this.meleePreference == false) {
-                console.log("In ranged attack range");
-                console.log("Distance to target: " + distanceToTarget);
+               // console.log("In ranged attack range");
+               // console.log("Distance to target: " + distanceToTarget);
                 this.RangedAttack();
                // show action
                controller.drawGrid?.();
@@ -171,6 +175,8 @@ export class BasicEnemyAI extends Entity{
                     controller.drawPlayer?.();
                     await (controller.delay?.(pauseMs) ?? new Promise(res => setTimeout(res,pauseMs)));
                     break;
+                    
+                    
                 }
             }
         } else if (this.LastKnownTargetCoords) {
@@ -544,6 +550,7 @@ export class OppressorUnitAI extends BasicEnemyAI {
 
     getConeTiles(centerX: number, centerY: number, range: number, angle: number, coneAngle: number): [number, number][] {
         const tiles: [number, number][] = [];
+        const controller = GameController.current;
         for (let x = centerX - range; x <= centerX + range; x++) {
             for (let y = centerY - range; y <= centerY + range; y++) {
                 const dx = Math.abs(x - centerX);
@@ -551,10 +558,17 @@ export class OppressorUnitAI extends BasicEnemyAI {
                 const dist = Math.ceil(Math.max(dx, dy) + 0.5 * Math.min(dx, dy));
                 if (dist > range || dist === 0) continue; // exclude center
 
+                // skip tiles that are out of the current map bounds
+                if (controller && controller.map && !controller.map.isValidTile(x, y)) continue;
+
                 const angleToTile = Math.atan2(y - centerY, x - centerX);
                 let angleDiff = angleToTile - angle;
-                angleDiff = ((angleDiff + Math.PI) % (2 * Math.PI)) - Math.PI; // normalize to -pi to pi
-                if (Math.abs(angleDiff) <= coneAngle / 2) {
+                // Robust normalization to [-PI, PI]
+                while (angleDiff <= -Math.PI) angleDiff += 2 * Math.PI;
+                while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
+                // small epsilon to avoid cutting off exact-edge tiles due to fp errors
+                const eps = 1e-9;
+                if (Math.abs(angleDiff) <= coneAngle / 2 + eps) {
                     tiles.push([x, y]);
                 }
             }
@@ -591,6 +605,7 @@ export class OppressorUnitAI extends BasicEnemyAI {
         }
         
         this.stunned += 1; //scorcher stuns itself after attack
+        console.log("Scorcher used Ranged Attack and is stunned for "+ this.stunned+" turn.");
     }
 
 
