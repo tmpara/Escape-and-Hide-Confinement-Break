@@ -31,9 +31,6 @@ export abstract class Entity {
   flammable = false;
   lootable = false;
   maxHealth = this.health;
-  inventorySize = 10;
-  inventorySlots: (Item | null)[] = [];
-  inventory = new Inventory();
   destroyed = false;
   removeOnDestroy = true;
   fireValue = 0;
@@ -43,14 +40,6 @@ export abstract class Entity {
     this.damageResistance = 0;
     this.onTakeDamage(damage, damageType);
     if (this.damageable == true && this.destroyed == false) {
-      this.damageResistance = 0;
-      for (let i = 0; i < this.inventorySlots.length; i++) {
-        const item = this.inventorySlots[i];
-        if (item && item.defense) {
-          this.damageResistance += item.defense;
-        }
-      }
-      console.log(this.damageResistance);
       this.health -= damage - this.damageResistance;
       if (this.health! <= 0) {
         this.destroy(damage, damageType);

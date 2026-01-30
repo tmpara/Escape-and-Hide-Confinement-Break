@@ -19,29 +19,36 @@ export class Dummy extends Entity {
   override posY = 0;
   override collidable = true;
   override damageable = true;
-  // override health = 100;
+  override health = 100;
   override hiddenOutsideLOS = true;
   override blockLOS = false;
   override flammable = true;
   override tags: string[] | null = ['dummy'];
-  override inventory = new Inventory();
-  override inventorySlots: (Item | null)[] = [];
-  lootTable = [
-    new gun(),
-    new bigGun(),
-    new helmet(),
-    new vest(),
-    new bandage(),
-    new medkit(),
-  ];
+  inventory: Inventory;
 
   constructor() {
     super();
-    this.inventorySlots = Array(this.inventorySize).fill(null);
-    for (let i = 0; i < this.inventorySlots.length; i++) {
-      this.inventorySlots[i] =
-        this.lootTable[Math.floor(Math.random() * this.lootTable.length)];
-      this.inventory.equip(this.inventorySlots[i]!);
+    // Give dummy its own inventory (10 slots + equipment slots)
+    this.inventory = new Inventory();
+
+    // Generate a small random assortment of items on spawn
+    const possibleItemConstructors: Array<any> = [gun, bigGun, bandage, medkit, helmet, vest];
+    const generatedCount = Math.floor(Math.random() * 4) + 1; // 1-4 items
+    let firstGenerated: Item | null = null;
+    for (let i = 0; i < generatedCount; i++) {
+      const ctor = possibleItemConstructors[Math.floor(Math.random() * possibleItemConstructors.length)];
+      const item: Item = new ctor();
+      const emptyIndex = this.inventory.inventorySlots.indexOf(null);
+      if (emptyIndex !== -1) {
+        this.inventory.inventorySlots[emptyIndex] = item;
+        if (!firstGenerated) firstGenerated = item;
+      }
+    }
+
+    // Auto-equip the first generated item if it is equippable (weapon/armor)
+    if (firstGenerated) {
+      // inventory.equip will only succeed if the slot is appropriate and empty
+      this.inventory.equip(firstGenerated);
     }
   }
 
@@ -71,8 +78,6 @@ export class HeavyDummy extends Entity {
   override blockLOS = false;
   override flammable = true;
   override tags: string[] | null = ['dummy'];
-  override inventory = new Inventory();
-  override inventorySlots: (Item | null)[] = [];
   lootTable = [
     new gun(),
     new bigGun(),
@@ -84,14 +89,6 @@ export class HeavyDummy extends Entity {
 
   constructor() {
     super();
-    this.inventorySlots = Array(this.inventorySize).fill(null);
-    for (let i = 0; i < this.inventorySlots.length; i++) {
-      this.inventorySlots[i] =
-        this.lootTable[Math.floor(Math.random() * this.lootTable.length)];
-      console.log(this.inventorySlots[i]);
-      this.inventory.equip(this.inventorySlots[i]!);
-    }
-    console.log(this.inventory.headArmorSlot, this.inventory.torsoArmorSlot);
   }
 
   override destroy(damage: number, damageType: string): void {

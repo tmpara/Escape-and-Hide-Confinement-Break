@@ -25,5 +25,4 @@ export class Player extends Entity {
     this.Energy.loseEnergy(energyCost);
     this.Health.bleedingRegen();
   }
-
 }
