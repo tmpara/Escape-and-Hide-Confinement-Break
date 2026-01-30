@@ -8,10 +8,9 @@ import { bigGun, gun, helmet, Item, vest } from './items/items';
 import { WorldMapRenderer } from './worldMapRenderer';
 import { Inventory } from './inventory/inventory';
 import { Dummy, HeavyDummy, LightInterferanceUnit, MediumInterferanceUnit, HeavyInterferanceUnit, OppressorUnit, ScorcherUnit} from './enemyTypes'
-import { GlassShards } from './entities';
 import { Entity } from './entity';
 import { BasicEnemyAI } from './enemyAI';
-import { RoomTransition } from './entities';
+import { RoomTransition, GlassShards } from './entities';
 
 
 
@@ -28,6 +27,7 @@ export class GameController {
   player1 = new Player();
   dummy1 = new Dummy();
   heavyDummy1 = new HeavyDummy();
+  glass = new GlassShards();
   liu = new LightInterferanceUnit();
   miu = new MediumInterferanceUnit();
   hiu = new HeavyInterferanceUnit();
@@ -207,7 +207,7 @@ export class GameController {
     this.loadPlayer(1, 1, this.player1, 1);
     this.loadEntity(5, 2, this.dummy1, this.map);
     this.loadEntity(5, 3, this.heavyDummy1, this.map);
-    this.loadEntity(2, 2, this.glassshards, this.map);
+    this.loadEntity(2, 2, this.glass, this.map);
     this.spawnItem(1, 3, new gun());
     this.spawnItem(2, 3, new bigGun());
     this.spawnItem(3, 3, new vest());
