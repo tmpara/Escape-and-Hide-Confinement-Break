@@ -137,6 +137,7 @@ export class ExplosiveBarrel extends Entity {
   override sprite = '/sprites/entities/explosiveBarrel.png';
   override interactable = true;
   override collidable = true;
+  override pushable = true;
   override damageable = true;
   override health = 10;
   override hiddenOutsideLOS = true;
@@ -158,6 +159,7 @@ export class Crate extends Entity {
   override lootable = true;
   override interactable = true;
   override collidable = true;
+  override pushable = true;
   override damageable = true;
   override health = 25;
   override hiddenOutsideLOS = true;
@@ -172,6 +174,7 @@ export class WeaponCrate extends Entity {
   override lootable = true;
   override interactable = true;
   override collidable = true;
+  override pushable = true;
   override damageable = true;
   override health = 25;
   override hiddenOutsideLOS = true;
@@ -186,6 +189,7 @@ export class MedicalCrate extends Entity {
   override lootable = true;
   override interactable = true;
   override collidable = true;
+  override pushable = true;
   override damageable = true;
   override health = 25;
   override hiddenOutsideLOS = true;
@@ -258,15 +262,15 @@ export class Mine extends Entity {
 
 }
 
-export class Spawnpoint extends Entity {
-  override name = 'Spawnpoint';
+export class RandomSpawner extends Entity {
+  override name = 'Random Spawner';
   override sprite = '/sprites/crosshair_default_invalid.png';
   activated = false
-  type: string;
+  entityPool: any[] = [];
 
-  constructor(type: string) {
+  constructor(entityPool: any[]) {
     super();
-    this.type = type;
+    this.entityPool = entityPool;
   }
 
   spawn(){
@@ -274,7 +278,10 @@ export class Spawnpoint extends Entity {
       this.activated = true;
       const controller = GameController.current;
       if (controller?.map && controller.map.isValidTile(this.posX, this.posY)) {
-        //GameController.current?.loadEntity(this.posX, this.posY,LightInterferanceUnit, GameController.current.map);
+        const rand = Math.floor(Math.random() * this.entityPool.length)
+        const thingy = this.entityPool[rand]
+        GameController.current?.loadEntity(this.posX, this.posY, thingy, GameController.current.map);
+        GameController.current?.removeEntities(this.posX, this.posY, this.id);
       }
     }
   }

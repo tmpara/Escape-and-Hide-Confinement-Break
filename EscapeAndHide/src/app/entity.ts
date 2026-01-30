@@ -23,6 +23,7 @@ export abstract class Entity {
   tags: string[] | null = null;
   interactable = false;
   collidable = false;
+  pushable = false;
   damageable = false;
   health = 0;
   maxHealth = this.health;
@@ -66,6 +67,8 @@ export abstract class Entity {
       }
     }
   }
+
+  onSpawn() {}
 
   onTakeDamage(damage: number, damageType: string) {}
 

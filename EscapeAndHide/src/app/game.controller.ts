@@ -10,7 +10,7 @@ import { WeaponFunctionality } from './items/weapon_functionality';
 import { Inventory } from './inventory/inventory';
 import { Entity } from './entity';
 import { BasicEnemyAI } from './enemyAI';
-import { RoomTransition, Spawnpoint } from './entities';
+import { RandomSpawner, RoomTransition } from './entities';
 
 export class GameController {
   static current: GameController | null = null;
@@ -1429,7 +1429,7 @@ export class GameController {
     for (let x = 0; x < this.map.width; x++) {
       for (let y = 0; y < this.map.height; y++) {
         this.map.tiles[x][y].entity!.forEach((entity) => {
-        if (entity instanceof Spawnpoint){
+        if (entity instanceof RandomSpawner){
           entity.spawn()
         }})
       }
@@ -1613,11 +1613,18 @@ export class GameController {
       entity.posY = y;
       entity.id = this.lastUsedId;
       this.lastUsedId += 1;
+      entity.onSpawn();
     }
   }
 
   removeEntities(x: number, y: number, id: number | null = null) {
-    this.map.tiles[x][y].entity = [];
+    const ents = this.map.tiles[x][y].entity;
+
+    if (id === null) {
+      this.map.tiles[x][y].entity = [];
+    } else {
+      this.map.tiles[x][y].entity = ents.filter((e: any) => e.id !== id);
+    }
   }
 
   getAllEntitiesOnTile(x: number, y: number) {
