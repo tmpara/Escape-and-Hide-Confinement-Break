@@ -7,10 +7,12 @@ import { Player } from './player';
 import { bigGun, gun, helmet, Item, vest } from './items/items';
 import { WorldMapRenderer } from './worldMapRenderer';
 import { Inventory } from './inventory/inventory';
-import { GlassShards, RoomTransition } from './entities';
-import { Dummy, HeavyDummy, LightInterferanceUnit } from './enemyTypes';
+import { Dummy, HeavyDummy, LightInterferanceUnit, MediumInterferanceUnit, HeavyInterferanceUnit, OppressorUnit, ScorcherUnit} from './enemyTypes'
 import { Entity } from './entity';
 import { BasicEnemyAI } from './enemyAI';
+import { RoomTransition, GlassShards } from './entities';
+
+
 
 export class GameController {
   static current: GameController | null = null;
@@ -25,9 +27,12 @@ export class GameController {
   player1 = new Player();
   dummy1 = new Dummy();
   heavyDummy1 = new HeavyDummy();
-  glassshards = new GlassShards();
+  glass = new GlassShards();
   liu = new LightInterferanceUnit();
-
+  miu = new MediumInterferanceUnit();
+  hiu = new HeavyInterferanceUnit();
+  oppressor = new OppressorUnit();
+  scorcher = new ScorcherUnit();
   world = new World();
   spriteContainer = new Container();
   effectContainer = new Container();
@@ -63,30 +68,32 @@ export class GameController {
 
   async init(container: HTMLDivElement): Promise<void> {
     GameController.current = this;
-    await Assets.load('aimingReticle.png');
+    await Assets.load('crosshair_aimmode_invalid.png');
+    await Assets.load('crosshair_aimmode.png');
+    await Assets.load('crosshair_default.png');
+    await Assets.load('crosshair_default_invalid.png');
     await Assets.load('head.png');
     await Assets.load('torso.png');
     await Assets.load('leftarm.png');
     await Assets.load('rightarm.png');
     await Assets.load('leftleg.png');
     await Assets.load('rightleg.png');
-    await Assets.load('/sprites/entities/placeholder.png');
     await Assets.load('/sprites/entities/wall_placeholder_base.png');
     await Assets.load('/sprites/entities/wall_placeholder_topcap.png');
     await Assets.load('/sprites/entities/wall_placeholder_bottomcap.png');
     await Assets.load('/sprites/entities/wall_placeholder_leftcap.png');
     await Assets.load('/sprites/entities/wall_placeholder_rightcap.png');
     await Assets.load('/sprites/entities/wall_placeholder_toprightcorner.png');
-    await Assets.load(
-      '/sprites/entities/wall_placeholder_bottomleftcorner.png',
-    );
+    await Assets.load('/sprites/entities/wall_placeholder_bottomleftcorner.png');
     await Assets.load('/sprites/entities/wall_placeholder_topleftcorner.png');
-    await Assets.load(
-      '/sprites/entities/wall_placeholder_bottomrightcorner.png',
-    );
+    await Assets.load('/sprites/entities/wall_placeholder_bottomrightcorner.png');
     await Assets.load('/sprites/entities/door1.png');
     await Assets.load('/sprites/entities/glass_shards.png');
     await Assets.load('/sprites/entities/explosiveBarrel.png');
+    await Assets.load('/sprites/entities/crate.png');
+    await Assets.load('/sprites/entities/crate_weapon.png');
+    await Assets.load('/sprites/entities/crate_medical.png');
+    await Assets.load('/sprites/entities/mine.png');
     await Assets.load('/sprites/entities/door_open_horizontal.png');
     await Assets.load('/sprites/entities/door_closed_horizontal.png');
     await Assets.load('/sprites/entities/door_open_vertical.png');
@@ -103,6 +110,7 @@ export class GameController {
     await Assets.load('/sprites/items/helmet.png');
     await Assets.load('/sprites/items/vest.png');
     await Assets.load('/sprites/effects/explosion.png');
+    await Assets.load('/sprites/effects/hidden.png');
     await Assets.load('/sprites/effects/fire_legacy.png');
     await Assets.load('/sprites/effects/fire_large.png');
     await Assets.load('/sprites/effects/fire_medium.png');
@@ -125,8 +133,11 @@ export class GameController {
     // Create map and player
     this.map = this.world.rooms[this.playerWorldX][this.playerWorldY];
     console.log(this.map.width + ' ' + this.map.height);
-    this.loadPlayer(1, 1, this.player1, 1);
-    this.loadEntity(6, 6, this.liu, this.map);
+    this.loadPlayer(1, 1, this.player1,1);
+    //this.loadEntity(6,6, this.liu, this.map);
+   // this.loadEntity(5,5, this.miu, this.map);
+   // this.loadEntity(5,5, this.hiu, this.map);
+    this.loadEntity(7,7, this.scorcher, this.map);
 
     // Create PIXI app
     this.app = new Application();
@@ -196,7 +207,7 @@ export class GameController {
     this.loadPlayer(1, 1, this.player1, 1);
     this.loadEntity(5, 2, this.dummy1, this.map);
     this.loadEntity(5, 3, this.heavyDummy1, this.map);
-    this.loadEntity(2, 2, this.glassshards, this.map);
+    this.loadEntity(2, 2, this.glass, this.map);
     this.spawnItem(1, 3, new gun());
     this.spawnItem(2, 3, new bigGun());
     this.spawnItem(3, 3, new vest());
@@ -213,7 +224,7 @@ export class GameController {
     this.app.stage.addChild(this.playerSprite);
     this.app.stage.addChild(this.healthBar);
     this.app.stage.addChild(this.energyBar);
-    this.app.stage.addChild(this.reticleContainer);
+    this.app.stage.addChild(this.effectContainer);
 
     const inventoryRow = document.createElement('div');
     inventoryRow.id = 'inventory-row';
@@ -632,6 +643,10 @@ export class GameController {
     return hitTiles;
   }
 
+  getDistance(posX: number, posY: number, targetX: number, targetY: number){
+    return Math.max(Math.abs(posX - targetX), Math.abs(posY - targetY))
+  }
+
   drawHealthBar() {
     this.healthBar.removeChildren();
     this.healthBar.clear();
@@ -1029,43 +1044,33 @@ export class GameController {
   }
 
   drawReticle() {
-    this.reticleContainer.removeChildren();
-    const sprite = Assets.get('aimingReticle.png') as PIXI.Texture;
-    const reticleSprite = new PIXI.Sprite(sprite);
+    let sprite = Assets.get('crosshair_default.png') as PIXI.Texture;
     const tileX = this.mouseTileX;
     const tileY = this.mouseTileY;
     const centerX = tileX * this.tileSize + this.tileSize / 2;
     const centerY = tileY * this.tileSize + this.tileSize / 2;
-    reticleSprite.alpha = 0;
-    if (
-      this.aimMode &&
-      !this.checkForCollision(tileX, tileY) &&
-      this.map.tiles[tileX][tileY].name != 'door'
-    ) {
-      reticleSprite.width = this.tileSize;
-      reticleSprite.height = this.tileSize;
-      reticleSprite.anchor.set(0.5);
-      reticleSprite._zIndex = 50;
-      reticleSprite.position.set(centerX, centerY);
-
-      if (
-        !this.map ||
-        !this.map.isValidTile(tileX, tileY) ||
-        this.isLineObstructed(
-          this.player1.posX,
-          this.player1.posY,
-          tileX,
-          tileY,
-          true,
-          true,
-        )
-      ) {
-        reticleSprite.alpha = 0;
-      } else {
+    if (this.map.isValidTile(tileX, tileY)){
+      if (!this.aimMode){
+        if(this.getDistance(this.player1.posX,this.player1.posY,tileX,tileY)<=1 && !this.isLineObstructed(this.player1.posX,this.player1.posY,tileX,tileY,true,true)){
+          sprite = Assets.get('crosshair_default.png') as PIXI.Texture;
+        }else{
+          sprite = Assets.get('crosshair_default_invalid.png') as PIXI.Texture;
+        }
+      }else{
+        if (!this.isLineObstructed(this.player1.posX,this.player1.posY,tileX,tileY,true,true)){
+          sprite = Assets.get('crosshair_aimmode.png') as PIXI.Texture;
+        }else{
+          sprite = Assets.get('crosshair_aimmode_invalid.png') as PIXI.Texture;
+        }}
+        let reticleSprite = new PIXI.Sprite(sprite);
         reticleSprite.alpha = 1;
-      }
+        reticleSprite.width = this.tileSize;
+        reticleSprite.height = this.tileSize;
+        reticleSprite.anchor.set(0.5);
+        reticleSprite._zIndex = 50;
+        reticleSprite.position.set(centerX, centerY);
+        this.spriteContainer.addChild(reticleSprite);
     }
-    this.reticleContainer.addChild(reticleSprite);
   }
 
   drawInventoryTab() {
@@ -1330,6 +1335,17 @@ export class GameController {
     this.getAfflictionsForLimb(this.selectedLimb);
     this.afflictionsApp.stage.removeChildren();
     let i = 0;
+     const afflictionText = new Text({
+          text: this.selectedLimb,
+          style: {
+            fontSize: 16,
+            fill: '#ffffff',
+          },
+          y: i * 24 + 10,
+          x: 10,
+        });
+        i++
+    this.afflictionsApp.stage.addChild(afflictionText);
     for (let affliction in this.afflictions) {
       const afflictionValue = this.afflictions[affliction];
       if (afflictionValue.severity > 0 && afflictionValue.severity <= 100) {
@@ -1433,6 +1449,10 @@ export class GameController {
       player.posY = targetY;
       this.animatePlayerMove(player, targetX, targetY);
       this.player1.playerAction(0);
+      let entities = this.getAllEntitiesOnTile(targetX, targetY);
+      for (let i = 0; i < entities.length; i++) {
+        entities[i].onSteppedOn(player);
+      }
       // this.checkTileForItem(player);
     }
   }
@@ -1520,8 +1540,8 @@ export class GameController {
 
   findEntrance(side: string) {
     let entities = [];
-    for (let x = 0; x <= this.map.width; x++) {
-      for (let y = 0; y <= this.map.height; y++) {
+    for (let x = 0; x < this.map.width; x++) {
+      for (let y = 0; y < this.map.height; y++) {
         switch (side) {
           case 'left':
             entities = GameController.current?.getAllEntitiesOnTile(x, y)!;
@@ -1582,11 +1602,13 @@ export class GameController {
         this.updateTile(x, y);
       }
     }
-
+   
     for (const entity of this.enemyTurnList) {
       try {
         // Let the entity take its turn (may be synchronous)
-        entity.onEndTurn();
+        if (entity instanceof BasicEnemyAI){
+          entity.aiTurn();
+        }
       } catch (err) {
         console.warn('Error during entity turn', err);
       }
@@ -1595,6 +1617,7 @@ export class GameController {
       this.drawGrid();
       this.drawPlayer();
     }
+    
   }
 
   updateTile(x: number, y: number) {
@@ -1610,40 +1633,27 @@ export class GameController {
       }
       var spreadchance = this.generateRandomNumber(1, 5);
       if (spreadchance == 1) {
-        this.ignite(
-          x + 1,
-          y,
-          this.map.tiles[x + 1][y].fireValue + 25,
-          false,
-          false,
-        );
-        this.ignite(
-          x - 1,
-          y,
-          this.map.tiles[x - 1][y].fireValue + 25,
-          false,
-          false,
-        );
-        this.ignite(
-          x,
-          y + 1,
-          this.map.tiles[x][y + 1].fireValue + 25,
-          false,
-          false,
-        );
-        this.ignite(
-          x,
-          y - 1,
-          this.map.tiles[x][y - 1].fireValue + 25,
-          false,
-          false,
-        );
+        // read neighbor fire values only if the neighbor tile exists
+        if (this.map.isValidTile(x + 1, y)) {
+          this.ignite(x + 1, y, this.map.tiles[x + 1][y].fireValue + 25, false, false);
+        }
+        if (this.map.isValidTile(x - 1, y)) {
+          this.ignite(x - 1, y, this.map.tiles[x - 1][y].fireValue + 25, false, false);
+        }
+        if (this.map.isValidTile(x, y + 1)) {
+          this.ignite(x, y + 1, this.map.tiles[x][y + 1].fireValue + 25, false, false);
+        }
+        if (this.map.isValidTile(x, y - 1)) {
+          this.ignite(x, y - 1, this.map.tiles[x][y - 1].fireValue + 25, false, false);
+        }
       }
     }
-    this.map.tiles[x][y].entity!.forEach((entity) => {
-      if (entity.ai) {
-        this.enemyTurnList.push(entity);
-      }
+      this.map.tiles[x][y].entity!.forEach((entity) => {
+        entity.onEndTurn()
+        if (entity.ai){
+          this.enemyTurnList.push(entity);
+        }
+        
     });
   }
 
@@ -1655,17 +1665,18 @@ export class GameController {
     }
   }
 
-  updateTarget(x: number, y: number) {
-    this.map.tiles[x][y].entity!.forEach((entity) => {
-      if (entity.ai) {
-        if (entity instanceof BasicEnemyAI) {
-          entity.findTargets();
-          console.log(entity.LastKnownTargetCoords);
-          console.log('ai find targerts');
-        } else {
-          console.log('no ai find targerts');
+  updateTarget(x: number, y: number){
+  this.map.tiles[x][y].entity!.forEach((entity) => {
+        if (entity.ai){
+          if (entity instanceof BasicEnemyAI){
+            entity.findTargets();
+            
+           
+          }else{
+            
+          }
         }
-      }
+
     });
   }
 
@@ -1715,7 +1726,7 @@ export class GameController {
               // this.player1.Health.Damage(strength / size / 10);
             }
             var firechance = this.generateRandomNumber(1, 5);
-            if (firechance == 1) {
+            if (firechance == 1 && startFires) {
               this.ignite(tile[0], tile[1], strength / 4, true, true);
             }
           }
@@ -1737,9 +1748,11 @@ export class GameController {
 
   removePlayer(x: number, y: number) {
     let entities = this.getAllEntitiesOnTile(x, y);
+    // remove only Player instances from the tile's entity array
     for (let i = 0; i < entities.length; i++) {
       if (entities[i] instanceof Player) {
-        entities.splice(i);
+        entities.splice(i, 1);
+        i--; // adjust index after removal
       }
     }
   }
@@ -1760,7 +1773,10 @@ export class GameController {
   }
 
   getAllEntitiesOnTile(x: number, y: number) {
-    return this.map.tiles[x][y].entity;
+    if (!this.map) return [] as any;
+    if (!this.map.isValidTile(x, y)) return [] as any;
+    const ents = this.map.tiles[x][y].entity;
+    return ents ? ents : [] as any;
   }
 
   checkForCollision(x: number, y: number) {
@@ -1811,6 +1827,14 @@ export class GameController {
   endTurn() {
     this.updateAllTiles();
     this.player1.Energy.setEnergy(100);
+    if (this.player1.Health.torso.zapped.severity > 0) {
+      this.player1.Energy.loseEnergy(this.player1.Health.torso.zapped.severity)
+      if (this.player1.Health.torso.zapped.severity >= 5){
+      this.player1.Health.torso.zapped.severity = this.player1.Health.torso.zapped.severity - 5;
+    } else {
+      this.player1.Health.torso.zapped.severity = 0;
+    }
+    }
     this.player1.playerAction(0);
   }
 

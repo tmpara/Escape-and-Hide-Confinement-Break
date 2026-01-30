@@ -3,21 +3,22 @@ import { Health } from './health/health';
 import { Inventory } from './inventory/inventory';
 import { Item } from './items/items';
 export abstract class Entity {
-  id = 0;
-  name = '';
-  description = '';
-  sprite = 'placeholder.png';
-  deadSprite = 'placeholder.png';
+  
+  id=0;
+  name = "";
+  description = "";
+  sprite = "placeholder.png";
+  deadSprite = "";
   tags: string[] | null = null;
-  connectsWith: string | null = null;
-  spriteTopCap = '';
-  spriteBottomCap = '';
-  spriteLeftCap = '';
-  spriteRightCap = '';
-  spriteTopLeftCorner = '';
-  spriteTopRightCorner = '';
-  spriteBottomLeftCorner = '';
-  spriteBottomRightCorner = '';
+  connectsWith: string | null = null
+  spriteTopCap = "";
+  spriteBottomCap = "";
+  spriteLeftCap = "";
+  spriteRightCap = "";
+  spriteTopLeftCorner = "";
+  spriteTopRightCorner = "";
+  spriteBottomLeftCorner = "";
+  spriteBottomRightCorner = "";
   posX = 0;
   posY = 0;
   zIndex = 4;
@@ -34,6 +35,7 @@ export abstract class Entity {
   inventorySlots: (Item | null)[] = [];
   inventory = new Inventory();
   destroyed = false;
+  removeOnDestroy = true;
   fireValue = 0;
   ai = false;
 
@@ -82,7 +84,8 @@ export abstract class Entity {
 
   onSteppedOn(user: Entity | null) {}
 
-  onEndTurn() {}
+  onEndTurn(){}
 
-  onHeal(amountHealed: number) {}
+  onHeal(amountHealed: number){}
+
 }

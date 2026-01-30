@@ -27,7 +27,7 @@ export class Hypoxemia extends Afflcition {
 
 export class Bleeding extends Afflcition {
   name: string = 'Bleeding';
-  override maxSeverity: number = 110;
+  override maxSeverity: number = 100;
   constructor() {
     super();
   }
@@ -53,6 +53,27 @@ export class Lacerations extends Afflcition {
 
 export class Fracture extends Afflcition {
   name: string = 'Fracture';
+  constructor() {
+    super();
+  }
+}
+
+export class Burn extends Afflcition {
+  name: string = 'Burn';
+  constructor() {
+    super();
+  }
+}
+
+export class GunshotWound extends Afflcition {
+  name: string = 'GunshotWound';
+  constructor() {
+    super();
+  }
+}
+
+export class Zapped extends Afflcition {
+  name: string = 'Zapped';
   constructor() {
     super();
   }

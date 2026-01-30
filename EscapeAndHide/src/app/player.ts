@@ -24,25 +24,6 @@ export class Player extends Entity {
     this.Health.updateAfflictions();
     this.Energy.loseEnergy(energyCost);
     this.Health.bleedingRegen();
-    this.checkBeneathForGlassShard();
   }
 
-  checkBeneathForGlassShard() {
-    const grid = GameController.current?.map;
-    if (grid) {
-      const tile = grid.tiles[this.posX]?.[this.posY];
-      if (tile) {
-        if (tile.entity[0] instanceof GlassShards) {
-          this.Health.damageLimb('leftLeg', [
-            ['Lacerations', 15],
-            ['Bleeding', 20],
-          ]);
-          this.Health.damageLimb('rightLeg', [
-            ['Lacerations', 15],
-            ['Bleeding', 20],
-          ]);
-        }
-      }
-    }
-  }
 }
