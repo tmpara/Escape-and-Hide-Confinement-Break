@@ -1,6 +1,15 @@
 import { BasicEnemyAI, HeavyInterferanceUnitAI, LightInterferanceUnitAI, MediumInterferanceUnitAI, OppressorUnitAI, ScorcherUnitAI } from './enemyAI';
 import { Entity } from './entity';
-import { Items } from './items/items';
+import { Inventory } from './inventory/inventory';
+import {
+  bandage,
+  bigGun,
+  gun,
+  helmet,
+  Item,
+  medkit,
+  vest,
+} from './items/items';
 
 export class Dummy extends Entity {
   override name = 'dummy';
@@ -10,15 +19,40 @@ export class Dummy extends Entity {
   override posY = 0;
   override collidable = true;
   override damageable = true;
-  override health = 2;
+  // override health = 100;
   override hiddenOutsideLOS = true;
   override blockLOS = false;
   override flammable = true;
-  override removeOnDestroy = false;
   override tags: string[] | null = ['dummy'];
-  lootTable = [new Items().gun, new Items().bandage];
+  override inventory = new Inventory();
+  override inventorySlots: (Item | null)[] = [];
+  lootTable = [
+    new gun(),
+    new bigGun(),
+    new helmet(),
+    new vest(),
+    new bandage(),
+    new medkit(),
+  ];
 
-  override onDestroyed(damage: number, damageType: string): void{
+  constructor() {
+    super();
+    this.inventorySlots = Array(this.inventorySize).fill(null);
+    for (let i = 0; i < this.inventorySlots.length; i++) {
+      this.inventorySlots[i] =
+        this.lootTable[Math.floor(Math.random() * this.lootTable.length)];
+      this.inventory.equip(this.inventorySlots[i]!);
+    }
+  }
+
+  override destroy(damage: number, damageType: string): void {
+    if (this.destroyed == false) {
+      this.destroyed = true;
+      this.onDestroyed(damage, damageType);
+      this.sprite = this.deadSprite;
+    }
+  }
+  override onDestroyed(damage: number, damageType: string): void {
     this.lootable = true;
   }
 }
@@ -29,17 +63,45 @@ export class HeavyDummy extends Entity {
   override deadSprite = '/sprites/npc/heavyDummyDead.png';
   override posX = 0;
   override posY = 0;
+  override zIndex = 3;
   override collidable = true;
   override damageable = true;
-  override health = 4;
+  // override health = 4;
   override hiddenOutsideLOS = true;
   override blockLOS = false;
   override flammable = true;
-  override removeOnDestroy = false;
   override tags: string[] | null = ['dummy'];
-  lootTable = [new Items().bigGun, new Items().medkit];
+  override inventory = new Inventory();
+  override inventorySlots: (Item | null)[] = [];
+  lootTable = [
+    new gun(),
+    new bigGun(),
+    new helmet(),
+    new vest(),
+    new bandage(),
+    new medkit(),
+  ];
 
-  override onDestroyed(damage: number, damageType: string): void{
+  constructor() {
+    super();
+    this.inventorySlots = Array(this.inventorySize).fill(null);
+    for (let i = 0; i < this.inventorySlots.length; i++) {
+      this.inventorySlots[i] =
+        this.lootTable[Math.floor(Math.random() * this.lootTable.length)];
+      console.log(this.inventorySlots[i]);
+      this.inventory.equip(this.inventorySlots[i]!);
+    }
+    console.log(this.inventory.headArmorSlot, this.inventory.torsoArmorSlot);
+  }
+
+  override destroy(damage: number, damageType: string): void {
+    if (this.destroyed == false) {
+      this.destroyed = true;
+      this.onDestroyed(damage, damageType);
+      this.sprite = this.deadSprite;
+    }
+  }
+  override onDestroyed(damage: number, damageType: string): void {
     this.lootable = true;
   }
 }

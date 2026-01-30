@@ -41,14 +41,12 @@ export class BasicEnemyAI extends Entity{
         // update target list
         this.findTargets();
 
-        const controller = GameController.current;
-        const pauseMs = (controller as any).enemyStepDelay ?? 160;
+    const controller = GameController.current;
+    const pauseMs = (controller as any).enemyStepDelay ?? 160;
 
-        
-
-        if (this.alerted && this.TargetCoords.length > 0) {
-            // Has current targets: pursue and attack as before
-            const target = this.TargetCoords[0] as Player;
+    if (this.alerted && this.TargetCoords.length > 0) {
+      // Has current targets: pursue and attack as before
+      const target = this.TargetCoords[0] as Player;
 
             const dx = Math.abs(this.posX - target.posX);
             const dy = Math.abs(this.posY - target.posY);
@@ -119,47 +117,53 @@ export class BasicEnemyAI extends Entity{
               return;
             }
 
-            // Otherwise: path towards the player using A* and spend movement (energy)
-            const path = controller.findPathAStar(this.posX, this.posY, target.posX, target.posY);
-            if (!path || path.length <= 1) return; // no movement possible
+      // Otherwise: path towards the player using A* and spend movement (energy)
+      const path = controller.findPathAStar(
+        this.posX,
+        this.posY,
+        target.posX,
+        target.posY,
+      );
+      if (!path || path.length <= 1) return; // no movement possible
 
-            // move up to `energy` steps along the path (path[0] == start)
-            const steps = Math.min(this.energy, path.length - 1);
-            for (let step = 1; step <= steps; step++) {
-                const [nx, ny] = path[step];
+      // move up to `energy` steps along the path (path[0] == start)
+      const steps = Math.min(this.energy, path.length - 1);
+      for (let step = 1; step <= steps; step++) {
+        const [nx, ny] = path[step];
 
-                // safety checks: bounds and walkability
-                if (!controller.map || !controller.map.isValidTile(nx, ny)) break;
+        // safety checks: bounds and walkability
+        if (!controller.map || !controller.map.isValidTile(nx, ny)) break;
 
-                // if there's a door on the next tile and it's closed, try to open it and stop moving this turn
-                const door = controller.getDoorOnTile(nx, ny);
+        // if there's a door on the next tile and it's closed, try to open it and stop moving this turn
+        const door = controller.getDoorOnTile(nx, ny);
 
-                if (door) {
-                    if (typeof door.onUse === "function") {
-                        if(door.open == false){
-                           door.onUse(); 
-                        }
-                    }
-                    // redraw + pause so player sees the open attempt
-                    controller.drawGrid?.();
-                    controller.drawPlayer?.();
-                    await (controller.delay?.(pauseMs) ?? new Promise(res => setTimeout(res,pauseMs)));
-                    
-                 }
+        if (door) {
+          if (typeof door.onUse === 'function') {
+            if (door.open == false) {
+              door.onUse();
+            }
+          }
+          // redraw + pause so player sees the open attempt
+          controller.drawGrid?.();
+          controller.drawPlayer?.();
+          await (controller.delay?.(pauseMs) ??
+            new Promise((res) => setTimeout(res, pauseMs)));
+        }
 
-                // allow stepping onto the goal even if occupied by non-walkable (attack intent),
-                // otherwise require walkable
-                const isGoal = (nx === target.posX && ny === target.posY);
-                if (!isGoal && !controller.isTileWalkable(nx, ny)) break;
+        // allow stepping onto the goal even if occupied by non-walkable (attack intent),
+        // otherwise require walkable
+        const isGoal = nx === target.posX && ny === target.posY;
+        if (!isGoal && !controller.isTileWalkable(nx, ny)) break;
 
-                // remove from current tile and place at new tile via controller API
-                this.removeEntity(this.posX, this.posY);
-                controller.loadEntity(nx, ny, this, controller.map);
+        // remove from current tile and place at new tile via controller API
+        this.removeEntity(this.posX, this.posY);
+        controller.loadEntity(nx, ny, this, controller.map);
 
-                // redraw and pause after each step so player can observe movement
-                controller.drawGrid?.();
-                controller.drawPlayer?.();
-                await (controller.delay?.(pauseMs) ?? new Promise(res => setTimeout(res,pauseMs)));
+        // redraw and pause after each step so player can observe movement
+        controller.drawGrid?.();
+        controller.drawPlayer?.();
+        await (controller.delay?.(pauseMs) ??
+          new Promise((res) => setTimeout(res, pauseMs)));
 
                 // after moving check current distance to the (possibly moved) player
                 const postDistance = Math.max(Math.abs(this.posX - target.posX), Math.abs(this.posY - target.posY));
@@ -189,40 +193,40 @@ export class BasicEnemyAI extends Entity{
                 return;
             }
 
-            // move up to `energy` steps along the path
-            const steps = Math.min(this.energy, path.length - 1);
-            for (let step = 1; step <= steps; step++) {
-                const [nx, ny] = path[step];
+      // move up to `energy` steps along the path
+      const steps = Math.min(this.energy, path.length - 1);
+      for (let step = 1; step <= steps; step++) {
+        const [nx, ny] = path[step];
 
-                // safety checks: bounds and walkability
-                if (!controller.map || !controller.map.isValidTile(nx, ny)) break;
+        // safety checks: bounds and walkability
+        if (!controller.map || !controller.map.isValidTile(nx, ny)) break;
 
-                // if there's a door on the next tile, try to open it
-                const door = controller.getDoorOnTile(nx, ny);
-                if (door) {
-                    
-                    if (typeof door.onUse === "function") {
-                        if(door.open == false){
-                           door.onUse(); 
-                        }
-                    }
-                    controller.drawGrid?.();
-                    controller.drawPlayer?.();
-                    await (controller.delay?.(pauseMs) ?? new Promise(res => setTimeout(res,pauseMs)));
-                    
-                }
+        // if there's a door on the next tile, try to open it
+        const door = controller.getDoorOnTile(nx, ny);
+        if (door) {
+          if (typeof door.onUse === 'function') {
+            if (door.open == false) {
+              door.onUse();
+            }
+          }
+          controller.drawGrid?.();
+          controller.drawPlayer?.();
+          await (controller.delay?.(pauseMs) ??
+            new Promise((res) => setTimeout(res, pauseMs)));
+        }
 
-                // require walkable (since no attack intent here)
-                if (!controller.isTileWalkable(nx, ny)) break;
+        // require walkable (since no attack intent here)
+        if (!controller.isTileWalkable(nx, ny)) break;
 
-                // move
-                this.removeEntity(this.posX, this.posY);
-                controller.loadEntity(nx, ny, this, controller.map);
+        // move
+        this.removeEntity(this.posX, this.posY);
+        controller.loadEntity(nx, ny, this, controller.map);
 
-                // redraw and pause
-                controller.drawGrid?.();
-                controller.drawPlayer?.();
-                await (controller.delay?.(pauseMs) ?? new Promise(res => setTimeout(res,pauseMs)));
+        // redraw and pause
+        controller.drawGrid?.();
+        controller.drawPlayer?.();
+        await (controller.delay?.(pauseMs) ??
+          new Promise((res) => setTimeout(res, pauseMs)));
 
                 // if reached last known, clear it
                 if (nx === lx && ny === ly) {
@@ -235,31 +239,31 @@ export class BasicEnemyAI extends Entity{
     }
     
 
-    removeEntity(x: number, y: number) {
-        const controller = GameController.current;
-        if (!controller || !controller.map) return;
-        if (!controller.map.isValidTile(x, y)) return;
-        const tile = controller.map.tiles[x][y];
-        if (!tile) return;
+  removeEntity(x: number, y: number) {
+    const controller = GameController.current;
+    if (!controller || !controller.map) return;
+    if (!controller.map.isValidTile(x, y)) return;
+    const tile = controller.map.tiles[x][y];
+    if (!tile) return;
 
-        const ents = (tile.entity as any);
-        if (!ents) return;
+    const ents = tile.entity as any;
+    if (!ents) return;
 
-        // handle both array or single-entity cases defensively
-        if (Array.isArray(ents)) {
-            for (let i = ents.length - 1; i >= 0; i--) {
-                if (ents[i] === this) {
-                    ents.splice(i, 1);
-                }
-            }
-            // ensure array remains (empty array is fine)
-            tile.entity = ents;
-        } else {
-            if (ents === this) {
-                tile.entity = [];
-            }
+    // handle both array or single-entity cases defensively
+    if (Array.isArray(ents)) {
+      for (let i = ents.length - 1; i >= 0; i--) {
+        if (ents[i] === this) {
+          ents.splice(i, 1);
         }
+      }
+      // ensure array remains (empty array is fine)
+      tile.entity = ents;
+    } else {
+      if (ents === this) {
+        tile.entity = [];
+      }
     }
+  }
 
     findTargets(){
         let temp = 0;

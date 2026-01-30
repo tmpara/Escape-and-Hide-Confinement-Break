@@ -1,4 +1,7 @@
 import { GameController } from './game.controller';
+import { Health } from './health/health';
+import { Inventory } from './inventory/inventory';
+import { Item } from './items/items';
 export abstract class Entity {
   
   id=0;
@@ -22,22 +25,35 @@ export abstract class Entity {
   collidable = false;
   damageable = false;
   health = 0;
-  maxHealth = this.health;
+  damageResistance = 0;
   hiddenOutsideLOS = false;
   blockLOS = false;
   flammable = false;
-  lootable = false
-  ai=false;
+  lootable = false;
+  maxHealth = this.health;
+  inventorySize = 10;
+  inventorySlots: (Item | null)[] = [];
+  inventory = new Inventory();
   destroyed = false;
   removeOnDestroy = true;
   fireValue = 0;
+  ai = false;
 
-  takeDamage(damage:number, damageType: string){
-    this.onTakeDamage(damage,damageType)
-    if (this.damageable==true && this.destroyed==false){
-      this.health -= damage;
-      if (this.health!<=0){
-        this.destroy(damage,damageType)
+  takeDamage(damage: number, damageType: string) {
+    this.damageResistance = 0;
+    this.onTakeDamage(damage, damageType);
+    if (this.damageable == true && this.destroyed == false) {
+      this.damageResistance = 0;
+      for (let i = 0; i < this.inventorySlots.length; i++) {
+        const item = this.inventorySlots[i];
+        if (item && item.defense) {
+          this.damageResistance += item.defense;
+        }
+      }
+      console.log(this.damageResistance);
+      this.health -= damage - this.damageResistance;
+      if (this.health! <= 0) {
+        this.destroy(damage, damageType);
       }
     }
   }
@@ -56,11 +72,7 @@ export abstract class Entity {
     if (this.destroyed == false) {
       this.destroyed = true;
       this.onDestroyed(damage, damageType);
-      if (this.removeOnDestroy == true){
-        GameController.current?.removeEntities(this.posX, this.posY);
-      }else{
-        this.sprite = this.deadSprite;
-      }
+      GameController.current?.removeEntities(this.posX, this.posY);
     }
   }
 

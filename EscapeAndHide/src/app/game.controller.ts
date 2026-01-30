@@ -4,11 +4,8 @@ import { Text, Assets } from 'pixi.js';
 import { GameGrid } from './grid';
 import { World } from './world';
 import { Player } from './player';
-import { Health } from './health/health';
-import { Energy } from './energy/energy';
-import { Items, Item} from './items/items';
+import { bigGun, gun, helmet, Item, vest } from './items/items';
 import { WorldMapRenderer } from './worldMapRenderer';
-import { WeaponFunctionality } from './items/weapon_functionality';
 import { Inventory } from './inventory/inventory';
 import { Dummy, HeavyDummy, LightInterferanceUnit, MediumInterferanceUnit, HeavyInterferanceUnit, OppressorUnit, ScorcherUnit} from './enemyTypes'
 import { GlassShards } from './entities';
@@ -24,8 +21,10 @@ export class GameController {
   map!: GameGrid;
   healthUIApp!: PIXI.Application;
   afflictionsApp!: PIXI.Application;
+  inventoryApp!: PIXI.Application;
+  equippedApp!: PIXI.Application;
   inventory!: Inventory;
-  weaponFunctionality = new WeaponFunctionality();
+
   player1 = new Player();
   dummy1 = new Dummy();
   heavyDummy1 = new HeavyDummy();
@@ -38,17 +37,22 @@ export class GameController {
   spriteContainer = new Container();
   effectContainer = new Container();
   pickUpPopUp = new Container();
+  reticleContainer = new Container();
+  healthLimbContainer = new Container();
+  inventoryContainer = new Container();
+  equippedContainer = new Container();
+
   playerSprite = new Graphics();
   healthBar = new Graphics();
   energyBar = new Graphics();
   tile = new Graphics();
+
   aimMode: boolean = false;
   mouseX: number = 0;
   mouseY: number = 0;
   mouseTileX: number = 0;
   mouseTileY: number = 0;
 
-  healthLimbContainer = new Container();
   limbSprites: Record<string, PIXI.Sprite> = {};
   selectedLimb: string = '';
   afflictions: any = {};
@@ -103,6 +107,8 @@ export class GameController {
     await Assets.load('/sprites/items/biggun.png');
     await Assets.load('/sprites/items/medkit.png');
     await Assets.load('/sprites/items/bandage.png');
+    await Assets.load('/sprites/items/helmet.png');
+    await Assets.load('/sprites/items/vest.png');
     await Assets.load('/sprites/effects/explosion.png');
     await Assets.load('/sprites/effects/hidden.png');
     await Assets.load('/sprites/effects/fire_legacy.png');
@@ -116,14 +122,14 @@ export class GameController {
         this.playerWorldX,
         this.playerWorldY,
         this.world.endX,
-        this.world.endY
+        this.world.endY,
       ) == false
     ) {
       this.world.CreateWorld();
       this.playerWorldX = this.world.startX;
       this.playerWorldY = this.world.startY;
     }
-    
+
     // Create map and player
     this.map = this.world.rooms[this.playerWorldX][this.playerWorldY];
     console.log(this.map.width + ' ' + this.map.height);
@@ -156,7 +162,7 @@ export class GameController {
       this.mapContainer,
       this.world,
       mapCellSize,
-      2
+      2,
     );
     this.mapRenderer.draw();
 
@@ -167,13 +173,13 @@ export class GameController {
       0,
       0,
       this.world.width * this.mapRenderer.cellSize,
-      this.world.height * this.mapRenderer.cellSize
+      this.world.height * this.mapRenderer.cellSize,
     );
     (this.mapContainer as any).cursor = 'pointer';
     this.mapContainer.on('pointerdown', (e: PIXI.FederatedPointerEvent) => {
       // convert global pointer to container-local coordinates
       const localPoint = this.mapContainer!.toLocal(
-        new PIXI.Point(e.globalX, e.globalY)
+        new PIXI.Point(e.globalX, e.globalY),
       );
       const cellX = Math.floor(localPoint.x / this.mapRenderer!.cellSize);
       const cellY = Math.floor(localPoint.y / this.mapRenderer!.cellSize);
@@ -192,7 +198,7 @@ export class GameController {
       // teleport the player to the clicked room
       this.teleportToRoom(cellX, cellY);
       console.log(
-        'teleported player to room:' + this.world.roomsIDs[cellX][cellY]
+        'teleported player to room:' + this.world.roomsIDs[cellX][cellY],
       );
     });
 
@@ -201,6 +207,11 @@ export class GameController {
     this.loadPlayer(1, 1, this.player1, 1);
     this.loadEntity(5, 2, this.dummy1, this.map);
     this.loadEntity(5, 3, this.heavyDummy1, this.map);
+    this.loadEntity(2, 2, this.glassshards, this.map);
+    this.spawnItem(1, 3, new gun());
+    this.spawnItem(2, 3, new bigGun());
+    this.spawnItem(3, 3, new vest());
+    this.spawnItem(4, 3, new helmet());
 
     // Draw grid, player
     this.drawGrid();
@@ -215,44 +226,74 @@ export class GameController {
     this.app.stage.addChild(this.energyBar);
     this.app.stage.addChild(this.effectContainer);
 
-    // Create inventory and equipped containers side by side
     const inventoryRow = document.createElement('div');
+    inventoryRow.id = 'inventory-row';
     inventoryRow.style.display = 'flex';
     inventoryRow.style.flexDirection = 'row';
     inventoryRow.style.width = '30vw';
-    inventoryRow.style.height = '80vh';
+    inventoryRow.style.height = '70vh';
     inventoryRow.style.position = 'absolute';
     inventoryRow.style.right = '0';
     inventoryRow.style.top = '0';
+    inventoryRow.style.gap = '0';
     container.appendChild(inventoryRow);
 
-    const invDiv = document.createElement('div');
-    invDiv.id = 'inventory-container';
-    invDiv.style.flex = '1';
-    invDiv.style.height = '100%';
-    inventoryRow.appendChild(invDiv);
+    const inventoryColumn = document.createElement('div');
+    inventoryColumn.id = 'inventory-column';
+    inventoryColumn.style.flex = '1';
+    inventoryColumn.style.display = 'flex';
+    inventoryColumn.style.flexDirection = 'column';
+    inventoryRow.appendChild(inventoryColumn);
 
-    const equippedDiv = document.createElement('div');
-    equippedDiv.id = 'equipped-container';
-    equippedDiv.style.flex = '1';
-    equippedDiv.style.height = '100%';
-    inventoryRow.appendChild(equippedDiv);
-    this.inventory = new Inventory(invDiv, equippedDiv);
+    const equippedColumn = document.createElement('div');
+    equippedColumn.id = 'equipped-column';
+    equippedColumn.style.flex = '1';
+    equippedColumn.style.display = 'flex';
+    equippedColumn.style.flexDirection = 'column';
+    inventoryRow.appendChild(equippedColumn);
 
-    // Create status row for health and afflictions side by side below main game canvas
+    this.inventoryApp = new PIXI.Application();
+    await this.inventoryApp.init({
+      width: window.innerWidth * 0.15,
+      height: window.innerHeight * 0.7,
+      antialias: true,
+      backgroundColor: 0x1099bb,
+    });
+    this.inventoryApp.view.style.display = 'block';
+    this.inventoryApp.view.style.width = '100%';
+    this.inventoryApp.view.style.height = '100%';
+    inventoryColumn.appendChild(this.inventoryApp.view as HTMLCanvasElement);
+
+    this.equippedApp = new PIXI.Application();
+    await this.equippedApp.init({
+      width: window.innerWidth * 0.15,
+      height: window.innerHeight * 0.7,
+      antialias: true,
+      backgroundColor: 0x333399,
+    });
+    this.equippedApp.view.style.display = 'block';
+    this.equippedApp.view.style.width = '100%';
+    this.equippedApp.view.style.height = '100%';
+    equippedColumn.appendChild(this.equippedApp.view as HTMLCanvasElement);
+    this.equippedContainer = this.equippedApp.stage;
+
     const statusRow = document.createElement('div');
     statusRow.id = 'status-row';
     statusRow.style.display = 'flex';
     statusRow.style.flexDirection = 'row';
-    statusRow.style.width = 'window.innerWidth * 0.3';
-    statusRow.style.height = 'window.innerHeight * 0.29';
-    // Append statusRow after main game canvas
+    statusRow.style.width = window.innerWidth * 0.7 + 'px';
+    statusRow.style.height = window.innerHeight * 0.3 + 'px';
+    statusRow.style.position = 'absolute';
+    statusRow.style.left = '0';
+    statusRow.style.bottom = '0';
     container.appendChild(statusRow);
+
+    this.inventory = new Inventory();
 
     this.healthUIApp = new PIXI.Application();
     await this.healthUIApp.init({
-      width: statusRow.clientWidth * 0.1,
-      height: window.innerHeight * 0.29,
+      width: window.innerWidth * 0.15,
+      height: window.innerHeight * 0.3,
       backgroundColor: 0x333333,
       antialias: true,
     });
@@ -260,18 +301,22 @@ export class GameController {
 
     this.afflictionsApp = new PIXI.Application();
     await this.afflictionsApp.init({
-      width: statusRow.clientWidth * 0.2,
-      height: window.innerHeight * 0.29,
+      width: window.innerWidth * 0.15,
+      height: window.innerHeight * 0.3,
       backgroundColor: 0x444444,
       antialias: true,
     });
     this.afflictionsApp.view.style.display = 'block';
-    this.afflictionsApp.view.style.flexDirection = 'row';
 
-    // Append both canvases to the statusRow for side-by-side display
+    this.inventoryApp.stage.addChild(this.inventoryContainer);
+
     statusRow.appendChild(this.healthUIApp.view as HTMLCanvasElement);
     statusRow.appendChild(this.afflictionsApp.view as HTMLCanvasElement);
     this.healthUIApp.stage.addChild(this.healthLimbContainer);
+
+    this.inventory = new Inventory();
+    this.drawInventoryTab();
+    this.drawEquippedTab();
 
     // Listen for movement
     this.listenForInput(this.player1);
@@ -305,7 +350,7 @@ export class GameController {
     y1: number,
     x2: number,
     y2: number,
-    stopOnCollision: boolean
+    stopOnCollision: boolean,
   ): [number, number][] {
     const hitTiles: [number, number][] = [];
 
@@ -364,7 +409,7 @@ export class GameController {
     if (!this.map.isValidTile(x, y)) return false;
     const ents = this.map.tiles[x][y].entity;
     if (!ents || ents.length === 0) return true;
-    return ents.every(e => !e.collidable);
+    return ents.every((e) => !e.collidable);
   }
 
   /**
@@ -376,7 +421,7 @@ export class GameController {
     const ents = this.map.tiles[x][y].entity;
     if (!ents) return null;
     for (const e of ents) {
-      if (e && (e.name == "Door" )) return e;
+      if (e && e.name == 'Door') return e;
     }
     return null;
   }
@@ -393,20 +438,31 @@ export class GameController {
   }
 
   // A* pathfinder — no diagonal moves, allows stepping on tiles that only contain non-collidable entities.
-  findPathAStar(startX: number, startY: number, goalX: number, goalY: number): [number, number][] {
+  findPathAStar(
+    startX: number,
+    startY: number,
+    goalX: number,
+    goalY: number,
+  ): [number, number][] {
     if (!this.map) return [];
     // bounds checks
-    if (!this.map.isValidTile(startX, startY) || !this.map.isValidTile(goalX, goalY)) return [];
+    if (
+      !this.map.isValidTile(startX, startY) ||
+      !this.map.isValidTile(goalX, goalY)
+    )
+      return [];
     // same tile
     if (startX === goalX && startY === goalY) return [[startX, startY]];
 
     // goal must be walkable (unless it's the start)
     // allow goal if walkable OR is a door tile (AI will open it)
-    if (!this.isTileWalkable(goalX, goalY) && !this.getDoorOnTile(goalX, goalY)) return [];
+    if (!this.isTileWalkable(goalX, goalY) && !this.getDoorOnTile(goalX, goalY))
+      return [];
 
     const key = (x: number, y: number) => `${x},${y}`;
 
-    const heuristic = (x: number, y: number) => Math.abs(x - goalX) + Math.abs(y - goalY); // Manhattan
+    const heuristic = (x: number, y: number) =>
+      Math.abs(x - goalX) + Math.abs(y - goalY); // Manhattan
 
     const neighbors = (cx: number, cy: number) => [
       [cx - 1, cy],
@@ -417,7 +473,9 @@ export class GameController {
 
     const openSet: Set<string> = new Set([key(startX, startY)]);
     const gScore: Map<string, number> = new Map([[key(startX, startY), 0]]);
-    const fScore: Map<string, number> = new Map([[key(startX, startY), heuristic(startX, startY)]]);
+    const fScore: Map<string, number> = new Map([
+      [key(startX, startY), heuristic(startX, startY)],
+    ]);
     const cameFrom: Map<string, string> = new Map();
 
     while (openSet.size > 0) {
@@ -433,13 +491,13 @@ export class GameController {
       }
       if (!currentKey) break;
 
-      const [cx, cy] = currentKey.split(',').map(n => parseInt(n, 10));
+      const [cx, cy] = currentKey.split(',').map((n) => parseInt(n, 10));
       if (cx === goalX && cy === goalY) {
         // reconstruct
         const path: [number, number][] = [];
         let cur: string | undefined = currentKey;
         while (cur) {
-          const [px, py] = cur.split(',').map(n => parseInt(n, 10));
+          const [px, py] = cur.split(',').map((n) => parseInt(n, 10));
           path.push([px, py]);
           cur = cameFrom.get(cur);
         }
@@ -453,7 +511,11 @@ export class GameController {
         if (!this.map.isValidTile(nx, ny)) continue;
         // allow stepping on start even if it contains collidable (player sits there).
         // For other tiles allow if walkable OR contains a door (we plan to open it).
-        if (!(nx === startX && ny === startY) && !this.canPathThroughTile(nx, ny)) continue;
+        if (
+          !(nx === startX && ny === startY) &&
+          !this.canPathThroughTile(nx, ny)
+        )
+          continue;
 
         const tentativeG = (gScore.get(currentKey) ?? Infinity) + 1;
         const nKey = key(nx, ny);
@@ -468,8 +530,14 @@ export class GameController {
 
     return [];
   }
-  isLineObstructed(x1: number, y1: number, x2: number, y2: number, ignoreStart: boolean = true, ignoreEnd: boolean = false): boolean {
-
+  isLineObstructed(
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number,
+    ignoreStart: boolean = true,
+    ignoreEnd: boolean = false,
+  ): boolean {
     const tiles = this.castRay(x1, y1, x2, y2, false);
     if (tiles.length === 0) return false;
 
@@ -493,7 +561,7 @@ export class GameController {
     x2: number,
     y2: number,
     ignoreStart: boolean = true,
-    ignoreEnd: boolean = false
+    ignoreEnd: boolean = false,
   ): boolean {
     const tiles = this.castRay(x1, y1, x2, y2, false);
     if (tiles.length === 0) return false;
@@ -605,11 +673,11 @@ export class GameController {
 
     const bleedingPercentage = Math.min(
       this.player1.Health.bloodLoss.severity / this.player1.Health.maxBlood,
-      1
+      1,
     );
     const regenPercentage = Math.min(
       this.player1.Health.regeneration / this.player1.Health.maxBlood,
-      1
+      1,
     );
 
     // Health
@@ -631,7 +699,7 @@ export class GameController {
         x + barWidth * (healthPercentage - bleedingPercentage),
         y,
         barWidth * bleedingPercentage,
-        barHeight
+        barHeight,
       );
       this.healthBar.endFill();
     }
@@ -707,22 +775,7 @@ export class GameController {
         const item = this.map.tiles[x][y].item;
         if (item != null) {
           let itemTexture;
-          switch (item.name) {
-            case 'gun':
-              itemTexture = Assets.get('/sprites/items/gun.png');
-              break;
-            case 'bigGun':
-              itemTexture = Assets.get('/sprites/items/biggun.png');
-              break;
-            case 'bandage':
-              itemTexture = Assets.get('/sprites/items/bandage.png');
-              break;
-            case 'medkit':
-              itemTexture = Assets.get('/sprites/items/medkit.png');
-              break;
-            default:
-              break;
-          }
+          itemTexture = Assets.get(item.sprite.toString());
           let itemSprite = new PIXI.Sprite(itemTexture);
           itemSprite.x = x * this.tileSize;
           itemSprite.y = y * this.tileSize;
@@ -737,7 +790,7 @@ export class GameController {
               x,
               y,
               true,
-              true
+              true,
             ) == true
           ) {
             itemSprite.alpha = 0;
@@ -748,7 +801,7 @@ export class GameController {
               x,
               y,
               true,
-              true
+              true,
             ) == false
           ) {
             itemSprite.alpha = 1;
@@ -759,11 +812,7 @@ export class GameController {
           if (entity.sprite != '') {
             let entityTexture = Assets.get(entity.sprite.toString());
             let entitySprite = new PIXI.Sprite(entityTexture);
-            if (
-              entity.isDead &&
-              entity.tags.includes('dummy') &&
-              entity.deadSprite
-            ) {
+            if (entity.destroyed && entity.deadSprite) {
               entity.texture = Assets.get(entity.deadSprite.toString());
               entitySprite.texture = entity.texture;
             }
@@ -834,7 +883,7 @@ export class GameController {
               entity.spriteTopLeftCorner != ''
             ) {
               let capTexture = Assets.get(
-                entity.spriteTopLeftCorner.toString()
+                entity.spriteTopLeftCorner.toString(),
               );
               let capSprite = new PIXI.Sprite(capTexture);
               capSprite.x = x * this.tileSize;
@@ -852,7 +901,7 @@ export class GameController {
               entity.spriteTopRightCorner != ''
             ) {
               let capTexture = Assets.get(
-                entity.spriteTopRightCorner.toString()
+                entity.spriteTopRightCorner.toString(),
               );
               let capSprite = new PIXI.Sprite(capTexture);
               capSprite.x = x * this.tileSize;
@@ -870,7 +919,7 @@ export class GameController {
               entity.spriteBottomLeftCorner != ''
             ) {
               let capTexture = Assets.get(
-                entity.spriteBottomLeftCorner.toString()
+                entity.spriteBottomLeftCorner.toString(),
               );
               let capSprite = new PIXI.Sprite(capTexture);
               capSprite.x = x * this.tileSize;
@@ -888,7 +937,7 @@ export class GameController {
               entity.spriteBottomRightCorner != ''
             ) {
               let capTexture = Assets.get(
-                entity.spriteBottomRightCorner.toString()
+                entity.spriteBottomRightCorner.toString(),
               );
               let capSprite = new PIXI.Sprite(capTexture);
               capSprite.x = x * this.tileSize;
@@ -906,7 +955,7 @@ export class GameController {
                   x,
                   y,
                   true,
-                  true
+                  true,
                 ) == true
               ) {
                 entitySprite.alpha = 0;
@@ -917,7 +966,7 @@ export class GameController {
                   x,
                   y,
                   true,
-                  true
+                  true,
                 ) == false
               ) {
                 entitySprite.alpha = 1;
@@ -948,7 +997,7 @@ export class GameController {
               x,
               y,
               true,
-              true
+              true,
             ) == true
           ) {
             fireSprite.alpha = 0;
@@ -959,7 +1008,7 @@ export class GameController {
               x,
               y,
               true,
-              true
+              true,
             ) == false
           ) {
             fireSprite.alpha = 1;
@@ -972,7 +1021,7 @@ export class GameController {
           x * this.tileSize,
           y * this.tileSize,
           this.tileSize,
-          this.tileSize
+          this.tileSize,
         );
         this.tile._zIndex = 1;
         this.tile.endFill();
@@ -988,7 +1037,7 @@ export class GameController {
     this.playerSprite.drawCircle(
       this.player1.renderX * this.tileSize + this.tileSize / 2,
       this.player1.renderY * this.tileSize + this.tileSize / 2,
-      this.tileSize / 3
+      this.tileSize / 3,
     );
     this.playerSprite.endFill();
     this.playerSprite._zIndex = 8;
@@ -1024,11 +1073,163 @@ export class GameController {
     }
   }
 
+  drawInventoryTab() {
+    if (!this.inventory) return;
+    this.inventoryApp.stage.removeChildren();
+    for (let i = 0; i < this.inventory.inventorySlots.length; i++) {
+      const item = this.inventory.inventorySlots[i];
+      if (item) {
+        item.displayed = false;
+      }
+    }
+
+    for (let i = 0; i < this.inventory.inventorySlots.length; i++) {
+      const item = this.inventory.inventorySlots[i];
+      if (item && !item.displayed) {
+        item.displayed = true;
+        const texture = PIXI.Assets.get(item.sprite as string) as PIXI.Texture;
+        const sprite = new PIXI.Sprite(texture);
+        sprite.x = 0;
+        sprite.y = 0;
+
+        const text = new PIXI.Text({
+          text: item.name,
+          style: {
+            fontFamily: 'Arial',
+            fontSize: 20,
+            wordWrap: true,
+          },
+        });
+        text.anchor.set(0);
+        text.x = sprite.width + 10;
+        text.y = 0;
+        text.eventMode = 'static';
+        text.cursor = 'pointer';
+        text.onclick = () => {
+          const globalPos = text.getGlobalPosition();
+          const canvasRect = (
+            this.inventoryApp.view as HTMLCanvasElement
+          ).getBoundingClientRect();
+          const scaleX = canvasRect.width / this.inventoryApp.screen.width;
+          const scaleY = canvasRect.height / this.inventoryApp.screen.height;
+          const screenX = canvasRect.left + globalPos.x * scaleX;
+          const screenY = canvasRect.top + globalPos.y * scaleY;
+          this.inventory.itemActionPrompt(item, screenX, screenY);
+        };
+
+        const itemContainer = new PIXI.Container();
+        itemContainer.x = 10;
+        itemContainer.y = 10 + i * 35;
+        itemContainer.interactive = true;
+        itemContainer.cursor = 'pointer';
+        itemContainer.addChild(sprite);
+        itemContainer.addChild(text);
+        itemContainer.on('pointerdown', () => {
+          const globalPos = itemContainer.getGlobalPosition();
+          const canvasRect = (
+            this.inventoryApp.view as HTMLCanvasElement
+          ).getBoundingClientRect();
+          const scaleX = canvasRect.width / this.inventoryApp.screen.width;
+          const scaleY = canvasRect.height / this.inventoryApp.screen.height;
+          const screenX = canvasRect.left + globalPos.x * scaleX;
+          const screenY = canvasRect.top + globalPos.y * scaleY;
+          this.inventory.itemActionPrompt(item, screenX, screenY);
+        });
+        this.inventoryApp.stage.addChild(itemContainer);
+      }
+    }
+  }
+
+  drawEquippedTab() {
+    if (!this.inventory) return;
+    this.equippedApp.stage.removeChildren();
+    const slotSize = 64;
+    const padding = 10;
+    const startX = 10;
+    const startY = 10;
+
+    const slots: { name: string; item: any | null }[] = [
+      { name: 'Weapon', item: this.inventory.weaponSlot },
+      { name: 'Head Armor', item: this.inventory.headArmorSlot },
+      { name: 'Torso Armor', item: this.inventory.torsoArmorSlot },
+      { name: 'Fullbody Armor', item: this.inventory.fullbodyArmorSlot },
+    ];
+
+    for (let i = 0; i < slots.length; i++) {
+      const slotContainer = new PIXI.Container();
+      slotContainer.x = startX;
+      slotContainer.y = startY + i * (slotSize + padding);
+      slotContainer.interactive = true;
+      slotContainer.cursor = 'pointer';
+
+      const bg = new PIXI.Graphics();
+      bg.lineStyle(2, 0x666666);
+      bg.beginFill(0xffffff);
+      bg.drawRect(0, 0, slotSize, slotSize);
+      bg.endFill();
+      bg.interactive = true;
+      bg.eventMode = 'static';
+      bg.on('pointerdown', () => {
+        const item = slots[i].item;
+        if (item) {
+          const globalPos = bg.getGlobalPosition();
+          const canvasRect = (
+            this.equippedApp.view as HTMLCanvasElement
+          ).getBoundingClientRect();
+          const scaleX = canvasRect.width / this.equippedApp.screen.width;
+          const scaleY = canvasRect.height / this.equippedApp.screen.height;
+          const screenX = canvasRect.left + globalPos.x * scaleX;
+          const screenY = canvasRect.top + globalPos.y * scaleY;
+          this.inventory.itemActionPrompt(item, screenX, screenY);
+        }
+      });
+
+      slotContainer.addChild(bg);
+      const item = slots[i].item;
+      if (item) {
+        try {
+          const tex = PIXI.Assets.get(item.sprite as string) as PIXI.Texture;
+          if (tex) {
+            const spr = new PIXI.Sprite(tex);
+            const maxDim = Math.max(spr.width, spr.height);
+            if (maxDim > 0) {
+              const scale = Math.min(
+                slotSize / spr.width,
+                slotSize / spr.height,
+                1,
+              );
+              spr.width *= scale;
+              spr.height *= scale;
+            }
+            spr.x = (slotSize - spr.width) / 2;
+            spr.y = (slotSize - spr.height) / 2;
+            spr.interactive = true;
+            spr.eventMode = 'static';
+            spr.cursor = 'pointer';
+            spr.on('pointerdown', () => {
+              const globalPos = spr.getGlobalPosition();
+              const canvasRect = (
+                this.equippedApp.view as HTMLCanvasElement
+              ).getBoundingClientRect();
+              const scaleX = canvasRect.width / this.equippedApp.screen.width;
+              const scaleY = canvasRect.height / this.equippedApp.screen.height;
+              const screenX = canvasRect.left + globalPos.x * scaleX;
+              const screenY = canvasRect.top + globalPos.y * scaleY;
+              this.inventory.itemActionPrompt(item, screenX, screenY);
+            });
+            slotContainer.addChild(spr);
+          }
+        } catch (e) {}
+      }
+      this.equippedApp.stage.addChild(slotContainer);
+    }
+  }
+
   drawHealthUI() {
     this.healthLimbContainer.removeChildren();
 
     const baseX = 80;
-    const baseY = 50; // Adjusted for healthUIApp canvas
+    const baseY = 50;
     const limbSize = 50;
 
     this.addHealthLimbSprite(
@@ -1037,7 +1238,7 @@ export class GameController {
       baseY,
       limbSize,
       limbSize,
-      this.selectedLimb === 'head'
+      this.selectedLimb === 'head',
     );
     this.addHealthLimbSprite(
       'torso',
@@ -1045,7 +1246,7 @@ export class GameController {
       baseY + limbSize,
       limbSize,
       limbSize,
-      this.selectedLimb === 'torso'
+      this.selectedLimb === 'torso',
     );
     this.addHealthLimbSprite(
       'leftarm',
@@ -1053,7 +1254,7 @@ export class GameController {
       baseY + limbSize,
       limbSize,
       limbSize,
-      this.selectedLimb === 'leftarm'
+      this.selectedLimb === 'leftarm',
     );
     this.addHealthLimbSprite(
       'rightarm',
@@ -1061,7 +1262,7 @@ export class GameController {
       baseY + limbSize,
       limbSize,
       limbSize,
-      this.selectedLimb === 'rightarm'
+      this.selectedLimb === 'rightarm',
     );
     this.addHealthLimbSprite(
       'leftleg',
@@ -1069,7 +1270,7 @@ export class GameController {
       baseY + limbSize * 2,
       limbSize,
       limbSize,
-      this.selectedLimb === 'leftleg'
+      this.selectedLimb === 'leftleg',
     );
     this.addHealthLimbSprite(
       'rightleg',
@@ -1077,7 +1278,7 @@ export class GameController {
       baseY + limbSize * 2,
       limbSize,
       limbSize,
-      this.selectedLimb === 'rightleg'
+      this.selectedLimb === 'rightleg',
     );
   }
 
@@ -1087,7 +1288,7 @@ export class GameController {
     y: number,
     width: number,
     height: number,
-    selected: boolean = false
+    selected: boolean = false,
   ) {
     const texture = Assets.get(`${limbName}.png`);
     const sprite = new PIXI.Sprite(texture);
@@ -1167,7 +1368,7 @@ export class GameController {
     player: Player,
     targetX: number,
     targetY: number,
-    duration: number = 150
+    duration: number = 150,
   ) {
     const startX = player.renderX;
     const startY = player.renderY;
@@ -1289,7 +1490,7 @@ export class GameController {
         this.teleportPlayer(this.player1, x, y);
         console.log('Moved to left room');
         console.log(
-          'World coordinates: ' + this.playerWorldX + ', ' + this.playerWorldY
+          'World coordinates: ' + this.playerWorldX + ', ' + this.playerWorldY,
         );
       }
     } else if (transition.type == 'right') {
@@ -1303,7 +1504,7 @@ export class GameController {
         this.teleportPlayer(this.player1, x, y);
         console.log('Moved to right room');
         console.log(
-          'World coordinates: ' + this.playerWorldX + ', ' + this.playerWorldY
+          'World coordinates: ' + this.playerWorldX + ', ' + this.playerWorldY,
         );
       }
     } else if (transition.type == 'up') {
@@ -1317,7 +1518,7 @@ export class GameController {
         this.teleportPlayer(this.player1, x, y);
         console.log('Moved to up room');
         console.log(
-          'World coordinates: ' + this.playerWorldX + ', ' + this.playerWorldY
+          'World coordinates: ' + this.playerWorldX + ', ' + this.playerWorldY,
         );
       }
     } else if (transition.type == 'down') {
@@ -1331,7 +1532,7 @@ export class GameController {
         this.teleportPlayer(this.player1, x, y);
         console.log('Moved to down room');
         console.log(
-          'World coordinates: ' + this.playerWorldX + ', ' + this.playerWorldY
+          'World coordinates: ' + this.playerWorldX + ', ' + this.playerWorldY,
         );
       }
     }
@@ -1394,7 +1595,7 @@ export class GameController {
     return;
   }
 
-   updateAllTiles() {
+  updateAllTiles() {
     this.enemyTurnList = [];
     for (let x = 0; x < this.map.width; x++) {
       for (let y = 0; y < this.map.height; y++) {
@@ -1425,7 +1626,7 @@ export class GameController {
       this.map.tiles[x][y].fireValue = this.clampNumber(
         this.map.tiles[x][y].fireValue - this.generateRandomNumber(10, 20),
         0,
-        100
+        100,
       );
       if (this.map.tiles[x][y].name == 'empty') {
         this.map.createTile(x, y, 'ash', true);
@@ -1456,8 +1657,8 @@ export class GameController {
     });
   }
 
-  aiTargetUpdate(){
-     for (let x = 0; x < this.map.width; x++) {
+  aiTargetUpdate() {
+    for (let x = 0; x < this.map.width; x++) {
       for (let y = 0; y < this.map.height; y++) {
         this.updateTarget(x, y);
       }
@@ -1484,7 +1685,7 @@ export class GameController {
     y: number,
     fireValue: number,
     additive: boolean,
-    ignoreFlammable: boolean
+    ignoreFlammable: boolean,
   ) {
     if (
       (this.map.isValidTile(x, y) &&
@@ -1503,7 +1704,7 @@ export class GameController {
     y: number,
     size: number,
     strength: number,
-    startFires: boolean = false
+    startFires: boolean = false,
   ) {
     (async () => {
       for (let i = 0; i < size; i++) {
@@ -1537,12 +1738,12 @@ export class GameController {
   }
 
   loadPlayer(x: number, y: number, player: Player, playerId: number) {
-    player.posX = x
-    player.posY = y
-    player.renderX = x
-    player.renderY = y
-    this.map.tiles[x][y].entity!.push(player)
-    player.playerId = playerId
+    player.posX = x;
+    player.posY = y;
+    player.renderX = x;
+    player.renderY = y;
+    this.map.tiles[x][y].entity!.push(player);
+    player.playerId = playerId;
   }
 
   removePlayer(x: number, y: number) {
@@ -1603,7 +1804,7 @@ export class GameController {
     y: number,
     damage: number,
     damageType: string,
-    ignoredId: number | null = null
+    ignoredId: number | null = null,
   ) {
     let entities = this.getAllEntitiesOnTile(x, y);
     for (let i = 0; i < entities.length; i++) {
@@ -1645,19 +1846,19 @@ export class GameController {
       switch (event.key.toLowerCase()) {
         case 'w':
           targetY -= 1;
-          this.aiTargetUpdate()
+          this.aiTargetUpdate();
           break;
         case 'a':
           targetX -= 1;
-          this.aiTargetUpdate()
+          this.aiTargetUpdate();
           break;
         case 's':
           targetY += 1;
-          this.aiTargetUpdate()
+          this.aiTargetUpdate();
           break;
         case 'd':
           targetX += 1;
-          this.aiTargetUpdate()
+          this.aiTargetUpdate();
           break;
         default:
           return;
@@ -1697,7 +1898,7 @@ export class GameController {
       const coords = this.map.getTileCoords(
         event.clientX,
         event.clientY,
-        this.tileSize
+        this.tileSize,
       );
       if (coords) {
         this.mouseTileX = coords.x;
@@ -1709,7 +1910,7 @@ export class GameController {
       const coords = this.map.getTileCoords(
         event.clientX,
         event.clientY,
-        this.tileSize
+        this.tileSize,
       );
       if (coords) {
         const tileInfo = this.map.tiles[coords.x][coords.y].getTileInfo();
@@ -1717,27 +1918,31 @@ export class GameController {
 
         this.onTileClick(coords.x, coords.y, tileInfo);
 
-        if (!this.aimMode) {
-          if (this.getDistance(this.player1.posX, this.player1.posY, coords.x, coords.y)<=1 && !this.isLineObstructed(this.player1.posX,this.player1.posY,coords.x, coords.y,true,true)){
-            this.getAllEntitiesOnTile(coords.x, coords.y)?.forEach(
-              (entity: any) => {
-                entity.onUse(player);
-              }
-            );
-            const entity = this.map.tiles[coords.x][coords.y].entity;
-            if (entity && entity.length > 0 && entity[0] && entity[0].lootable) {
-              this.inventory.showLootPopup(entity[0]);
-            }
-          }
-        }else{
-          const entity = this.map.tiles[coords.x][coords.y].entity;
+        this.getAllEntitiesOnTile(coords.x, coords.y)?.forEach(
+          (entity: any) => {
+            entity.onUse(player);
+          },
+        );
+        const entity = this.map.tiles[coords.x][coords.y].entity;
+        if (entity[0].lootable) {
+          this.inventory.showLootPopup(entity[0]);
+        }
+        if (
+          this.aimMode &&
+          !this.isLineObstructed(
+            this.player1.posX,
+            this.player1.posY,
+            coords.x,
+            coords.y,
+            true,
+            true,
+          )
+        ) {
           if (entity && entity.length > 0) {
-            this.weaponFunctionality.attack(
-              coords,
-              this.map,
-              this.inventory,
-              entity[0]
-            );
+            const weapon = this.inventory.getEquippedWeapon();
+            if (weapon) {
+              weapon.dealDamage(entity[0]);
+            }
           }
         }
       }
