@@ -1,6 +1,7 @@
 import { BasicEnemyAI, HeavyInterferanceUnitAI, LightInterferanceUnitAI, MediumInterferanceUnitAI, OppressorUnitAI, ScorcherUnitAI } from './enemyAI';
 import { Entity } from './entity';
-import { Items } from './items/items';
+import { Item } from './items/items';
+import { gun,bigGun,bandage,medkit } from './items/items';
 
 export class Dummy extends Entity {
   override name = 'dummy';
@@ -17,7 +18,7 @@ export class Dummy extends Entity {
   override flammable = true;
   override removeOnDestroy = false;
   override tags: string[] | null = ['dummy'];
-  lootTable = [new Items().gun, new Items().bandage];
+  lootTable = [new gun(), new bandage()];
 
   override onDestroyed(damage: number, damageType: string): void{
     this.lootable = true;
@@ -38,7 +39,7 @@ export class HeavyDummy extends Entity {
   override flammable = true;
   override removeOnDestroy = false;
   override tags: string[] | null = ['dummy'];
-  lootTable = [new Items().bigGun, new Items().medkit];
+  lootTable = [new bigGun(), new medkit()];
 
   override onDestroyed(damage: number, damageType: string): void{
     this.lootable = true;
@@ -82,7 +83,7 @@ export class MediumInterferanceUnit extends MediumInterferanceUnitAI{
   override ai = true;
   
   isDead = false;
-  lootTable = [new Items().gun, new Items().bandage];
+  lootTable = [new gun(), new bandage()];
 }
 export class HeavyInterferanceUnit extends HeavyInterferanceUnitAI{
   override name = "Heavy Interferance Unit";
@@ -98,7 +99,7 @@ export class HeavyInterferanceUnit extends HeavyInterferanceUnitAI{
   override ai = true;
   
   isDead = false;
-  lootTable = [new Items().gun, new Items().bandage];
+  lootTable = [new gun(), new bandage()];
 }
 
 export class OppressorUnit extends OppressorUnitAI{
@@ -114,7 +115,7 @@ export class OppressorUnit extends OppressorUnitAI{
   override ai = true;
   
   isDead = false;
-  lootTable = [new Items().gun, new Items().bandage];
+  lootTable = [new gun(), new bandage()];
 }
 export class ScorcherUnit extends ScorcherUnitAI{
   override name = "Scorcher Unit";
@@ -129,5 +130,5 @@ export class ScorcherUnit extends ScorcherUnitAI{
   override ai = true;
 
   isDead = false;
-  lootTable = [new Items().gun, new Items().bandage];
+  lootTable = [new gun(), new bandage()];
 }

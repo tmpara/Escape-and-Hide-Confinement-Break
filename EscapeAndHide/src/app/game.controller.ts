@@ -6,7 +6,6 @@ import { World } from './world';
 import { Player } from './player';
 import { Item} from './items/items';
 import { WorldMapRenderer } from './worldMapRenderer';
-import { WeaponFunctionality } from './items/weapon_functionality';
 import { Inventory } from './inventory/inventory';
 import { Entity } from './entity';
 import { BasicEnemyAI } from './enemyAI';
@@ -16,12 +15,14 @@ export class GameController {
   static current: GameController | null = null;
   app!: Application;
   map!: GameGrid;
+  inventoryApp!: PIXI.Application;
+  equippedApp!: PIXI.Application;
   healthUIApp!: PIXI.Application;
-  logUIApp!: PIXI.Application;
   afflictionsApp!: PIXI.Application;
+  logUIApp!: PIXI.Application;
+  mapUIApp!: PIXI.Application;
   inventory!: Inventory;
 
-  weaponFunctionality = new WeaponFunctionality();
   player1 = new Player();
   world = new World();
 
@@ -29,6 +30,8 @@ export class GameController {
   spriteContainer = new Container();
   effectContainer = new Container();
   pickUpPopUp = new Container();
+  inventoryContainer = new Container();
+  equippedContainer = new Container();
 
   playerSprite = new Graphics();
   healthBar = new Graphics();
@@ -126,25 +129,179 @@ export class GameController {
     console.log(this.map.width + ' ' + this.map.height);
     this.loadPlayer(1, 1, this.player1,1);
 
+    //************************************************************\\
+    // TO DO: MAKE GAME SCREEN RENDER IN THE MIDDLE OF THE CONTAINER
+
     // Create PIXI app
     this.app = new Application();
     await this.app.init({
-      width: window.innerWidth * 0.7,
-      height: window.innerHeight * 0.7,
+      width: window.innerWidth * 0.6,
+      height: window.innerHeight * 1,
       backgroundColor: 0x222222,
       antialias: true,
     });
-
+    container.style.width = window.innerWidth * 0.6 + 'px';
+    container.style.height = window.innerHeight * 1 + 'px';
     container.appendChild(this.app.canvas as HTMLCanvasElement);
 
-    // create and place the world map renderer
+    // Create map and player
+    this.loadPlayer(1, 1, this.player1, 1);
+
+    // Draw grid, player
+    this.drawGrid();
+    this.drawPlayer();
+    this.drawHealthUI();
+
+    // Add containers to stage
+    this.app.stage.addChild(this.spriteContainer);
+    this.app.stage.addChild(this.effectContainer);
+    this.app.stage.addChild(this.playerSprite);
+    this.app.stage.addChild(this.healthBar);
+    this.app.stage.addChild(this.energyBar);
+
+    const inventoryRow = document.createElement('div');
+    inventoryRow.id = 'inventory-row';
+    inventoryRow.style.display = 'flex';
+    inventoryRow.style.flexDirection = 'row';
+    inventoryRow.style.width = '40%';
+    inventoryRow.style.height = '40%';
+    inventoryRow.style.position = 'absolute';
+    inventoryRow.style.right = '0';
+    inventoryRow.style.top = '0';
+    inventoryRow.style.gap = '0';
+    container.appendChild(inventoryRow);
+
+    const inventoryColumn = document.createElement('div');
+    inventoryColumn.id = 'inventory-column';
+    inventoryColumn.style.flex = '1';
+    inventoryColumn.style.display = 'flex';
+    inventoryColumn.style.flexDirection = 'column';
+    inventoryRow.appendChild(inventoryColumn);
+
+    const equippedColumn = document.createElement('div');
+    equippedColumn.id = 'equipped-column';
+    equippedColumn.style.flex = '1';
+    equippedColumn.style.display = 'flex';
+    equippedColumn.style.flexDirection = 'column';
+    inventoryRow.appendChild(equippedColumn);
+
+    this.inventoryApp = new PIXI.Application();
+    await this.inventoryApp.init({
+      width: window.innerWidth * 0.5,
+      height: window.innerHeight * 1,
+      antialias: true,
+      backgroundColor: 0x1099bb,
+    });
+    this.inventoryApp.view.style.display = 'block';
+    this.inventoryApp.view.style.width = '100%';
+    this.inventoryApp.view.style.height = '100%';
+    inventoryColumn.appendChild(this.inventoryApp.view as HTMLCanvasElement);
+
+    this.equippedApp = new PIXI.Application();
+    await this.equippedApp.init({
+      width: window.innerWidth * 0.5,
+      height: window.innerHeight * 1,
+      antialias: true,
+      backgroundColor: 0x333399,
+    });
+    this.equippedApp.view.style.display = 'block';
+    this.equippedApp.view.style.width = '100%';
+    this.equippedApp.view.style.height = '100%';
+    equippedColumn.appendChild(this.equippedApp.view as HTMLCanvasElement);
+    this.equippedContainer = this.equippedApp.stage;
+
+    this.inventory = new Inventory();
+    this.inventoryApp.stage.addChild(this.inventoryContainer);
+    this.inventory = new Inventory();
+    this.drawInventoryTab();
+    this.drawEquippedTab();
+
+    // Create status row for health and afflictions side by side on the right middle
+    const healthStatusRow = document.createElement('div');
+    healthStatusRow.id = 'health-status-row';
+    healthStatusRow.style.display = 'flex';
+    healthStatusRow.style.flexDirection = 'row';
+    healthStatusRow.style.width = '40%';
+    healthStatusRow.style.height = '30%';
+    healthStatusRow.style.position = 'absolute';
+    healthStatusRow.style.right = '0';
+    healthStatusRow.style.top = '40%';
+    container.appendChild(healthStatusRow);
+
+    this.healthUIApp = new PIXI.Application();
+    await this.healthUIApp.init({
+      width: window.innerWidth * 0.2,
+      height: window.innerHeight * 0.3,
+      backgroundColor: 0x333333,
+      antialias: true,
+    });
+    this.healthUIApp.view.style.display = 'block';
+    this.healthUIApp.view.style.width = '100%';
+    this.healthUIApp.view.style.height = '100%';
+
+    this.afflictionsApp = new PIXI.Application();
+    await this.afflictionsApp.init({
+      width: window.innerWidth * 0.2,
+      height: window.innerHeight * 0.3,
+      backgroundColor: 0x444444,
+      antialias: true,
+    });
+    this.afflictionsApp.view.style.display = 'block';
+    this.afflictionsApp.view.style.width = '100%';
+    this.afflictionsApp.view.style.height = '100%';
+
+    // Append health and afflictions side by side
+    healthStatusRow.appendChild(this.healthUIApp.view as HTMLCanvasElement);
+    healthStatusRow.appendChild(this.afflictionsApp.view as HTMLCanvasElement);
+    this.healthUIApp.stage.addChild(this.healthLimbContainer);
+
+    // Create log row on the right bottom
+    const logRow = document.createElement('div');
+    logRow.id = 'log-row';
+    logRow.style.display = 'flex';
+    logRow.style.flexDirection = 'row';
+    logRow.style.width = '40%';
+    logRow.style.height = '30%';
+    logRow.style.position = 'absolute';
+    logRow.style.right = '0';
+    logRow.style.top = '70%';
+    container.appendChild(logRow);
+
+    this.logUIApp = new PIXI.Application();
+    await this.logUIApp.init({
+      width: window.innerWidth * 0.2,
+      height: window.innerHeight * 0.3,
+      backgroundColor: 0x111111,
+      antialias: true,
+    });
+    this.logUIApp.view.style.display = 'block';
+    this.logUIApp.view.style.width = '100%';
+    this.logUIApp.view.style.height = '100%';
+
+    this.mapUIApp = new PIXI.Application();
+    await this.mapUIApp.init({
+      width: window.innerWidth * 0.2,
+      height: window.innerHeight * 0.3,
+      backgroundColor: 0x111111,
+      antialias: true,
+    });
+    this.mapUIApp.view.style.display = 'block';
+    this.mapUIApp.view.style.width = '100%';
+    this.mapUIApp.view.style.height = '100%';
+
+    logRow.appendChild(this.logUIApp.view as HTMLCanvasElement);
+    logRow.appendChild(this.mapUIApp.view as HTMLCanvasElement);
+
+    // create and place the world map renderer inside mapUIApp
+    const mapCellSize = 30; // pixels per world cell in minimap
     this.mapContainer = new Container();
-    const mapCellSize = 20; // pixels per world cell in minimap
-    // position at top-right with a small margin
-    this.mapContainer.x =
-    this.app.screen.width - this.world.width * mapCellSize - 16;
-    this.mapContainer.y = 8;
-    this.app.stage.addChild(this.mapContainer);
+    // calculate minimap dimensions
+    const minimapWidth = this.world.width * mapCellSize;
+    const minimapHeight = this.world.height * mapCellSize;
+    // center the minimap in the mapUIApp canvas
+    this.mapContainer.x = (this.mapUIApp.screen.width - minimapWidth) / 2;
+    this.mapContainer.y = (this.mapUIApp.screen.height - minimapHeight) / 2;
+    this.mapUIApp.stage.addChild(this.mapContainer);
     this.mapRenderer = new WorldMapRenderer(
       this.mapContainer,
       this.world,
@@ -153,9 +310,9 @@ export class GameController {
     );
     this.mapRenderer.draw();
 
-    // make minimap interactive so clicks teleport
-    this.mapContainer.interactive = true;
-    // ensure the container has a hit area that covers the full minimap
+    // make minimap interactive so clicks teleport (enabled in debug mode)
+    this.mapContainer.interactive = false;
+
     this.mapContainer.hitArea = new PIXI.Rectangle(
       0,
       0,
@@ -188,90 +345,6 @@ export class GameController {
         'teleported player to room:' + this.world.roomsIDs[cellX][cellY]
       );
     });
-
-    // Create map and player
-    this.loadPlayer(1, 1, this.player1, 1);
-
-    // Draw grid, player
-    this.drawGrid();
-    this.drawPlayer();
-    this.drawHealthUI();
-
-    // Add containers to stage
-    this.app.stage.addChild(this.spriteContainer);
-    this.app.stage.addChild(this.effectContainer);
-    this.app.stage.addChild(this.playerSprite);
-    this.app.stage.addChild(this.healthBar);
-    this.app.stage.addChild(this.energyBar);
-
-    // Create inventory and equipped containers side by side
-    const inventoryRow = document.createElement('div');
-    inventoryRow.style.display = 'flex';
-    inventoryRow.style.flexDirection = 'row';
-    inventoryRow.style.width = '30vw';
-    inventoryRow.style.height = '80vh';
-    inventoryRow.style.position = 'absolute';
-    inventoryRow.style.right = '0';
-    inventoryRow.style.top = '0';
-    container.appendChild(inventoryRow);
-
-    const invDiv = document.createElement('div');
-    invDiv.id = 'inventory-container';
-    invDiv.style.flex = '1';
-    invDiv.style.height = '100%';
-    inventoryRow.appendChild(invDiv);
-
-    const equippedDiv = document.createElement('div');
-    equippedDiv.id = 'equipped-container';
-    equippedDiv.style.flex = '1';
-    equippedDiv.style.height = '100%';
-    inventoryRow.appendChild(equippedDiv);
-    this.inventory = new Inventory(invDiv, equippedDiv);
-
-    // Create status row for health and afflictions side by side below main game canvas
-    const statusRow = document.createElement('div');
-    statusRow.id = 'status-row';
-    statusRow.style.display = 'flex';
-    statusRow.style.flexDirection = 'row';
-    statusRow.style.width = 'window.innerWidth * 0.3';
-    statusRow.style.height = 'window.innerHeight * 0.29';
-    // Append statusRow after main game canvas
-    container.appendChild(statusRow);
-
-    this.healthUIApp = new PIXI.Application();
-    await this.healthUIApp.init({
-      width: statusRow.clientWidth * 0.1,
-      height: window.innerHeight * 0.29,
-      backgroundColor: 0x333333,
-      antialias: true,
-    });
-    this.healthUIApp.view.style.display = 'block';
-
-    this.afflictionsApp = new PIXI.Application();
-    await this.afflictionsApp.init({
-      width: statusRow.clientWidth * 0.2,
-      height: window.innerHeight * 0.29,
-      backgroundColor: 0x444444,
-      antialias: true,
-    });
-    this.afflictionsApp.view.style.display = 'block';
-    this.afflictionsApp.view.style.flexDirection = 'row';
-
-    this.logUIApp = new PIXI.Application();
-    await this.logUIApp.init({
-      width: statusRow.clientWidth * 0.4,
-      height: window.innerHeight * 0.29,
-      backgroundColor: 0x333333,
-      antialias: true,
-    });
-    this.logUIApp.view.style.display = 'block';
-
-    // Append both canvases to the statusRow for side-by-side display
-    statusRow.appendChild(this.healthUIApp.view as HTMLCanvasElement);
-    statusRow.appendChild(this.afflictionsApp.view as HTMLCanvasElement);
-    this.healthUIApp.stage.addChild(this.healthLimbContainer);
-
-    statusRow.appendChild(this.logUIApp.view as HTMLCanvasElement);
 
     // Listen for movement
     this.listenForInput(this.player1);
@@ -579,6 +652,158 @@ export class GameController {
     return Math.max(Math.abs(posX - targetX), Math.abs(posY - targetY))
   }
 
+  drawInventoryTab() {
+    if (!this.inventory) return;
+    this.inventoryApp.stage.removeChildren();
+    for (let i = 0; i < this.inventory.inventorySlots.length; i++) {
+      const item = this.inventory.inventorySlots[i];
+      if (item) {
+        item.displayed = false;
+      }
+    }
+
+    for (let i = 0; i < this.inventory.inventorySlots.length; i++) {
+      const item = this.inventory.inventorySlots[i];
+      if (item && !item.displayed) {
+        item.displayed = true;
+        const texture = PIXI.Assets.get(item.sprite as string) as PIXI.Texture;
+        const sprite = new PIXI.Sprite(texture);
+        sprite.x = 0;
+        sprite.y = 0;
+
+        const text = new PIXI.Text({
+          text: item.name,
+          style: {
+            fontFamily: 'Arial',
+            fontSize: 20,
+            wordWrap: true,
+          },
+        });
+        text.anchor.set(0);
+        text.x = sprite.width + 10;
+        text.y = 0;
+        text.eventMode = 'static';
+        text.cursor = 'pointer';
+        text.onclick = () => {
+          const globalPos = text.getGlobalPosition();
+          const canvasRect = (
+            this.inventoryApp.view as HTMLCanvasElement
+          ).getBoundingClientRect();
+          const scaleX = canvasRect.width / this.inventoryApp.screen.width;
+          const scaleY = canvasRect.height / this.inventoryApp.screen.height;
+          const screenX = canvasRect.left + globalPos.x * scaleX;
+          const screenY = canvasRect.top + globalPos.y * scaleY;
+          this.inventory.itemActionPrompt(item, screenX, screenY);
+        };
+
+        const itemContainer = new PIXI.Container();
+        itemContainer.x = 10;
+        itemContainer.y = 10 + i * 35;
+        itemContainer.interactive = true;
+        itemContainer.cursor = 'pointer';
+        itemContainer.addChild(sprite);
+        itemContainer.addChild(text);
+        itemContainer.on('pointerdown', () => {
+          const globalPos = itemContainer.getGlobalPosition();
+          const canvasRect = (
+            this.inventoryApp.view as HTMLCanvasElement
+          ).getBoundingClientRect();
+          const scaleX = canvasRect.width / this.inventoryApp.screen.width;
+          const scaleY = canvasRect.height / this.inventoryApp.screen.height;
+          const screenX = canvasRect.left + globalPos.x * scaleX;
+          const screenY = canvasRect.top + globalPos.y * scaleY;
+          this.inventory.itemActionPrompt(item, screenX, screenY);
+        });
+        this.inventoryApp.stage.addChild(itemContainer);
+      }
+    }
+  }
+
+  drawEquippedTab() {
+    if (!this.inventory) return;
+    this.equippedApp.stage.removeChildren();
+    const slotSize = 64;
+    const padding = 10;
+    const startX = 10;
+    const startY = 10;
+
+    const slots: { name: string; item: any | null }[] = [
+      { name: 'Weapon', item: this.inventory.weaponSlot },
+      { name: 'Head Armor', item: this.inventory.headArmorSlot },
+      { name: 'Torso Armor', item: this.inventory.torsoArmorSlot },
+      { name: 'Fullbody Armor', item: this.inventory.fullbodyArmorSlot },
+    ];
+
+    for (let i = 0; i < slots.length; i++) {
+      const slotContainer = new PIXI.Container();
+      slotContainer.x = startX;
+      slotContainer.y = startY + i * (slotSize + padding);
+      slotContainer.interactive = true;
+      slotContainer.cursor = 'pointer';
+
+      const bg = new PIXI.Graphics();
+      bg.lineStyle(2, 0x666666);
+      bg.beginFill(0xffffff);
+      bg.drawRect(0, 0, slotSize, slotSize);
+      bg.endFill();
+      bg.interactive = true;
+      bg.eventMode = 'static';
+      bg.on('pointerdown', () => {
+        const item = slots[i].item;
+        if (item) {
+          const globalPos = bg.getGlobalPosition();
+          const canvasRect = (
+            this.equippedApp.view as HTMLCanvasElement
+          ).getBoundingClientRect();
+          const scaleX = canvasRect.width / this.equippedApp.screen.width;
+          const scaleY = canvasRect.height / this.equippedApp.screen.height;
+          const screenX = canvasRect.left + globalPos.x * scaleX;
+          const screenY = canvasRect.top + globalPos.y * scaleY;
+          this.inventory.itemActionPrompt(item, screenX, screenY);
+        }
+      });
+
+      slotContainer.addChild(bg);
+      const item = slots[i].item;
+      if (item) {
+        try {
+          const tex = PIXI.Assets.get(item.sprite as string) as PIXI.Texture;
+          if (tex) {
+            const spr = new PIXI.Sprite(tex);
+            const maxDim = Math.max(spr.width, spr.height);
+            if (maxDim > 0) {
+              const scale = Math.min(
+                slotSize / spr.width,
+                slotSize / spr.height,
+                1,
+              );
+              spr.width *= scale;
+              spr.height *= scale;
+            }
+            spr.x = (slotSize - spr.width) / 2;
+            spr.y = (slotSize - spr.height) / 2;
+            spr.interactive = true;
+            spr.eventMode = 'static';
+            spr.cursor = 'pointer';
+            spr.on('pointerdown', () => {
+              const globalPos = spr.getGlobalPosition();
+              const canvasRect = (
+                this.equippedApp.view as HTMLCanvasElement
+              ).getBoundingClientRect();
+              const scaleX = canvasRect.width / this.equippedApp.screen.width;
+              const scaleY = canvasRect.height / this.equippedApp.screen.height;
+              const screenX = canvasRect.left + globalPos.x * scaleX;
+              const screenY = canvasRect.top + globalPos.y * scaleY;
+              this.inventory.itemActionPrompt(item, screenX, screenY);
+            });
+            slotContainer.addChild(spr);
+          }
+        } catch (e) {}
+      }
+      this.equippedApp.stage.addChild(slotContainer);
+    }
+  }
+
   drawHealthBar() {
     this.healthBar.removeChildren();
     this.healthBar.clear();
@@ -678,11 +903,9 @@ export class GameController {
 
     // Energy
     const energyPercentage =
-      this.player1.Energy.currentEnergy / this.player1.Energy.maxEnergy;
+    this.player1.Energy.currentEnergy / this.player1.Energy.maxEnergy;
     this.energyBar.beginFill(0xffff00);
     this.energyBar.drawRect(x, y, barWidth * energyPercentage, barHeight);
-    this.energyBar.endFill();
-
     this.energyBar.endFill();
   }
 
@@ -1164,26 +1387,50 @@ export class GameController {
   }
 
   drawLogsUI(){
+    // clear previous content and mask
     this.logUIApp.stage.removeChildren();
-    let i = 0;
-    for (i=0; i<this.logs.length; i++){
+    this.logUIApp.stage.mask = null;
+
+    const padding = 10;
+    const spacing = 5;
+    const maxWidth = Math.max(0, this.logUIApp.screen.width - padding * 2);
+    const maxHeight = Math.max(0, this.logUIApp.screen.height - padding * 2);
+
+    // Start from bottom and render newest logs at the bottom
+    let yOffset = this.logUIApp.screen.height - padding;
+
+    for (let i = this.logs.length - 1; i >= 0; i--) {
+      const txt = this.logs[i];
       const logText = new Text({
-        text: this.logs[i],
+        text: txt,
         style: {
-          fontSize: 20,
+          fontSize: 15,
           fill: '#ffffff',
+          wordWrap: true,
+          wordWrapWidth: maxWidth,
+          align: 'left',
         },
-        y: i * 25 + 10,
-        x: 10,
       });
+
+      // measure height and compute top position for this entry
+      const entryHeight = logText.height;
+      const top = yOffset - entryHeight;
+
+      // stop if there's no more space
+      if (top < padding) break;
+
+      logText.x = padding;
+      logText.y = top;
       this.logUIApp.stage.addChild(logText);
+
+      yOffset = top - spacing;
     }
   }
 
   addLog(message: string) {
     const timestamp = new Date().toLocaleTimeString();
     this.logs.push(`${timestamp}` + ' - ' + message);
-    if (this.logs.length > 10) {
+    if (this.logs.length > 20) {
       this.logs.shift();
     }
     this.drawLogsUI();
@@ -1730,15 +1977,25 @@ export class GameController {
           this.addLog("Player ended their turn.");
           this.endTurn();
           break;
+        case 'f':
+          this.addLog("Aim mode: " + (this.aimMode ? "off" : "on") + ".");
+          this.aimMode = !this.aimMode;
+          break;
         case 'p':
+          this.addLog("(DEBUG) Explosion created at player position.");
           this.createExplosion(player.posX, player.posY, 3, 100, true);
           this.endTurn();
           break;
-        case 'f':
-          this.aimMode = !this.aimMode;
-          break;
         case 'l':
+          this.addLog("(DEBUG) Healed bleeding.");
           this.player1.Health.stopBleeding();
+          break;
+        case 'o':
+          this.addLog("(DEBUG) This is a very long message to test the logging system in the game. It should properly handle wrapping and display multiple lines if necessary.");
+          break;
+        case 't':
+          this.addLog("(DEBUG) Enabled map teleportation.");
+          this.mapContainer!.interactive = true;
           break;
         default:
           return;
@@ -1787,12 +2044,7 @@ export class GameController {
         }else{
           const entity = this.map.tiles[coords.x][coords.y].entity;
           if (entity && entity.length > 0) {
-            this.weaponFunctionality.attack(
-              coords,
-              this.map,
-              this.inventory,
-              entity[0]
-            );
+
           }
         }
       }

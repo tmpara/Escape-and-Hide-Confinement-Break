@@ -1,8 +1,8 @@
 import { Entity } from './entity';
 import { Player } from './player';
 import { GameController } from './game.controller';
-import { Items } from './items/items';
-import { LightInterferanceUnit } from "./enemyTypes";
+import { Item } from './items/items';
+import { gun,bandage } from './items/items';
 
 export class Wall1 extends Entity {
   override name = 'Wall';
@@ -180,7 +180,7 @@ export class WeaponCrate extends Entity {
   override hiddenOutsideLOS = true;
   override blockLOS = false;
   override flammable = true;
-  lootTable = [new Items().gun];
+  lootTable = [new gun()];
 }
 
 export class MedicalCrate extends Entity {
@@ -195,7 +195,7 @@ export class MedicalCrate extends Entity {
   override hiddenOutsideLOS = true;
   override blockLOS = false;
   override flammable = true;
-  lootTable = [new Items().bandage];
+  lootTable = [new bandage()];
 }
 
 export class CryoChamber extends Entity {

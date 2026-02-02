@@ -278,36 +278,12 @@ export class RoomsData {
         /* ---- Room code end ---- */
             
         /* ---- Room code start ---- */
-        this.crossHall1 = new Room(15, 15, ["up", "left", "right", "down"], []);
+        this.crossHall1 = new Room(28, 28, ["up", "left", "right", "down"], []);
         this.crossHall1.layout = Array.from({ length: this.crossHall1.width }, () => Array.from({ length: this.crossHall1.height }));
-        this.crossHall1.layout[0][7] = new RoomTransition("left");
-        this.crossHall1.layout[1][1] = new WallCorner1();
-        this.crossHall1.layout[1][2] = new WallCorner1();
-        this.crossHall1.layout[1][3] = new WallCorner1();
-        this.crossHall1.layout[1][11] = new WallCorner1();
-        this.crossHall1.layout[1][12] = new WallCorner1();
-        this.crossHall1.layout[1][13] = new WallCorner1();
-        this.crossHall1.layout[2][1] = new WallCorner1();
-        this.crossHall1.layout[2][2] = new WallCorner1();
-        this.crossHall1.layout[2][12] = new WallCorner1();
-        this.crossHall1.layout[2][13] = new WallCorner1();
-        this.crossHall1.layout[3][1] = new WallCorner1();
-        this.crossHall1.layout[3][13] = new WallCorner1();
-        this.crossHall1.layout[7][0] = new RoomTransition("up");
-        this.crossHall1.layout[7][14] = new RoomTransition("down");
-        this.crossHall1.layout[11][1] = new WallCorner1();
-        this.crossHall1.layout[11][13] = new WallCorner1();
-        this.crossHall1.layout[12][1] = new WallCorner1();
-        this.crossHall1.layout[12][2] = new WallCorner1();
-        this.crossHall1.layout[12][12] = new WallCorner1();
-        this.crossHall1.layout[12][13] = new WallCorner1();
-        this.crossHall1.layout[13][1] = new WallCorner1();
-        this.crossHall1.layout[13][2] = new WallCorner1();
-        this.crossHall1.layout[13][3] = new WallCorner1();
-        this.crossHall1.layout[13][11] = new WallCorner1();
-        this.crossHall1.layout[13][12] = new WallCorner1();
-        this.crossHall1.layout[13][13] = new WallCorner1();
-        this.crossHall1.layout[14][7] = new RoomTransition("right");
+        this.crossHall1.layout[0][13] = new RoomTransition("left");
+        this.crossHall1.layout[13][0] = new RoomTransition("up");
+        this.crossHall1.layout[13][27] = new RoomTransition("down");
+        this.crossHall1.layout[27][13] = new RoomTransition("right");
         /* ---- Room code end ---- */
 
         this.verticalHall = new Room(5, 15, ["up", "down"], []);
