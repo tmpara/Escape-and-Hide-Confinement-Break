@@ -12,8 +12,7 @@ export class Inventory {
   itemActionOverlay: HTMLDivElement | null = null;
   floorActionOverlay: HTMLDivElement | null = null;
 
-  equip(item: Item) {
-    const index = this.inventorySlots.indexOf(item);
+  equip(item: Item, index: number) {
     if (item.slot === 'weapon') {
       if (!this.weaponSlot) {
         this.weaponSlot = item;
@@ -66,6 +65,7 @@ export class Inventory {
     if (emptyIndex !== -1) {
       this.inventorySlots[emptyIndex] = item;
     }
+    console.log('player inventory: ', this.inventorySlots);
     GameController.current?.drawInventoryTab();
     GameController.current?.drawEquippedTab();
   }
@@ -175,6 +175,7 @@ export class Inventory {
       return Promise.resolve(false);
     }
     this.lootPopupStyles();
+    const inventory = entity.inventory.inventorySlots;
 
     const overlay = document.createElement('div');
     overlay.className = 'loot-overlay';
@@ -189,15 +190,15 @@ export class Inventory {
     const itemLootBox = document.createElement('div');
     itemLootBox.className = 'item-loot box';
 
-    for (let i = 0; i < entity.inventorySlots.length; i++) {
-      const item = entity.inventorySlots[i];
+    for (let i = 0; i < inventory.length; i++) {
+      const item = inventory[i];
       const itemButton = document.createElement('button');
       itemButton.className = 'loot-item-btn';
       itemButton.textContent = item.name;
       itemButton.onclick = () => {
         this.pickUp(item);
         itemButton.disabled = true;
-        entity.inventorySlots.splice(i, 1);
+        inventory.splice(i, 1);
         itemLootBox.removeChild(itemButton);
       };
       itemLootBox.appendChild(itemButton);
@@ -233,7 +234,12 @@ export class Inventory {
     });
   }
 
-  itemActionPrompt(item: Item, screenX?: number, screenY?: number) {
+  itemActionPrompt(
+    item: Item,
+    index: number,
+    screenX?: number,
+    screenY?: number,
+  ) {
     if (this.itemActionOverlay) {
       return;
     }
@@ -262,7 +268,7 @@ export class Inventory {
     } else {
       equipButton.textContent = 'Equip';
       equipButton.onclick = () => {
-        this.equip(item);
+        this.equip(item, index);
       };
       dropButton.onclick = () => {
         this.drop(item, false);

@@ -7,12 +7,18 @@ import { Player } from './player';
 import { bigGun, gun, helmet, Item, vest } from './items/items';
 import { WorldMapRenderer } from './worldMapRenderer';
 import { Inventory } from './inventory/inventory';
-import { Dummy, HeavyDummy, LightInterferanceUnit, MediumInterferanceUnit, HeavyInterferanceUnit, OppressorUnit, ScorcherUnit} from './enemyTypes'
+import {
+  Dummy,
+  HeavyDummy,
+  LightInterferanceUnit,
+  MediumInterferanceUnit,
+  HeavyInterferanceUnit,
+  OppressorUnit,
+  ScorcherUnit,
+} from './enemyTypes';
 import { Entity } from './entity';
 import { BasicEnemyAI } from './enemyAI';
 import { RoomTransition, GlassShards } from './entities';
-
-
 
 export class GameController {
   static current: GameController | null = null;
@@ -84,9 +90,13 @@ export class GameController {
     await Assets.load('/sprites/entities/wall_placeholder_leftcap.png');
     await Assets.load('/sprites/entities/wall_placeholder_rightcap.png');
     await Assets.load('/sprites/entities/wall_placeholder_toprightcorner.png');
-    await Assets.load('/sprites/entities/wall_placeholder_bottomleftcorner.png');
+    await Assets.load(
+      '/sprites/entities/wall_placeholder_bottomleftcorner.png',
+    );
     await Assets.load('/sprites/entities/wall_placeholder_topleftcorner.png');
-    await Assets.load('/sprites/entities/wall_placeholder_bottomrightcorner.png');
+    await Assets.load(
+      '/sprites/entities/wall_placeholder_bottomrightcorner.png',
+    );
     await Assets.load('/sprites/entities/door1.png');
     await Assets.load('/sprites/entities/glass_shards.png');
     await Assets.load('/sprites/entities/explosiveBarrel.png');
@@ -133,11 +143,11 @@ export class GameController {
     // Create map and player
     this.map = this.world.rooms[this.playerWorldX][this.playerWorldY];
     console.log(this.map.width + ' ' + this.map.height);
-    this.loadPlayer(1, 1, this.player1,1);
+    this.loadPlayer(1, 1, this.player1, 1);
     //this.loadEntity(6,6, this.liu, this.map);
-   // this.loadEntity(5,5, this.miu, this.map);
-   // this.loadEntity(5,5, this.hiu, this.map);
-    this.loadEntity(7,7, this.scorcher, this.map);
+    // this.loadEntity(5,5, this.miu, this.map);
+    // this.loadEntity(5,5, this.hiu, this.map);
+    this.loadEntity(7, 7, this.scorcher, this.map);
 
     // Create PIXI app
     this.app = new Application();
@@ -643,8 +653,8 @@ export class GameController {
     return hitTiles;
   }
 
-  getDistance(posX: number, posY: number, targetX: number, targetY: number){
-    return Math.max(Math.abs(posX - targetX), Math.abs(posY - targetY))
+  getDistance(posX: number, posY: number, targetX: number, targetY: number) {
+    return Math.max(Math.abs(posX - targetX), Math.abs(posY - targetY));
   }
 
   drawHealthBar() {
@@ -656,7 +666,7 @@ export class GameController {
     const y = 570;
 
     const myText = new Text({
-      text: Math.round(this.player1.Health.currentBlood) + ' ml',
+      text: Math.round(this.player1.Health.currentHealth) + ' ml',
       style: {
         fontSize: 20,
         fill: '#ffffff',
@@ -672,17 +682,17 @@ export class GameController {
     this.healthBar.endFill();
 
     const bleedingPercentage = Math.min(
-      this.player1.Health.bloodLoss.severity / this.player1.Health.maxBlood,
+      this.player1.Health.bloodLoss.severity / this.player1.Health.maxHealth,
       1,
     );
     const regenPercentage = Math.min(
-      this.player1.Health.regeneration / this.player1.Health.maxBlood,
+      this.player1.Health.regeneration / this.player1.Health.maxHealth,
       1,
     );
 
     // Health
     const healthPercentage =
-      this.player1.Health.currentBlood / this.player1.Health.maxBlood;
+      this.player1.Health.currentHealth / this.player1.Health.maxHealth;
     this.healthBar.beginFill(0xff0000);
     this.healthBar.drawRect(x, y, barWidth * healthPercentage, barHeight);
     this.healthBar.addChild(myText);
@@ -690,7 +700,7 @@ export class GameController {
 
     // Bleeding effect
     if (
-      this.player1.Health.currentBlood > 0 &&
+      this.player1.Health.currentHealth > 0 &&
       this.player1.Health.bloodLoss.severity > 0 &&
       bleedingPercentage > regenPercentage
     ) {
@@ -707,7 +717,7 @@ export class GameController {
     // Regeneration effect
     if (
       this.player1.Health.regeneration > 0 &&
-      this.player1.Health.currentBlood < this.player1.Health.maxBlood
+      this.player1.Health.currentHealth < this.player1.Health.maxHealth
     ) {
       let regenBarX = x + barWidth * healthPercentage;
       let regenBarWidth = barWidth * regenPercentage;
@@ -717,13 +727,13 @@ export class GameController {
       ) {
         regenBarX = x + barWidth * (healthPercentage - bleedingPercentage);
       } else if (
-        this.player1.Health.currentBlood + this.player1.Health.regeneration >
-        this.player1.Health.maxBlood
+        this.player1.Health.currentHealth + this.player1.Health.regeneration >
+        this.player1.Health.maxHealth
       ) {
         regenBarWidth =
           barWidth *
-          ((this.player1.Health.maxBlood - this.player1.Health.currentBlood) /
-            this.player1.Health.maxBlood);
+          ((this.player1.Health.maxHealth - this.player1.Health.currentHealth) /
+            this.player1.Health.maxHealth);
       }
       this.healthBar.beginFill(0x00ff00);
       this.healthBar.drawRect(regenBarX, y, regenBarWidth, barHeight);
@@ -1049,44 +1059,62 @@ export class GameController {
     const tileY = this.mouseTileY;
     const centerX = tileX * this.tileSize + this.tileSize / 2;
     const centerY = tileY * this.tileSize + this.tileSize / 2;
-    if (this.map.isValidTile(tileX, tileY)){
-      if (!this.aimMode){
-        if(this.getDistance(this.player1.posX,this.player1.posY,tileX,tileY)<=1 && !this.isLineObstructed(this.player1.posX,this.player1.posY,tileX,tileY,true,true)){
+    if (this.map.isValidTile(tileX, tileY)) {
+      if (!this.aimMode) {
+        if (
+          this.getDistance(
+            this.player1.posX,
+            this.player1.posY,
+            tileX,
+            tileY,
+          ) <= 1 &&
+          !this.isLineObstructed(
+            this.player1.posX,
+            this.player1.posY,
+            tileX,
+            tileY,
+            true,
+            true,
+          )
+        ) {
           sprite = Assets.get('crosshair_default.png') as PIXI.Texture;
-        }else{
+        } else {
           sprite = Assets.get('crosshair_default_invalid.png') as PIXI.Texture;
         }
-      }else{
-        if (!this.isLineObstructed(this.player1.posX,this.player1.posY,tileX,tileY,true,true)){
+      } else {
+        if (
+          !this.isLineObstructed(
+            this.player1.posX,
+            this.player1.posY,
+            tileX,
+            tileY,
+            true,
+            true,
+          )
+        ) {
           sprite = Assets.get('crosshair_aimmode.png') as PIXI.Texture;
-        }else{
+        } else {
           sprite = Assets.get('crosshair_aimmode_invalid.png') as PIXI.Texture;
-        }}
-        let reticleSprite = new PIXI.Sprite(sprite);
-        reticleSprite.alpha = 1;
-        reticleSprite.width = this.tileSize;
-        reticleSprite.height = this.tileSize;
-        reticleSprite.anchor.set(0.5);
-        reticleSprite._zIndex = 50;
-        reticleSprite.position.set(centerX, centerY);
-        this.spriteContainer.addChild(reticleSprite);
+        }
+      }
+      let reticleSprite = new PIXI.Sprite(sprite);
+      reticleSprite.alpha = 1;
+      reticleSprite.width = this.tileSize;
+      reticleSprite.height = this.tileSize;
+      reticleSprite.anchor.set(0.5);
+      reticleSprite._zIndex = 50;
+      reticleSprite.position.set(centerX, centerY);
+      this.spriteContainer.addChild(reticleSprite);
     }
   }
 
   drawInventoryTab() {
     if (!this.inventory) return;
     this.inventoryApp.stage.removeChildren();
-    for (let i = 0; i < this.inventory.inventorySlots.length; i++) {
-      const item = this.inventory.inventorySlots[i];
-      if (item) {
-        item.displayed = false;
-      }
-    }
 
     for (let i = 0; i < this.inventory.inventorySlots.length; i++) {
       const item = this.inventory.inventorySlots[i];
-      if (item && !item.displayed) {
-        item.displayed = true;
+      if (item) {
         const texture = PIXI.Assets.get(item.sprite as string) as PIXI.Texture;
         const sprite = new PIXI.Sprite(texture);
         sprite.x = 0;
@@ -1114,7 +1142,7 @@ export class GameController {
           const scaleY = canvasRect.height / this.inventoryApp.screen.height;
           const screenX = canvasRect.left + globalPos.x * scaleX;
           const screenY = canvasRect.top + globalPos.y * scaleY;
-          this.inventory.itemActionPrompt(item, screenX, screenY);
+          this.inventory.itemActionPrompt(item, i, screenX, screenY);
         };
 
         const itemContainer = new PIXI.Container();
@@ -1133,7 +1161,7 @@ export class GameController {
           const scaleY = canvasRect.height / this.inventoryApp.screen.height;
           const screenX = canvasRect.left + globalPos.x * scaleX;
           const screenY = canvasRect.top + globalPos.y * scaleY;
-          this.inventory.itemActionPrompt(item, screenX, screenY);
+          this.inventory.itemActionPrompt(item, i, screenX, screenY);
         });
         this.inventoryApp.stage.addChild(itemContainer);
       }
@@ -1335,16 +1363,16 @@ export class GameController {
     this.getAfflictionsForLimb(this.selectedLimb);
     this.afflictionsApp.stage.removeChildren();
     let i = 0;
-     const afflictionText = new Text({
-          text: this.selectedLimb,
-          style: {
-            fontSize: 16,
-            fill: '#ffffff',
-          },
-          y: i * 24 + 10,
-          x: 10,
-        });
-        i++
+    const afflictionText = new Text({
+      text: this.selectedLimb,
+      style: {
+        fontSize: 16,
+        fill: '#ffffff',
+      },
+      y: i * 24 + 10,
+      x: 10,
+    });
+    i++;
     this.afflictionsApp.stage.addChild(afflictionText);
     for (let affliction in this.afflictions) {
       const afflictionValue = this.afflictions[affliction];
@@ -1602,11 +1630,11 @@ export class GameController {
         this.updateTile(x, y);
       }
     }
-   
+
     for (const entity of this.enemyTurnList) {
       try {
         // Let the entity take its turn (may be synchronous)
-        if (entity instanceof BasicEnemyAI){
+        if (entity instanceof BasicEnemyAI) {
           entity.aiTurn();
         }
       } catch (err) {
@@ -1617,7 +1645,6 @@ export class GameController {
       this.drawGrid();
       this.drawPlayer();
     }
-    
   }
 
   updateTile(x: number, y: number) {
@@ -1635,25 +1662,48 @@ export class GameController {
       if (spreadchance == 1) {
         // read neighbor fire values only if the neighbor tile exists
         if (this.map.isValidTile(x + 1, y)) {
-          this.ignite(x + 1, y, this.map.tiles[x + 1][y].fireValue + 25, false, false);
+          this.ignite(
+            x + 1,
+            y,
+            this.map.tiles[x + 1][y].fireValue + 25,
+            false,
+            false,
+          );
         }
         if (this.map.isValidTile(x - 1, y)) {
-          this.ignite(x - 1, y, this.map.tiles[x - 1][y].fireValue + 25, false, false);
+          this.ignite(
+            x - 1,
+            y,
+            this.map.tiles[x - 1][y].fireValue + 25,
+            false,
+            false,
+          );
         }
         if (this.map.isValidTile(x, y + 1)) {
-          this.ignite(x, y + 1, this.map.tiles[x][y + 1].fireValue + 25, false, false);
+          this.ignite(
+            x,
+            y + 1,
+            this.map.tiles[x][y + 1].fireValue + 25,
+            false,
+            false,
+          );
         }
         if (this.map.isValidTile(x, y - 1)) {
-          this.ignite(x, y - 1, this.map.tiles[x][y - 1].fireValue + 25, false, false);
+          this.ignite(
+            x,
+            y - 1,
+            this.map.tiles[x][y - 1].fireValue + 25,
+            false,
+            false,
+          );
         }
       }
     }
-      this.map.tiles[x][y].entity!.forEach((entity) => {
-        entity.onEndTurn()
-        if (entity.ai){
-          this.enemyTurnList.push(entity);
-        }
-        
+    this.map.tiles[x][y].entity!.forEach((entity) => {
+      entity.onEndTurn();
+      if (entity.ai) {
+        this.enemyTurnList.push(entity);
+      }
     });
   }
 
@@ -1665,18 +1715,14 @@ export class GameController {
     }
   }
 
-  updateTarget(x: number, y: number){
-  this.map.tiles[x][y].entity!.forEach((entity) => {
-        if (entity.ai){
-          if (entity instanceof BasicEnemyAI){
-            entity.findTargets();
-            
-           
-          }else{
-            
-          }
+  updateTarget(x: number, y: number) {
+    this.map.tiles[x][y].entity!.forEach((entity) => {
+      if (entity.ai) {
+        if (entity instanceof BasicEnemyAI) {
+          entity.findTargets();
+        } else {
         }
-
+      }
     });
   }
 
@@ -1776,7 +1822,7 @@ export class GameController {
     if (!this.map) return [] as any;
     if (!this.map.isValidTile(x, y)) return [] as any;
     const ents = this.map.tiles[x][y].entity;
-    return ents ? ents : [] as any;
+    return ents ? ents : ([] as any);
   }
 
   checkForCollision(x: number, y: number) {
@@ -1828,12 +1874,13 @@ export class GameController {
     this.updateAllTiles();
     this.player1.Energy.setEnergy(100);
     if (this.player1.Health.torso.zapped.severity > 0) {
-      this.player1.Energy.loseEnergy(this.player1.Health.torso.zapped.severity)
-      if (this.player1.Health.torso.zapped.severity >= 5){
-      this.player1.Health.torso.zapped.severity = this.player1.Health.torso.zapped.severity - 5;
-    } else {
-      this.player1.Health.torso.zapped.severity = 0;
-    }
+      this.player1.Energy.loseEnergy(this.player1.Health.torso.zapped.severity);
+      if (this.player1.Health.torso.zapped.severity >= 5) {
+        this.player1.Health.torso.zapped.severity =
+          this.player1.Health.torso.zapped.severity - 5;
+      } else {
+        this.player1.Health.torso.zapped.severity = 0;
+      }
     }
     this.player1.playerAction(0);
   }
@@ -1924,6 +1971,7 @@ export class GameController {
           },
         );
         const entity = this.map.tiles[coords.x][coords.y].entity;
+        console.log(entity[0].inventory.inventorySlots);
         if (entity[0].lootable) {
           this.inventory.showLootPopup(entity[0]);
         }

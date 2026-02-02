@@ -3,22 +3,21 @@ import { Health } from './health/health';
 import { Inventory } from './inventory/inventory';
 import { Item } from './items/items';
 export abstract class Entity {
-  
-  id=0;
-  name = "";
-  description = "";
-  sprite = "placeholder.png";
-  deadSprite = "";
+  id = 0;
+  name = '';
+  description = '';
+  sprite = 'placeholder.png';
+  deadSprite = '';
   tags: string[] | null = null;
-  connectsWith: string | null = null
-  spriteTopCap = "";
-  spriteBottomCap = "";
-  spriteLeftCap = "";
-  spriteRightCap = "";
-  spriteTopLeftCorner = "";
-  spriteTopRightCorner = "";
-  spriteBottomLeftCorner = "";
-  spriteBottomRightCorner = "";
+  connectsWith: string | null = null;
+  spriteTopCap = '';
+  spriteBottomCap = '';
+  spriteLeftCap = '';
+  spriteRightCap = '';
+  spriteTopLeftCorner = '';
+  spriteTopRightCorner = '';
+  spriteBottomLeftCorner = '';
+  spriteBottomRightCorner = '';
   posX = 0;
   posY = 0;
   zIndex = 4;
@@ -35,13 +34,26 @@ export abstract class Entity {
   removeOnDestroy = true;
   fireValue = 0;
   ai = false;
+  itemPool: Item[] = [];
+  inventorySize = 0;
+  inventory = new Inventory();
 
   takeDamage(damage: number, damageType: string) {
     this.damageResistance = 0;
     this.onTakeDamage(damage, damageType);
     if (this.damageable == true && this.destroyed == false) {
+      if (this.inventory.headArmorSlot) {
+        this.damageResistance += this.inventory.headArmorSlot.defense;
+      }
+      if (this.inventory.torsoArmorSlot) {
+        this.damageResistance += this.inventory.torsoArmorSlot.defense;
+      }
+      if (this.inventory.fullbodyArmorSlot) {
+        this.damageResistance += this.inventory.fullbodyArmorSlot.defense;
+      }
+      console.log('total damage resistance: ' + this.damageResistance);
       this.health -= damage - this.damageResistance;
-      if (this.health! <= 0) {
+      if (this.health <= 0) {
         this.destroy(damage, damageType);
       }
     }
@@ -65,6 +77,36 @@ export abstract class Entity {
     }
   }
 
+  generateLoot() {
+    const lootLimit = Math.floor(Math.random() * 5) + 1;
+    const selectedItems: Item[] = [];
+    while (
+      selectedItems.length < this.inventorySize ||
+      selectedItems.length < lootLimit
+    ) {
+      const lootIndex = Math.floor(Math.random() * this.itemPool.length);
+      selectedItems.push(this.itemPool[lootIndex]);
+    }
+    for (const item of selectedItems) {
+      if (item.slot && item.slot === 'weapon') {
+        this.inventory.weaponSlot = item;
+        // console.log('Equipped weapon:', item.name);
+      } else if (item.slot && item.slot === 'head') {
+        this.inventory.headArmorSlot = item;
+        // console.log('Equipped head armor:', item.name);
+      } else if (item.slot && item.slot === 'torso') {
+        this.inventory.torsoArmorSlot = item;
+      } else if (item.slot && item.slot === 'fullbody') {
+        this.inventory.fullbodyArmorSlot = item;
+      }
+      const emptyIndex = this.inventory.inventorySlots.indexOf(null);
+      if (emptyIndex !== -1) {
+        this.inventory.inventorySlots[emptyIndex] = item;
+      }
+    }
+    console.log('entity inventory: ', this.inventory.inventorySlots);
+  }
+
   onTakeDamage(damage: number, damageType: string) {}
 
   onDestroyed(damage: number, damageType: string) {}
@@ -73,8 +115,9 @@ export abstract class Entity {
 
   onSteppedOn(user: Entity | null) {}
 
-  onEndTurn(){}
+  onEndTurn() {}
 
-  onHeal(amountHealed: number){}
+  onHeal(amountHealed: number) {}
 
+  onSpawn() {}
 }
