@@ -1,4 +1,6 @@
 import { Entity } from '../entity';
+import { GameController } from '../game.controller';
+import { Player } from '../player';
 
 export abstract class Item {
   name = '';
@@ -8,7 +10,7 @@ export abstract class Item {
   isEquipped = false;
   damage = 0;
   range = 0;
-  healAmount = 0;
+  healAfflictions = [ [null, 0] ]; // [afflictionType, amount][]
   defense = 0;
   slot = '';
 
@@ -17,7 +19,7 @@ export abstract class Item {
   }
 
   heal(target: Entity) {
-    target.heal(this.healAmount);
+    target.heal(0);
   }
 }
 
@@ -49,24 +51,42 @@ export class bigGun extends Item {
 }
 export class bandage extends Item {
   override name = 'bandage';
-  override category = 'consumable';
+  override category = 'consumable_heal';
   override displayed = false;
   override sprite = '/sprites/items/bandage.png';
-  override healAmount = 50;
+  override healAfflictions: (any | null)[][] = [ ['Lacerations', 20], ['Bleeding', 20] ];
 
   override heal(target: Entity) {
-    target.heal(this.healAmount);
+    if(target.Health){
+      for (let affliction of this.healAfflictions) {
+        if (affliction[0] === 'Lacerations') {
+          target.Health.healLimb([affliction[0], affliction[1]]);
+        }
+        if (affliction[0] === 'Bleeding') {
+          target.Health.healLimb([affliction[0], affliction[1]]);
+        }
+      }
+    }
   }
 }
 export class medkit extends Item {
   override name = 'medkit';
-  override category = 'consumable';
+  override category = 'consumable_heal';
   override displayed = false;
   override sprite = '/sprites/items/medkit.png';
-  override healAmount = 100;
+  override healAfflictions: (any | null)[][] = [ ['Lacerations', 50], ['Bleeding', 50] ];
 
   override heal(target: Entity) {
-    target.heal(this.healAmount);
+    if(target.Health){
+      for (let affliction of this.healAfflictions) {
+        if (affliction[0] === 'Lacerations') {
+          target.Health.healLimb([affliction[0], affliction[1]]);
+        }
+        if (affliction[0] === 'Bleeding') {
+          target.Health.healLimb([affliction[0], affliction[1]]);
+        }
+      }
+    }
   }
 }
 export class helmet extends Item {

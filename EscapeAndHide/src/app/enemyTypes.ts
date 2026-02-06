@@ -6,6 +6,7 @@ import {
   ScorcherUnitAI,
 } from './enemyAI';
 import { Entity } from './entity';
+import { Health } from './health/health';
 import { bandage, bigGun, gun, helmet, medkit, vest } from './items/items';
 
 export class Dummy extends Entity {
@@ -14,10 +15,10 @@ export class Dummy extends Entity {
   override deadSprite = '/sprites/npc/dummyDead.png';
   override posX = 0;
   override posY = 0;
+
   override collidable = true;
   override damageable = true;
-  override health = 10;
-  override hiddenOutsideLOS = true;
+  override Health = new Health(10, 10);
   override blockLOS = false;
   override flammable = true;
   override tags: string[] | null = ['dummy'];
@@ -57,7 +58,7 @@ export class HeavyDummy extends Entity {
   override zIndex = 3;
   override collidable = true;
   override damageable = true;
-  override health = 20;
+  override Health = new Health(20, 20);
   override hiddenOutsideLOS = true;
   override blockLOS = false;
   override flammable = true;
@@ -97,7 +98,7 @@ export class LightInterferanceUnit extends LightInterferanceUnitAI {
   override deadSprite = '/sprites/npc/heavyDummyDead.png';
   override collidable = true;
   override damageable = true;
-  override health = 50;
+  override Health = new Health(50, 50);
   override hiddenOutsideLOS = true;
   override blockLOS = false;
   override flammable = true;
@@ -117,7 +118,7 @@ export class MediumInterferanceUnit extends MediumInterferanceUnitAI {
   override sprite = '/sprites/npc/heavyDummy.png';
   override collidable = true;
   override damageable = true;
-  override health = 100;
+  override Health = new Health(100, 100);
   override hiddenOutsideLOS = true;
   override blockLOS = false;
   override flammable = true;
@@ -132,7 +133,7 @@ export class HeavyInterferanceUnit extends HeavyInterferanceUnitAI {
   override sprite = '/sprites/npc/heavyDummy.png';
   override collidable = true;
   override damageable = true;
-  override health = 500;
+  override Health = new Health(500, 500);
   override hiddenOutsideLOS = true;
   override blockLOS = false;
   override flammable = true;
@@ -147,7 +148,7 @@ export class OppressorUnit extends OppressorUnitAI {
     'A large robotic unit built to crush anything in its path, extremely lethal.';
   override sprite = '/sprites/npc/heavyDummy.png';
   override collidable = true;
-  override health = 300;
+  override Health = new Health(300, 300);
   override hiddenOutsideLOS = true;
   override blockLOS = false;
   override flammable = true;
@@ -161,7 +162,7 @@ export class ScorcherUnit extends ScorcherUnitAI {
     'A heavy robotic unit equipped with a flamethrower, lethal.';
   override sprite = '/sprites/npc/heavyDummy.png';
   override collidable = true;
-  override health = 400;
+  override Health = new Health(400, 400);
   override hiddenOutsideLOS = true;
   override blockLOS = false;
   override flammable = false;

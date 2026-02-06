@@ -24,6 +24,7 @@ export abstract class Entity {
   collidable = false;
   damageable = false;
   health = 0;
+  Health: import('./health/health').Health | null = null;
   damageResistance = 0;
   hiddenOutsideLOS = false;
   blockLOS = false;
@@ -52,9 +53,17 @@ export abstract class Entity {
         this.damageResistance += this.inventory.fullbodyArmorSlot.defense;
       }
       console.log('total damage resistance: ' + this.damageResistance);
-      this.health -= damage - this.damageResistance;
-      if (this.health <= 0) {
-        this.destroy(damage, damageType);
+      const finalDamage = Math.max(0, damage - this.damageResistance);
+      if (this.Health) {
+        this.Health.currentHealth -= finalDamage;
+        if (this.Health.currentHealth <= 0) {
+          this.destroy(damage, damageType);
+        }
+      } else {
+        this.health -= finalDamage;
+        if (this.health <= 0) {
+          this.destroy(damage, damageType);
+        }
       }
     }
   }
@@ -62,9 +71,16 @@ export abstract class Entity {
   heal(amount: number) {
     this.onHeal(amount);
     if (this.damageable == true && this.destroyed == false) {
-      this.health += amount;
-      if (this.health > this.maxHealth) {
-        this.health = this.maxHealth;
+      if (this.Health) {
+        this.Health.currentHealth += amount;
+        if (this.Health.currentHealth > this.Health.maxHealth) {
+          this.Health.currentHealth = this.Health.maxHealth;
+        }
+      } else {
+        this.health += amount;
+        if (this.health > this.maxHealth) {
+          this.health = this.maxHealth;
+        }
       }
     }
   }

@@ -20,6 +20,9 @@ export class Limbs {
   addFracture() {
     this.fracture.increaseSeverity(100);
   }
+  removeFracture(){
+    this.fracture.decreaseSeverity(100);
+  }
 
 
   returnAfflictions() {

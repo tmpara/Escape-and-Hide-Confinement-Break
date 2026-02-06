@@ -12,7 +12,7 @@ export class Player extends Entity {
   override flammable = true;
   enableAnimating = true;
   playerId = 0;
-  Health = new Health(5000, 5000);
+  override Health = new Health(5000, 5000);
   Energy = new Energy(100, 100);
   renderX = this.posX;
   renderY = this.posY;

@@ -22,7 +22,6 @@ export class BasicEnemyAI extends Entity {
   damage = 1;
   accuracy = 0.1; //chance to miss
   stunned = 0;
-  Health = new Health(5000, 5000);
 
   async aiTurn() {
     await this.Main();

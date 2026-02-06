@@ -253,6 +253,8 @@ export class Inventory {
     const equipButton = document.createElement('button');
     equipButton.className = 'item-action-equip-btn';
 
+    const useButton = document.createElement('button');
+
     const dropButton = document.createElement('button');
     dropButton.className = 'item-action-drop-btn';
     dropButton.textContent = 'Drop';
@@ -270,6 +272,20 @@ export class Inventory {
       equipButton.onclick = () => {
         this.equip(item, index);
       };
+      if(item.category === 'consumable_heal'){
+        useButton.className = 'item-action-use-btn';
+        useButton.textContent = 'Use';
+        useButton.onclick = () => {
+          item.heal(GameController.current?.player1 as any);
+          const invIndex = this.inventorySlots.indexOf(item);
+          if (invIndex !== -1) {
+            this.inventorySlots[invIndex] = null;
+          }
+          GameController.current?.drawInventoryTab();
+        };
+        box.appendChild(useButton);
+      } 
+        
       dropButton.onclick = () => {
         this.drop(item, false);
       };

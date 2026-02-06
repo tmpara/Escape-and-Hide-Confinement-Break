@@ -14,6 +14,7 @@ import {
   Fracture,
   Bloodloss,
 } from './afflictions';
+import { GameController } from '../game.controller';
 export type LimbName =
   | 'leftArm'
   | 'rightArm'
@@ -22,6 +23,7 @@ export type LimbName =
   | 'head'
   | 'torso';
 type affliction = [string, number];
+
 export class Health {
   maxHealth: number = 5000;
   currentHealth: number = 5000;
@@ -71,13 +73,23 @@ export class Health {
     }
   }
 
-  healLimb(limb: LimbName, afflictionType: affliction[], amount: number) {
+  healLimb(afflictionType: affliction[]) {
+    const limb = GameController.current?.selectedLimb as LimbName;
     for (let affliction of afflictionType) {
       if (affliction[0] === 'Lacerations') {
-        this[limb].lacerations.decreaseSeverity(amount);
+        this[limb].lacerations.decreaseSeverity(affliction[1]);
       }
       if (affliction[0] === 'Bleeding') {
-        this[limb].bleeding.decreaseSeverity(amount);
+        this[limb].bleeding.decreaseSeverity(affliction[1]);
+      }
+      if (affliction[0] == 'GunshotWound') {
+        this[limb].gunshotWound.decreaseSeverity(affliction[1]);
+      }
+      if (affliction[0] == 'Burn') {
+        this[limb].burn.decreaseSeverity(affliction[1]);
+      }
+      if (affliction[0] == 'Fracture') {
+        this[limb].addFracture();
       }
     }
   }
