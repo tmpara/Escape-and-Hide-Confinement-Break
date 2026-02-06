@@ -1,4 +1,4 @@
-import { BasicEnemyAI, HeavyInterferanceUnitAI, LightInterferanceUnitAI, MediumInterferanceUnitAI, OppressorUnitAI, ScorcherUnitAI } from './enemyAI';
+import { BasicEnemyAI, HeavyInterferanceUnitAI, LightInterferanceUnitAI, MediumInterferanceUnitAI, TrapperUnitAI, OppressorUnitAI, ScorcherUnitAI } from './enemyAI';
 import { Entity } from './entity';
 import { Item } from './items/items';
 import { gun,bigGun,bandage,medkit } from './items/items';
@@ -117,12 +117,29 @@ export class OppressorUnit extends OppressorUnitAI{
   isDead = false;
   lootTable = [new gun(), new bandage()];
 }
+
 export class ScorcherUnit extends ScorcherUnitAI{
   override name = "Scorcher Unit";
   override description = "A heavy robotic unit equipped with a flamethrower, lethal."
   override sprite = "/sprites/npc/heavyDummy.png"
   override collidable = true
   override health = 400;
+  override hiddenOutsideLOS = true;
+  override blockLOS = false;
+  override flammable = false;
+  override parentEntity = this;
+  override ai = true;
+
+  isDead = false;
+  lootTable = [new gun(), new bandage()];
+}
+
+export class TrapperUnit extends TrapperUnitAI{
+  override name = "Trapper Unit";
+  override description = "A small robotic unit that deploys traps to hinder your movement."
+  override sprite = "/sprites/npc/heavyDummy.png"
+  override collidable = true
+  override health = 200;
   override hiddenOutsideLOS = true;
   override blockLOS = false;
   override flammable = false;

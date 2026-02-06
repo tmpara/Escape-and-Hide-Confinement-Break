@@ -129,9 +129,6 @@ export class GameController {
     console.log(this.map.width + ' ' + this.map.height);
     this.loadPlayer(1, 1, this.player1,1);
 
-    //************************************************************\\
-    // TO DO: MAKE GAME SCREEN RENDER IN THE MIDDLE OF THE CONTAINER
-
     // Create PIXI app
     this.app = new Application();
     await this.app.init({
@@ -140,8 +137,8 @@ export class GameController {
       backgroundColor: 0x222222,
       antialias: true,
     });
-    container.style.width = window.innerWidth * 0.6 + 'px';
-    container.style.height = window.innerHeight * 1 + 'px';
+    container.style.width = "100%";
+    container.style.height = "100%";
     container.appendChild(this.app.canvas as HTMLCanvasElement);
 
     // Create map and player
@@ -156,8 +153,6 @@ export class GameController {
     this.app.stage.addChild(this.spriteContainer);
     this.app.stage.addChild(this.effectContainer);
     this.app.stage.addChild(this.playerSprite);
-    this.app.stage.addChild(this.healthBar);
-    this.app.stage.addChild(this.energyBar);
 
     const inventoryRow = document.createElement('div');
     inventoryRow.id = 'inventory-row';
@@ -254,6 +249,8 @@ export class GameController {
     healthStatusRow.appendChild(this.healthUIApp.view as HTMLCanvasElement);
     healthStatusRow.appendChild(this.afflictionsApp.view as HTMLCanvasElement);
     this.healthUIApp.stage.addChild(this.healthLimbContainer);
+    this.healthUIApp.stage.addChild(this.healthBar);
+    this.healthUIApp.stage.addChild(this.energyBar);
 
     // Create log row on the right bottom
     const logRow = document.createElement('div');
@@ -293,7 +290,7 @@ export class GameController {
     logRow.appendChild(this.mapUIApp.view as HTMLCanvasElement);
 
     // create and place the world map renderer inside mapUIApp
-    const mapCellSize = 30; // pixels per world cell in minimap
+    const mapCellSize = 25; // pixels per world cell in minimap
     this.mapContainer = new Container();
     // calculate minimap dimensions
     const minimapWidth = this.world.width * mapCellSize;
@@ -358,6 +355,17 @@ export class GameController {
     this.map = new GameGrid(x, y);
     this.map.createEmptyMap();
     this.loadPlayer(1, 1, this.player1, 1);
+  }
+
+  centerMap(){
+    this.spriteContainer.x = this.spriteContainer!.x = (this.app.screen.width - this.spriteContainer.width) / 2;
+    this.spriteContainer.y = this.spriteContainer!.y = (this.app.screen.height - this.spriteContainer.height) / 2;
+
+    this.effectContainer.x = this.effectContainer!.x = (this.app.screen.width - this.spriteContainer.width) / 2;
+    this.effectContainer.y = this.effectContainer!.y = (this.app.screen.height - this.spriteContainer.height) / 2;
+
+    this.playerSprite.x = this.playerSprite!.x = (this.app.screen.width - this.spriteContainer.width) / 2;
+    this.playerSprite.y = this.playerSprite!.y = (this.app.screen.height - this.spriteContainer.height) / 2;
   }
 
   generateRandomNumber(min: number, max: number) {
@@ -722,7 +730,7 @@ export class GameController {
   drawEquippedTab() {
     if (!this.inventory) return;
     this.equippedApp.stage.removeChildren();
-    const slotSize = 64;
+    const slotSize = 128;
     const padding = 10;
     const startX = 10;
     const startY = 10;
@@ -810,7 +818,7 @@ export class GameController {
     const barWidth = 200;
     const barHeight = 20;
     const x = 10;
-    const y = 570;
+    const y = 205;
 
     const myText = new Text({
       text: Math.round(this.player1.Health.currentBlood) + ' ml',
@@ -894,7 +902,7 @@ export class GameController {
     const barWidth = 200;
     const barHeight = 20;
     const x = 10;
-    const y = 600;
+    const y = 230;
 
     // Background
     this.energyBar.beginFill(0x555555);
@@ -1477,6 +1485,7 @@ export class GameController {
     this.drawEnergyBar();
     this.drawReticle();
     this.drawAfflictions();
+    this.centerMap();
     requestAnimationFrame(() => this.gameLoop());
   }
 
@@ -1492,6 +1501,7 @@ export class GameController {
       this.removePlayer(playerPosX, playerPosY);
     }
     console.log('Player teleported to: ' + player.posX + ', ' + player.posY);
+    this.centerMap();
   }
 
   tryToMovePlayer(player: Player, targetX: number, targetY: number) {
@@ -2004,27 +2014,45 @@ export class GameController {
     window.addEventListener('mousemove', (event) => {
       if (!this.app || !this.app.view) return;
       const rect = this.app.view.getBoundingClientRect();
+      
       const canvasX = event.clientX - rect.left;
       const canvasY = event.clientY - rect.top;
+
       this.mouseX = canvasX;
       this.mouseY = canvasY;
-      const coords = this.map.getTileCoords(
-        event.clientX,
-        event.clientY,
-        this.tileSize
-      );
+
+      const containerX = this.spriteContainer ? this.spriteContainer.x : 0;
+      const containerY = this.spriteContainer ? this.spriteContainer.y : 0;
+      const mapLocalX = canvasX - containerX;
+      const mapLocalY = canvasY - containerY;
+
+      const coords = this.map.getTileCoords(mapLocalX, mapLocalY, this.tileSize);
       if (coords) {
         this.mouseTileX = coords.x;
         this.mouseTileY = coords.y;
+      } else {
+        this.mouseTileX = -1;
+        this.mouseTileY = -1;
       }
     });
 
     window.addEventListener('click', (event) => {
-      const coords = this.map.getTileCoords(
-        event.clientX,
-        event.clientY,
-        this.tileSize
-      );
+
+      const rect = this.app.view.getBoundingClientRect();
+
+      const canvasX = event.clientX - rect.left;
+      const canvasY = event.clientY - rect.top;
+      
+      this.mouseX = canvasX;
+      this.mouseY = canvasY;
+
+      const containerX = this.spriteContainer ? this.spriteContainer.x : 0;
+      const containerY = this.spriteContainer ? this.spriteContainer.y : 0;
+      const mapLocalX = canvasX - containerX;
+      const mapLocalY = canvasY - containerY;
+
+      const coords = this.map.getTileCoords(mapLocalX, mapLocalY, this.tileSize);
+
       if (coords) {
         const tileInfo = this.map.tiles[coords.x][coords.y].getTileInfo();
         console.log(coords, tileInfo);
