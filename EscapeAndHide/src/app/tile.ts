@@ -1,32 +1,42 @@
-import { entity } from './entity';
-import { Item } from './items/item';
+import { Entity } from './entity';
+import { Item } from './items/items';
 export class tile {
+  name: string | null = 'empty';
+  sprite: string = 'placeholder.png';
+  effect: string = '';
+  flammable: boolean = false;
+  fireValue: number = 0;
+  item: Item | null = null;
+  entity: Entity[];
 
-    name: string | null;
-    hasCollision: boolean;
-    effect?: string;
-    destroyable: boolean;
-    health: number | null;
-    flammable: boolean;
-    fireValue: number;
-    brokenTile: String | null;
-    sprite: String;
-    hasItem: boolean;
-    item: Item | null;
-    entity: entity | null;
+  constructor(
+    name: string | null,
+    sprite: string,
+    effect: string,
+    flammable: boolean,
+    fireValue: number,
+    item: Item | null,
+    entity: Entity[]
+  ) {
+    this.name = name;
+    this.sprite = sprite;
+    this.effect = effect;
+    this.flammable = flammable;
+    this.fireValue = fireValue;
+    this.item = item;
+    this.entity = entity;
+  }
 
-     constructor(name: string|null, hasCollision: boolean, effect: string, destroyable: boolean, health: number|null, flammable: boolean, fireValue: number, brokenTile: String|null, sprite: String,hasItem: boolean, item: Item | null, entity: entity|null){
-        this.name = name
-        this.hasCollision = hasCollision
-        this.effect = effect
-        this.destroyable = destroyable
-        this.health = health
-        this.flammable = flammable
-        this.fireValue = fireValue
-        this.brokenTile = brokenTile
-        this.sprite = sprite
-        this.hasItem = hasItem;
-        this.item = item;
-        this.entity = entity
-    }
+  getTileInfo(): any {
+    return {
+      name: this.name,
+      sprite: this.sprite,
+      effect: this.effect,
+      flammable: this.flammable,
+      fireValue: this.fireValue,
+      item: this.item,
+      entityCount: this.entity.length,
+      entities: this.entity.map((e) => e.name),
+    };
+  }
 }

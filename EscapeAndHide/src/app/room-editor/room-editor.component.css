@@ -1,0 +1,41 @@
+.editor-overlay{
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.6);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.editor-panel{
+  width: 90%;
+  height: 90%;
+  background: #222;
+  color: #fff;
+  display: flex;
+  border-radius: 6px;
+  overflow: hidden;
+}
+.left-menu{
+  width: 260px;
+  padding: 12px;
+  border-right: 1px solid #333;
+  box-sizing: border-box;
+}
+.main-area{
+  flex: 1;
+  padding: 12px;
+  box-sizing: border-box;
+}
+.palette{ display:flex; flex-wrap:wrap; gap:6px; max-height:40vh; overflow:auto; }
+.palette button{ padding:6px 8px; background:#333; color:#ddd; border:1px solid #444; }
+.palette button.active{ background:#59a; color:#fff; }
+.room-grid{ border-collapse: collapse; }
+.room-grid td{ padding:0; }
+.tile-button{ width:28px; height:28px; border:1px solid #333; background:#111; color:#ddd; font-size:9px; }
+.top-row{ display:flex; justify-content:space-between; align-items:center }
+.dim-row{ display:flex; gap:8px; }
+.close-area{ position:absolute; right:12px; bottom:12px }
