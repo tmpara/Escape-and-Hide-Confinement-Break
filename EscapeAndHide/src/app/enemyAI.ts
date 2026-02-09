@@ -6,6 +6,7 @@ import { Torso } from "./health/limbs";
 import { Lacerations } from "./health/afflictions";
 import { LimbName } from "./health/health";
 import { tile } from "./tile";
+import { Boss1UnitLeg } from "./enemyTypes";
 
 export class BasicEnemyAI extends Entity{
     
@@ -14,6 +15,9 @@ export class BasicEnemyAI extends Entity{
     hostile = false;
     meleePreference = false;
     nonMelee = false;
+    stationary = false;
+    isSubEntity = false;
+    hasSubEntities = false;
     TargetCoords: Entity[] = [];
     LastKnownTargetCoords: [number, number] | null = null;
     energy = 3;
@@ -23,6 +27,7 @@ export class BasicEnemyAI extends Entity{
     damage = 1;
     accuracy = 0.1; //chance to miss
     stunned = 0;
+    
 
     async aiTurn(){
         await this.Main();
@@ -42,7 +47,7 @@ export class BasicEnemyAI extends Entity{
         this.findTargets();
 
         const controller = GameController.current;
-        const pauseMs = (controller as any).enemyStepDelay ?? 160;
+        const pauseMs = (controller as any).enemyStepDelay ?? 360;
 
         
 
@@ -53,6 +58,20 @@ export class BasicEnemyAI extends Entity{
             const dx = Math.abs(this.posX - target.posX);
             const dy = Math.abs(this.posY - target.posY);
             const distanceToTarget = Math.ceil(Math.max(dx, dy) + 0.5 * Math.min(dx, dy));
+                // If this entity is stationary, only perform attacks (no movement)
+                if (this.stationary) {
+                    if (distanceToTarget <= this.attackRange) {
+                        if (distanceToTarget === 1) {
+                            this.MeleeAttack();
+                        } else {
+                            this.RangedAttack();
+                        }
+                        controller.drawGrid?.();
+                        controller.drawPlayer?.();
+                        await (controller.delay?.(pauseMs) ?? new Promise(res => setTimeout(res,pauseMs)));
+                    }
+                    return;
+                }
             
             // If too close for ranged attack, move away
             if (this.meleePreference == false && distanceToTarget < this.optimalRange) {
@@ -618,8 +637,460 @@ export class TrapperUnitAI extends BasicEnemyAI {
         this.stunned += 1; //scorcher stuns itself after attack
         console.log("Scorcher used Ranged Attack and is stunned for "+ this.stunned+" turn.");
     }
+}
 
-    
+ export class Boss1AI extends BasicEnemyAI {
+        override hostile = true;
+        override meleePreference = false;
+        override energy = 4;
+        override sightRange = 20;
+        override attackRange = 10;
+        override damage = 30;
+        override accuracy = 0.2; //chance to miss
+        override hasSubEntities = true;
+
+        activateSubEntities = false;
+
+        subEnentities: Entity[] = [];
+
+        // visually occupy 2x2 tiles
+        override footprintWidth = 2;
+        override footprintHeight = 2;
+
+        burst = 2; //number of shots in a burst
+        controller = GameController.current;
+        
+        // Track last position for movement direction
+        lastPosX: number = 0;
+        lastPosY: number = 0;
+
+        /**
+         * Sync legs to boss position with animation
+         * Legs in the direction of movement animate before the boss
+         */
+        syncLegsWithAnimation() {
+            if (!this.activateSubEntities || this.subEnentities.length === 0) return;
+            
+            const corners: [number, number][] = [
+                [this.posX, this.posY],           // top-left (0)
+                [this.posX + 1, this.posY],       // top-right (1)
+                [this.posX, this.posY + 1],       // bottom-left (2)
+                [this.posX + 1, this.posY + 1]    // bottom-right (3)
+            ];
+            
+            const controller = GameController.current;
+            if (!controller || !controller.map) return;
+            
+            // Determine movement direction
+            const dx = this.posX - this.lastPosX;
+            const dy = this.posY - this.lastPosY;
+            
+            // Create array of [legIndex, delayMs] pairs
+            const legAnimations: [number, number][] = [];
+            
+            this.subEnentities.forEach((leg: any, index: number) => {
+                if (!leg || leg.destroyed) return;
+                if (index < corners.length) {
+                    const [x, y] = corners[index];
+                    
+                    // Only animate if position changed
+                    if (leg.posX === x && leg.posY === y) return;
+                    
+                    // Calculate delay based on movement direction
+                    // Legs in direction of movement animate first
+                    let delay = 0;
+                    
+                    if (dx > 0) { // moving right
+                        delay = index === 1 || index === 3 ? 0 : 250; // right legs first
+                    } else if (dx < 0) { // moving left
+                        delay = index === 0 || index === 2 ? 0 : 250; // left legs first
+                    } else if (dy > 0) { // moving down
+                        delay = index === 2 || index === 3 ? 0 : 250; // bottom legs first
+                    } else if (dy < 0) { // moving up
+                        delay = index === 0 || index === 1 ? 0 : 250; // top legs first
+                    } else {
+                        delay = 0; // no movement
+                    }
+                    
+                    legAnimations.push([index, delay]);
+                }
+            });
+            
+            // Execute animations with staggered delays
+            legAnimations.forEach(([index, delay]) => {
+                setTimeout(() => {
+                    const leg = this.subEnentities[index];
+                    if (!leg || leg.destroyed) return;
+                    
+                    const [x, y] = corners[index];
+                    controller.moveEntity(x, y, leg, controller.map);
+                    controller.animateEntityMove(leg, x, y, 150);
+                }, delay);
+            });
+            
+            // Update last position for next movement
+            this.lastPosX = this.posX;
+            this.lastPosY = this.posY;
+        }
+
+        /**
+         * Animate legs toward a specific target boss position and return the maximum delay used.
+         * The method schedules leg `moveEntity` + `animateEntityMove` calls and returns the
+         * maximum delay (in ms) after which the boss visual animation should run.
+         */
+        syncLegsWithAnimationTo(targetBossX: number, targetBossY: number, animDuration: number = 150): number {
+            if (!this.activateSubEntities || this.subEnentities.length === 0) return 0;
+            const corners: [number, number][] = [
+                [targetBossX, targetBossY],
+                [targetBossX + 1, targetBossY],
+                [targetBossX, targetBossY + 1],
+                [targetBossX + 1, targetBossY + 1]
+            ];
+            const controller = GameController.current;
+            if (!controller || !controller.map) return 0;
+
+            const dx = targetBossX - this.posX;
+            const dy = targetBossY - this.posY;
+
+            let maxDelay = 0;
+            const legStep = 500; // ms between individual leg starts
+
+            // Determine order: legs in movement direction first, then the others
+            let order: number[] = [];
+            if (dx > 0) { // right
+                order = [1, 3, 0, 2];
+            } else if (dx < 0) { // left
+                order = [0, 2, 1, 3];
+            } else if (dy > 0) { // down
+                order = [2, 3, 0, 1];
+            } else if (dy < 0) { // up
+                order = [0, 1, 2, 3];
+            } else {
+                order = [0, 1, 2, 3];
+            }
+
+            let scheduled = 0;
+            for (let i = 0; i < order.length; i++) {
+                const index = order[i];
+                const leg = this.subEnentities[index] as any;
+                if (!leg || leg.destroyed) continue;
+                if (index >= corners.length) continue;
+                const [x, y] = corners[index];
+                if (leg.posX === x && leg.posY === y) continue;
+
+                const delay = i * legStep;
+                scheduled = delay;
+                setTimeout(() => {
+                    controller.moveEntity(x, y, leg, controller.map);
+                    controller.animateEntityMove(leg, x, y, animDuration);
+                }, delay);
+            }
+
+            maxDelay = scheduled;
+            return maxDelay;
+        }
+        
+        getRandomTileInRadius(radius: number){
+        const target = this.TargetCoords[0] as Player;
+        if (!this.controller) return null;
+        const tiles = this.controller.getTilesInSphere(target.posX,target.posY,radius);
+        if (tiles.length == 0) return null;
+        const randomIndex = Math.floor(Math.random() * tiles.length);
+        return tiles[randomIndex];
+    }
 
 
+        override async RangedAttack(){
+        this.controller = GameController.current;
+        if (this.controller == null) {
+            return
+        };
+        //Dual gun attack
+
+        let targetLimb: LimbName = "head";
+        for (let i=0;i<this.burst;i++){
+            let miss = Math.random(); //chance to miss or hit random limb
+        if (miss < this.accuracy){
+            return; //missed attack
+        }
+        else if (miss < this.accuracy*2){
+            const limbs: LimbName[] = ["torso","leftArm","rightArm","leftLeg","rightLeg"];
+            const randomIndex = Math.floor(Math.random() * limbs.length);
+            targetLimb = limbs[randomIndex];
+        }
+        const controller = GameController.current;
+        if (!controller) return;
+        if (this.TargetCoords.length == 0) return;
+        const target = this.TargetCoords[0] as Player;
+        target.Health.damageLimb(targetLimb,[['GunshotWound',this.damage],['Bleeding',this.damage*5]]);
+        // Add 0.5 second cooldown between shots
+        await controller.delay?.(200) ?? new Promise(res => setTimeout(res,200));
+        }
+
+        //Rocket barrage
+
+        let explosionRadius = 2;
+        let missRadius = 5;
+        let attackRadius = 4;
+
+        
+        for (let i=0;i<this.burst*4;i++){
+            
+            let miss = Math.random(); //chance to miss or hit random limb
+        if (miss < this.accuracy){
+            let missTile = this.getRandomTileInRadius(missRadius);
+            if (missTile) {
+                this.controller.createExplosion(missTile[0], missTile[1], explosionRadius, this.damage/5);
+            }
+        }
+        else {
+            let attackTile = this.getRandomTileInRadius(attackRadius);
+            if (attackTile) {
+                this.controller.createExplosion(attackTile[0], attackTile[1], explosionRadius, this.damage/5);
+            }
+           
+        }
+        // Add 0.2 second cooldown between shots
+        await this.controller.delay?.(200) ?? new Promise(res => setTimeout(res,200));
+        
+        if (this.TargetCoords.length == 0) return;
+       
+        }
+        this.stunned += 1; //boss stuns itself after attack
+        }
+
+        override onEndTurn(){
+             const corners: [number, number][] = [
+                [this.posX, this.posY],
+                [this.posX + 1, this.posY],
+                [this.posX, this.posY + 1],
+                [this.posX + 1, this.posY + 1]
+            ];
+            const controller = GameController.current;
+            if (!controller || !controller.map) return;
+            if(this.activateSubEntities==true){
+                // Legs already synced with animation in syncLegsWithAnimation() during movement
+                this.syncLegsWithAnimation();
+            }else{
+            // ensure boss footprint is set and spawn 4 leg sub-entities at the corners of a 2x2 boss footprint
+            this.footprintWidth = 2;
+            this.footprintHeight = 2;
+            const controller = GameController.current;
+            if (!controller || !controller.map) return;
+            this.subEnentities = [];
+            
+            // Initialize position tracking for movement direction detection
+            this.lastPosX = this.posX;
+            this.lastPosY = this.posY;
+           
+
+            for (const [x,y] of corners){
+                if (!controller.map.isValidTile(x,y)) continue;
+                const leg = new Boss1UnitLeg();
+                leg.isSubEntity = true;
+                leg.parentEntity = this as any;
+                leg.ai = true;
+                // place leg on tile (coexists with boss)
+                controller.loadEntity(x,y,leg,controller.map);
+                this.subEnentities.push(leg);
+            }
+            // Mark that we've activated sub-entities so next turn we move them instead of creating new ones
+            this.activateSubEntities = true;
+            }
+
+        }
+
+        override async Main(): Promise<void> {
+            const controller = GameController.current;
+            if (!controller) {
+                await super.Main();
+                return;
+            }
+
+            // Monkey-patch controller load/move functions to intercept boss moves and
+            // trigger leg animations for each step. Originals will be restored after.
+            const origLoad = controller.loadEntity.bind(controller);
+            const origMove = controller.moveEntity.bind(controller);
+            const self = this;
+
+                controller.loadEntity = function(x: number, y: number, entity: any, map: any) {
+                    // If this is the boss and has legs, sequence front legs -> boss -> back legs
+                    if (entity === self && self.activateSubEntities) {
+                        const animMs = 150;
+                        const preBossMs = 100; // wait after front legs start before boss moves
+                        const postBossMs = 100; // wait after boss moves before back legs move
+
+                        // Determine front/back leg indices from movement direction
+                        const dx = x - self.posX;
+                        const dy = y - self.posY;
+                        const frontIndices: number[] = [];
+                        const backIndices: number[] = [];
+                        // indices: 0=top-left,1=top-right,2=bottom-left,3=bottom-right
+                        if (dx > 0) { // moving right => right legs front
+                            frontIndices.push(1,3);
+                            backIndices.push(0,2);
+                        } else if (dx < 0) { // left
+                            frontIndices.push(0,2);
+                            backIndices.push(1,3);
+                        } else if (dy > 0) { // down
+                            frontIndices.push(2,3);
+                            backIndices.push(0,1);
+                        } else if (dy < 0) { // up
+                            frontIndices.push(0,1);
+                            backIndices.push(2,3);
+                        } else {
+                            // no movement: move all together
+                            frontIndices.push(0,1,2,3);
+                        }
+
+                        const corners: [number, number][] = [
+                            [x, y],
+                            [x + 1, y],
+                            [x, y + 1],
+                            [x + 1, y + 1]
+                        ];
+
+                        // Stagger front legs one-by-one, then boss, then back legs one-by-one
+                        const legStep = 50; // ms between individual leg starts
+
+                        // Determine strict order for individual leg animation based on direction
+                        let order: number[] = [];
+                        if (dx > 0) { // right
+                            order = [1, 3, 0, 2];
+                        } else if (dx < 0) { // left
+                            order = [0, 2, 1, 3];
+                        } else if (dy > 0) { // down
+                            order = [2, 3, 0, 1];
+                        } else if (dy < 0) { // up
+                            order = [0, 1, 2, 3];
+                        } else {
+                            order = [0, 1, 2, 3];
+                        }
+
+                        // Start visual animations for front legs in order (only those that are in frontIndices)
+                        let frontCount = 0;
+                        for (let i = 0; i < order.length; i++) {
+                            const idx = order[i];
+                            if (!frontIndices.includes(idx)) continue;
+                            const leg = self.subEnentities[idx];
+                            if (!leg || leg.destroyed) continue;
+                            const [lx, ly] = corners[idx];
+                            setTimeout(() => {
+                                controller.animateEntityMove(leg, lx, ly, animMs);
+                            }, frontCount * legStep);
+                            frontCount++;
+                        }
+
+                        // After last front start + preBossMs, perform logical front-leg moves and boss move, then animate boss
+                        const frontTotalStart = Math.max(0, frontCount - 1) * legStep;
+                        const bossStart = frontTotalStart + preBossMs;
+                        setTimeout(() => {
+                            // logical front legs
+                            for (const idx of frontIndices) {
+                                const leg = self.subEnentities[idx];
+                                if (!leg || leg.destroyed) continue;
+                                const [lx, ly] = corners[idx];
+                                origMove(lx, ly, leg, map);
+                            }
+                            // boss logical move
+                            origLoad(x, y, entity, map);
+                            controller.animateEntityMove(entity, x, y, animMs);
+                        }, bossStart);
+
+                        // After boss animation + postBossMs, move back legs one-by-one logically and animate
+                        const backStartBase = bossStart + animMs + postBossMs;
+                        let backIndexCounter = 0;
+                        for (let i = 0; i < order.length; i++) {
+                            const idx = order[i];
+                            if (!backIndices.includes(idx)) continue;
+                            const leg = self.subEnentities[idx];
+                            if (!leg || leg.destroyed) continue;
+                            const [lx, ly] = corners[idx];
+                            setTimeout(() => {
+                                origMove(lx, ly, leg, map);
+                                controller.animateEntityMove(leg, lx, ly, animMs);
+                            }, backStartBase + backIndexCounter * legStep);
+                            backIndexCounter++;
+                        }
+
+                        return;
+                    }
+
+                    // default behavior for non-boss or when no sub-entities
+                    origLoad(x, y, entity, map);
+                } as any;
+
+            controller.moveEntity = function(x: number, y: number, entity: any, map: any) {
+                // keep logical movement and ensure legs animate if boss moves via moveEntity
+                origMove(x, y, entity, map);
+                if (entity === self && self.activateSubEntities) {
+                    const maxDelay = self.syncLegsWithAnimationTo(x, y, 150);
+                    const bossAnimDelay = Math.max(10, maxDelay + 10);
+                    setTimeout(() => {
+                        controller.animateEntityMove(entity, x, y, 150);
+                    }, bossAnimDelay);
+                }
+            } as any;
+
+            try {
+                await super.Main();
+            } finally {
+                // restore originals
+                controller.loadEntity = origLoad as any;
+                controller.moveEntity = origMove as any;
+            }
+        }
+
+        override async aiTurn(){
+            // Run boss main AI
+            await this.Main();
+            // After boss finishes, let legs take their turns in order
+            for (const leg of this.subEnentities.slice()){
+                if (!leg || (leg as any).destroyed) continue;
+                try{
+                    if ((leg as BasicEnemyAI).ai){
+                        await (leg as BasicEnemyAI).aiTurn();
+                    }
+                }catch(e){console.warn('Leg AI error',e)}
+            }
+        }
+}
+
+ export class Boss1AILeg extends BasicEnemyAI {
+    override hostile = true;
+    override meleePreference = true;
+    override energy = 1;
+    override sightRange = 20;
+    override attackRange = 1;
+    override damage = 20;
+    override accuracy = 0; //chance to miss
+    override stationary = true;
+    override isSubEntity = true;
+
+    // Boss leg has a powerful melee attack that always hits, but does not move or do ranged attacks, the leg can get on the same tile as player stunning them for 1 turn and dealing heavy damage, but the leg itself can be targeted and damaged by the player, if the leg's health reaches 0 it gets destroyed and removed from the boss's subentities, each destroyed leg reduces the boss energry by 2.
+
+    override MeleeAttack(){
+        const controller = GameController.current;
+        if (!controller) return;
+        if (this.TargetCoords.length == 0) return;
+        const target = this.TargetCoords[0] as Player;
+        let damageDealt = this.damage;
+        target.Health.damageLimb("torso",[['Fracture',damageDealt]]);
+        target.Health.torso.zapped.increaseSeverity(50);
+    }
+
+    override onDestroyed(damage: number, damageType: string){
+        // notify parent boss and remove self from its sub-entity list
+        if (this.parentEntity && (this.parentEntity as any).subEnentities){
+            const parent = this.parentEntity as any;
+            parent.subEnentities = parent.subEnentities.filter((s: any) => s !== this);
+            // reduce boss energy as penalty
+            if (parent.energy && typeof parent.energy === 'number'){
+                parent.energy = Math.max(0, parent.energy - 2);
+            }
+        }
+        // remove from map
+        GameController.current?.removeEntities(this.posX, this.posY, this.id);
+    }
+   
  }

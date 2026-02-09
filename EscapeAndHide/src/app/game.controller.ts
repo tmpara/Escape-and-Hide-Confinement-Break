@@ -150,6 +150,9 @@ export class GameController {
     this.drawHealthUI();
 
     // Add containers to stage
+    // enable sorting by _zIndex so we can layer sprites correctly
+    this.spriteContainer.sortableChildren = true;
+    this.effectContainer.sortableChildren = true;
     this.app.stage.addChild(this.spriteContainer);
     this.app.stage.addChild(this.effectContainer);
     this.app.stage.addChild(this.playerSprite);
@@ -998,10 +1001,12 @@ export class GameController {
               entity.texture = Assets.get(entity.deadSprite.toString());
               entitySprite.texture = entity.texture;
             }
-            entitySprite.x = x * this.tileSize + entity.sizeOffsetX;
-            entitySprite.y = y * this.tileSize + entity.sizeOffsetY;
-            entitySprite.width = this.tileSize + Math.abs(entity.sizeOffsetX);
-            entitySprite.height = this.tileSize + Math.abs(entity.sizeOffsetY);
+            const fw = (entity.footprintWidth ?? 1) as number;
+            const fh = (entity.footprintHeight ?? 1) as number;
+            entitySprite.x = x * this.tileSize + (entity.sizeOffsetX ?? 0);
+            entitySprite.y = y * this.tileSize + (entity.sizeOffsetY ?? 0);
+            entitySprite.width = this.tileSize * fw;
+            entitySprite.height = this.tileSize * fh;
             entitySprite._zIndex = entity.zIndex;
             this.spriteContainer.addChild(entitySprite);
             // handle wall connections
@@ -1445,14 +1450,19 @@ export class GameController {
     console.log(`${timestamp}` + ' - ' + message);
   }
 
-  animatePlayerMove(
-    player: Player,
+  // Generic entity animation helper (works for Player and non-player entities)
+  animateEntityMove(
+    entity: any,
     targetX: number,
     targetY: number,
     duration: number = 150
   ) {
-    const startX = player.renderX;
-    const startY = player.renderY;
+    // Ensure entity has render positions; if not, initialize
+    if (entity.renderX === undefined) entity.renderX = entity.posX;
+    if (entity.renderY === undefined) entity.renderY = entity.posY;
+
+    const startX = entity.renderX;
+    const startY = entity.renderY;
     const deltaX = targetX - startX;
     const deltaY = targetY - startY;
     const startTime = performance.now();
@@ -1460,16 +1470,26 @@ export class GameController {
     const animate = (now: number) => {
       const elapsed = now - startTime;
       const t = Math.min(elapsed / duration, 1);
-      player.renderX = startX + deltaX * t;
-      player.renderY = startY + deltaY * t;
+      entity.renderX = startX + deltaX * t;
+      entity.renderY = startY + deltaY * t;
       if (t < 1) {
         requestAnimationFrame(animate);
       } else {
-        player.renderX = targetX;
-        player.renderY = targetY;
+        entity.renderX = targetX;
+        entity.renderY = targetY;
       }
     };
     requestAnimationFrame(animate);
+  }
+
+  // Backwards-compatible wrapper for player-specific calls
+  animatePlayerMove(
+    player: Player,
+    targetX: number,
+    targetY: number,
+    duration: number = 150
+  ) {
+    this.animateEntityMove(player, targetX, targetY, duration);
   }
 
   gameLoop() {
@@ -1748,7 +1768,8 @@ export class GameController {
     }
       this.map.tiles[x][y].entity!.forEach((entity) => {
         entity.onEndTurn()
-        if (entity.ai){
+        // Do not schedule sub-entities globally; their parent triggers their turns
+        if (entity.ai && !(entity as any).isSubEntity){
           this.enemyTurnList.push(entity);
         }
         
@@ -1872,6 +1893,42 @@ export class GameController {
       this.lastUsedId += 1;
       entity.onSpawn();
     }
+  }
+
+  moveEntity(x: number, y: number, entity: any, map: GameGrid) {
+    console.log(`Moving entity ${entity.name} (id: ${entity.id}) from (${entity.posX}, ${entity.posY}) to (${x}, ${y})`);
+    
+    // Only move if entity is not already on the target tile
+    if (entity.posX === x && entity.posY === y) {
+      console.log(`Entity already at target position, skipping.`);
+      return;
+    }
+    
+    // Remove entity from ALL tiles (safety check)
+    let foundCount = 0;
+    for (let tx = 0; tx < map.width; tx++) {
+      for (let ty = 0; ty < map.height; ty++) {
+        if (map.tiles[tx][ty] && map.tiles[tx][ty].entity) {
+          const idx = map.tiles[tx][ty].entity.findIndex((e: any) => e === entity);
+          if (idx > -1) {
+            console.log(`Found entity on tile (${tx}, ${ty}), removing it.`);
+            map.tiles[tx][ty].entity.splice(idx, 1);
+            foundCount++;
+          }
+        }
+      }
+    }
+    console.log(`Removed entity from ${foundCount} tile(s).`);
+    
+    // Add entity to new position
+    if (map.tiles[x][y].entity) {
+      map.tiles[x][y].entity.push(entity);
+    } else {
+      map.tiles[x][y].entity = [entity];
+    }
+    entity.posX = x;
+    entity.posY = y;
+    console.log(`Entity now at (${x}, ${y}).`);
   }
 
   removeEntities(x: number, y: number, id: number | null = null) {

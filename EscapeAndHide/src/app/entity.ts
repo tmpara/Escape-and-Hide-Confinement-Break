@@ -8,6 +8,9 @@ export abstract class Entity {
   deadSprite = "";
   sizeOffsetX = 0;
   sizeOffsetY = 0;
+  // footprint controls how many tiles the entity visually occupies (width x height)
+  footprintWidth = 1;
+  footprintHeight = 1;
   posX = 0;
   posY = 0;
   zIndex = 5;
