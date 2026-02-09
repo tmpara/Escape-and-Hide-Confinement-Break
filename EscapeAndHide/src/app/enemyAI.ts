@@ -1,237 +1,122 @@
-import { range } from "rxjs";
 import { Entity } from "./entity";
 import { GameController } from "./game.controller";
 import { Player } from "./player";
-import { Torso } from "./health/limbs";
-import { Lacerations } from "./health/afflictions";
 import { LimbName } from "./health/health";
-import { tile } from "./tile";
+import { setPositions } from "pixi.js";
 
 export class BasicEnemyAI extends Entity{
     
-    parentEntity: Entity | null = null;
-    alerted = false;
-    hostile = false;
     meleePreference = false;
-    nonMelee = false;
-    TargetCoords: Entity[] = [];
-    LastKnownTargetCoords: [number, number] | null = null;
-    energy = 3;
-    sightRange = 7;
+    rangedOnly = false;
+    patrolWhenIdle = true;
+    maxEnergy = 5;
+    sightRange = 8;
     attackRange = 3;
     optimalRange = 2;
+    //values below should probably be removed/changed later
     damage = 1;
     accuracy = 0.1; //chance to miss
     stunned = 0;
+    //these values shouldn't be changed
+    parentEntity: Entity | null = null;
+    alerted = false;
+    hostile = false;
+    energy = this.maxEnergy
+    Targets: Entity[] = [];
+    LastKnownTargetCoords: [number, number] | null = null;
+
+    //TO DO: FIX ENEMY TURN GETTING STUCK AFTER ATTACKING
 
     async aiTurn(){
         await this.Main();
     }
     
        async Main(): Promise<void> {
+
+        // find a position at the start of the turn
+        const patrolPos = this.findRandomPatrolPos();
+
+        while(this.energy > 0){
         
-        if (this.stunned > 0){
-            this.stunned -= 1;
-            if (this.stunned < 0){
-                this.stunned = 0;
-            }
-            return;
-        }
-        if (!GameController.current) return;
-        // update target list
-        this.findTargets();
-
-        const controller = GameController.current;
-        const pauseMs = (controller as any).enemyStepDelay ?? 160;
-
-        
-
-        if (this.alerted && this.TargetCoords.length > 0) {
-            // Has current targets: pursue and attack as before
-            const target = this.TargetCoords[0] as Player;
-
-            const dx = Math.abs(this.posX - target.posX);
-            const dy = Math.abs(this.posY - target.posY);
-            const distanceToTarget = Math.ceil(Math.max(dx, dy) + 0.5 * Math.min(dx, dy));
-            
-            // If too close for ranged attack, move away
-            if (this.meleePreference == false && distanceToTarget < this.optimalRange) {
-               // console.log("Moving away to maintain attack range");
-                // For ranged enemies, if player is too close, move away to optimal range
-                const dx = this.posX - target.posX;
-                const dy = this.posY - target.posY;
-                const nx = this.posX + (dx > 0 ? 1 : dx < 0 ? -1 : 0);
-                const ny = this.posY + (dy > 0 ? 1 : dy < 0 ? -1 : 0);
-                
-                // Check if the new position is valid and walkable
-                if (controller.map && controller.map.isValidTile(nx, ny) && controller.isTileWalkable(nx, ny)) {
-                    // Move away
-                    this.removeEntity(this.posX, this.posY);
-                    controller.loadEntity(nx, ny, this, controller.map);
-                    // Redraw and pause
-                    controller.drawGrid?.();
-                    controller.drawPlayer?.();
-                    await (controller.delay?.(pauseMs) ?? new Promise(res => setTimeout(res,pauseMs)));
+            if (this.stunned > 0){
+                this.stunned -= 1;
+                this.energy = 0;
+                if (this.stunned < 0){
+                    this.stunned = 0;
                 }
-                return;
             }
 
-            // If in ranged attack window -> ranged attack
-            if (distanceToTarget <= this.attackRange && distanceToTarget >= this.optimalRange && this.meleePreference == false) {
-               // console.log("In ranged attack range");
-               // console.log("Distance to target: " + distanceToTarget);
-                this.RangedAttack();
-               // show action
-               controller.drawGrid?.();
-               controller.drawPlayer?.();
-               await (controller.delay?.(pauseMs) ?? new Promise(res => setTimeout(res,pauseMs)));
-              return;
-            }
-            
-           
-            // If adjacent -> melee
-            if (distanceToTarget === 1 ) {
-                if (this.nonMelee == true){
-                    // For non-melee enemies, if player is too close, move away to attack range
+            if (!GameController.current) return;
+            // update target list
+            this.findTargets();
+
+            const controller = GameController.current;
+
+            if (this.alerted && this.Targets.length > 0) {
+                // Has current targets: pursue and attack as before
+                const target = this.Targets[0] as Player;
+
+                const dx = Math.abs(this.posX - target.posX);
+                const dy = Math.abs(this.posY - target.posY);
+                const distanceToTarget = Math.ceil(Math.max(dx, dy) + 0.5 * Math.min(dx, dy));
+                
+                // If too close for ranged attack, move away
+                if (this.meleePreference == false && distanceToTarget < this.optimalRange) {
+                    // For ranged enemies, if player is too close, move away to optimal range
                     const dx = this.posX - target.posX;
                     const dy = this.posY - target.posY;
                     const nx = this.posX + (dx > 0 ? 1 : dx < 0 ? -1 : 0);
                     const ny = this.posY + (dy > 0 ? 1 : dy < 0 ? -1 : 0);
                     
-                    // Check if the new position is valid and walkable
-                    if (controller.map && controller.map.isValidTile(nx, ny) && controller.isTileWalkable(nx, ny)) {
-                        // Move away
-                        this.removeEntity(this.posX, this.posY);
-                        controller.loadEntity(nx, ny, this, controller.map);
-                        // Redraw and pause
-                        controller.drawGrid?.();
-                        controller.drawPlayer?.();
-                        await (controller.delay?.(pauseMs) ?? new Promise(res => setTimeout(res,pauseMs)));
+                    this.moveToPosition(nx,ny)
+                }
+
+                // If in ranged attack window -> ranged attack
+                if (distanceToTarget <= this.attackRange && distanceToTarget >= this.optimalRange && this.meleePreference == false) {
+                    this.energy -= 1;
+                    this.RangedAttack();
+                    controller.drawGrid?.();
+                    controller.drawPlayer?.();
+                }
+            
+                // If adjacent -> melee
+                if (distanceToTarget === 1 ) {
+                    if (this.rangedOnly == true){
+                        // For non-melee enemies, if player is too close, move away to attack range
+                        const dx = this.posX - target.posX;
+                        const dy = this.posY - target.posY;
+                        const nx = this.posX + (dx > 0 ? 1 : dx < 0 ? -1 : 0);
+                        const ny = this.posY + (dy > 0 ? 1 : dy < 0 ? -1 : 0);
+                        this.moveToPosition(nx,ny)
+                    }else{
+                        this.energy -= 1;
+                        this.MeleeAttack();
+                    }
+                    
+                    controller.drawGrid?.();
+                    controller.drawPlayer?.();
+                }
+
+                this.moveToPosition(this.Targets[0].posX,this.Targets[0].posY)
+
+            } else if (this.LastKnownTargetCoords) {
+                this.moveToPosition(this.LastKnownTargetCoords[0],this.LastKnownTargetCoords[1])
+                if(this.posX==this.LastKnownTargetCoords[0] && this.posY == this.LastKnownTargetCoords[1]){
+                    this.LastKnownTargetCoords = null
+                }
+            }else if(this.patrolWhenIdle){
+                if(patrolPos != null){
+                    await this.moveToPosition(patrolPos![0], patrolPos![1]);
+                    if(this.posX==patrolPos![0] && this.posY == patrolPos![1]){
+                        this.energy = 0;
                     }
                 }else{
-                    this.MeleeAttack();
-                    return
-                }
-                
-               controller.drawGrid?.();
-               controller.drawPlayer?.();
-               await (controller.delay?.(pauseMs) ?? new Promise(res => setTimeout(res,pauseMs)));
-              return;
-            }
-
-            // Otherwise: path towards the player using A* and spend movement (energy)
-            const path = controller.findPathAStar(this.posX, this.posY, target.posX, target.posY);
-            if (!path || path.length <= 1) return; // no movement possible
-
-            // move up to `energy` steps along the path (path[0] == start)
-            const steps = Math.min(this.energy, path.length - 1);
-            for (let step = 1; step <= steps; step++) {
-                const [nx, ny] = path[step];
-
-                // safety checks: bounds and walkability
-                if (!controller.map || !controller.map.isValidTile(nx, ny)) break;
-
-                // if there's a door on the next tile and it's closed, try to open it and stop moving this turn
-                const door = controller.getDoorOnTile(nx, ny);
-
-                if (door) {
-                    if (typeof door.onUse === "function") {
-                        if(door.open == false){
-                           door.onUse(); 
-                        }
-                    }
-                    // redraw + pause so player sees the open attempt
-                    controller.drawGrid?.();
-                    controller.drawPlayer?.();
-                    await (controller.delay?.(pauseMs) ?? new Promise(res => setTimeout(res,pauseMs)));
-                    
-                 }
-
-                // allow stepping onto the goal even if occupied by non-walkable (attack intent),
-                // otherwise require walkable
-                const isGoal = (nx === target.posX && ny === target.posY);
-                if (!isGoal && !controller.isTileWalkable(nx, ny)) break;
-
-                // remove from current tile and place at new tile via controller API
-                this.removeEntity(this.posX, this.posY);
-                controller.loadEntity(nx, ny, this, controller.map);
-
-                // redraw and pause after each step so player can observe movement
-                controller.drawGrid?.();
-                controller.drawPlayer?.();
-                await (controller.delay?.(pauseMs) ?? new Promise(res => setTimeout(res,pauseMs)));
-
-                // after moving check current distance to the (possibly moved) player
-                const postDistance = Math.max(Math.abs(this.posX - target.posX), Math.abs(this.posY - target.posY));
-                if (postDistance <= this.attackRange) {
-                    // if within melee range do melee, otherwise ranged
-                    if (postDistance === 1) {
-                        this.MeleeAttack();
-                    } else {
-                        this.RangedAttack();
-                    }
-                    // show attack and pause, then stop further movement this turn
-                    controller.drawGrid?.();
-                    controller.drawPlayer?.();
-                    await (controller.delay?.(pauseMs) ?? new Promise(res => setTimeout(res,pauseMs)));
-                    break;
-                    
-                    
+                    this.energy=0;
                 }
             }
-        } else if (this.LastKnownTargetCoords) {
-            // No current targets, but has last known position: move towards it
-            const [lx, ly] = this.LastKnownTargetCoords;
-            const path = controller.findPathAStar(this.posX, this.posY, lx, ly);
-            if (!path || path.length <= 1) {
-                // Can't reach last known, clear it
-                this.LastKnownTargetCoords = null;
-                return;
-            }
-
-            // move up to `energy` steps along the path
-            const steps = Math.min(this.energy, path.length - 1);
-            for (let step = 1; step <= steps; step++) {
-                const [nx, ny] = path[step];
-
-                // safety checks: bounds and walkability
-                if (!controller.map || !controller.map.isValidTile(nx, ny)) break;
-
-                // if there's a door on the next tile, try to open it
-                const door = controller.getDoorOnTile(nx, ny);
-                if (door) {
-                    
-                    if (typeof door.onUse === "function") {
-                        if(door.open == false){
-                           door.onUse(); 
-                        }
-                    }
-                    controller.drawGrid?.();
-                    controller.drawPlayer?.();
-                    await (controller.delay?.(pauseMs) ?? new Promise(res => setTimeout(res,pauseMs)));
-                    
-                }
-
-                // require walkable (since no attack intent here)
-                if (!controller.isTileWalkable(nx, ny)) break;
-
-                // move
-                this.removeEntity(this.posX, this.posY);
-                controller.loadEntity(nx, ny, this, controller.map);
-
-                // redraw and pause
-                controller.drawGrid?.();
-                controller.drawPlayer?.();
-                await (controller.delay?.(pauseMs) ?? new Promise(res => setTimeout(res,pauseMs)));
-
-                // if reached last known, clear it
-                if (nx === lx && ny === ly) {
-                    this.LastKnownTargetCoords = null;
-                    break;
-                }
-            }
+            await (controller.delay?.(500) ?? new Promise(res => setTimeout(res,250)));
         }
-        // else: no targets and no last known, do nothing
+        this.energy = this.maxEnergy;
     }
     
 
@@ -274,8 +159,8 @@ export class BasicEnemyAI extends Entity{
                   for (let i=0;i<entities!.length;i++){
                     if (entities![i] instanceof Player){
                         this.alerted=true;
-                        if (!this.TargetCoords.includes(entities![i])){
-                            this.TargetCoords.push(entities![i]);
+                        if (!this.Targets.includes(entities![i])){
+                            this.Targets.push(entities![i]);
                         }
                         // update last known position
                         this.LastKnownTargetCoords = [entities![i].posX, entities![i].posY];
@@ -291,10 +176,75 @@ export class BasicEnemyAI extends Entity{
             }
             if (temp==0){
                 this.alerted=false;
-                this.TargetCoords = [];
+                this.Targets = [];
                 // do not clear LastKnownTargetCoords here
             }
     }
+
+    findRandomPatrolPos(){
+
+        const controller = GameController.current;
+        if (!controller) return null;
+
+        let positionFound = false;
+
+        while(positionFound==false){
+            const randomX = this.posX + Math.floor(Math.random() * 7) - 3;
+            const randomY = this.posY + Math.floor(Math.random() * 7) - 3;
+
+            if (controller.map && controller.map.isValidTile(randomX, randomY) && controller.isTileWalkable(randomX, randomY)) {
+                positionFound = true;
+                return [randomX, randomY];
+            }
+        }
+        return null;
+    }
+
+    async moveToPosition(targetX: number, targetY: number){
+        const controller = GameController.current;
+        const path = controller!.findPathAStar(this.posX, this.posY, targetX, targetY);
+        if (!path || path.length <= 1) {
+            return;
+        }
+
+        // move up to `energy` steps along the path
+        const steps = 1; //maybe will be changed later
+        for (let step = 1; step <= steps; step++) {
+            const [nx, ny] = path[step];
+
+            // safety checks: bounds and walkability
+            if (!controller!.map || !controller!.map.isValidTile(nx, ny)) return;
+
+            // if there's a door on the next tile, try to open it
+            const door = controller!.getDoorOnTile(nx, ny);
+            if (door) {    
+                if (typeof door.onUse === "function") {
+                    if(door.open == false){
+                        door.onUse();
+                        this.energy -= 1;
+                    }
+                }
+                controller!.drawGrid?.();
+                controller!.drawPlayer?.();
+            }
+
+            if (!controller!.isTileWalkable(nx, ny)) return;
+
+            this.removeEntity(this.posX, this.posY);
+            controller!.loadEntity(nx, ny, this, controller!.map);
+
+            // redraw and pause
+            controller!.drawGrid?.();
+            controller!.drawPlayer?.();
+
+            if (nx === targetX && ny === targetY) {
+                return;
+            }
+        }
+        this.energy -= 1;
+        return;
+    }
+
     RangedAttack(){
         
         let targetLimb: LimbName = "torso";
@@ -309,8 +259,8 @@ export class BasicEnemyAI extends Entity{
         }
         const controller = GameController.current;
         if (!controller) return;
-        if (this.TargetCoords.length == 0) return;
-        const target = this.TargetCoords[0] as Player;
+        if (this.Targets.length == 0) return;
+        const target = this.Targets[0] as Player;
         let damageDealt = this.damage;
         target.Health.damageLimb(targetLimb,[['Lacerations',damageDealt]]);
         
@@ -329,8 +279,8 @@ export class BasicEnemyAI extends Entity{
         }
         const controller = GameController.current;
         if (!controller) return;
-        if (this.TargetCoords.length == 0) return;
-        const target = this.TargetCoords[0] as Player;
+        if (this.Targets.length == 0) return;
+        const target = this.Targets[0] as Player;
         let damageDealt = this.damage*2;
         target.Health.damageLimb(targetLimb,[['Lacerations',damageDealt],]);
         
@@ -341,8 +291,8 @@ export class BasicEnemyAI extends Entity{
 export class LightInterferanceUnitAI extends BasicEnemyAI {
     override hostile = true;
     override meleePreference = false;
-    override energy = 3;
-    override sightRange = 5;
+    override maxEnergy = 4;
+    override sightRange = 8;
     override attackRange = 3;
     override damage = 1;
     override accuracy = 0.1; //chance to miss
@@ -361,8 +311,8 @@ export class LightInterferanceUnitAI extends BasicEnemyAI {
         }
         const controller = GameController.current;
         if (!controller) return;
-        if (this.TargetCoords.length == 0) return;
-        const target = this.TargetCoords[0] as Player;
+        if (this.Targets.length == 0) return;
+        const target = this.Targets[0] as Player;
         let damageDealt = this.damage;
         target.Health.damageLimb(targetLimb,[['Lacerations',damageDealt*2],['Bleeding',damageDealt*2]]);
         target.Health.torso.zapped.increaseSeverity(damageDealt*5);
@@ -381,8 +331,8 @@ export class LightInterferanceUnitAI extends BasicEnemyAI {
         }
         const controller = GameController.current;
         if (!controller) return;
-        if (this.TargetCoords.length == 0) return;
-        const target = this.TargetCoords[0] as Player;
+        if (this.Targets.length == 0) return;
+        const target = this.Targets[0] as Player;
         let damageDealt = this.damage*2;
         target.Health.damageLimb(targetLimb,[['Lacerations',damageDealt*2],['Bleeding',damageDealt*2]]);
         target.Health.torso.zapped.increaseSeverity(damageDealt*5);
@@ -392,7 +342,7 @@ export class LightInterferanceUnitAI extends BasicEnemyAI {
 export class MediumInterferanceUnitAI extends BasicEnemyAI {
     override hostile = true;
     override meleePreference = false;
-    override energy = 3;
+    override maxEnergy = 3;
     override sightRange = 7;
     override attackRange = 4;
     override damage = 5;
@@ -414,8 +364,8 @@ export class MediumInterferanceUnitAI extends BasicEnemyAI {
         }
         const controller = GameController.current;
         if (!controller) return;
-        if (this.TargetCoords.length == 0) return;
-        const target = this.TargetCoords[0] as Player;
+        if (this.Targets.length == 0) return;
+        const target = this.Targets[0] as Player;
         let damageDealt = this.damage;
         target.Health.damageLimb(targetLimb,[['GunshotWound',damageDealt],['Bleeding',damageDealt*5]]);
         // Add 0.5 second cooldown between shots
@@ -438,8 +388,8 @@ export class MediumInterferanceUnitAI extends BasicEnemyAI {
         }
         const controller = GameController.current;
         if (!controller) return;
-        if (this.TargetCoords.length == 0) return;
-        const target = this.TargetCoords[0] as Player;
+        if (this.Targets.length == 0) return;
+        const target = this.Targets[0] as Player;
         let damageDealt = 10;
         target.Health.damageLimb(targetLimb,[['Lacerations',damageDealt*2],['Bleeding',damageDealt*5]]);
   
@@ -449,8 +399,8 @@ export class MediumInterferanceUnitAI extends BasicEnemyAI {
 export class HeavyInterferanceUnitAI extends BasicEnemyAI {
     override hostile = true;
     override meleePreference = false;
-    override energy = 2;
-    override sightRange = 8
+    override maxEnergy = 2;
+    override sightRange = 6
     override attackRange = 5;
     override optimalRange = this.attackRange-2;
     override damage = 10
@@ -460,7 +410,7 @@ export class HeavyInterferanceUnitAI extends BasicEnemyAI {
     
 
     getRandomTileInRadius(radius: number){
-        const target = this.TargetCoords[0] as Player;
+        const target = this.Targets[0] as Player;
         if (!this.controller) return null;
         const tiles = this.controller.getTilesInSphere(target.posX,target.posY,radius);
         if (tiles.length == 0) return null;
@@ -497,7 +447,7 @@ export class HeavyInterferanceUnitAI extends BasicEnemyAI {
         // Add 0.5 second cooldown between shots
         await this.controller.delay?.(200) ?? new Promise(res => setTimeout(res,200));
         
-        if (this.TargetCoords.length == 0) return;
+        if (this.Targets.length == 0) return;
        
         }
         this.stunned += 1; //heavy unit stuns itself after attack
@@ -507,7 +457,7 @@ export class HeavyInterferanceUnitAI extends BasicEnemyAI {
 export class OppressorUnitAI extends BasicEnemyAI {
     override hostile = true;
     override meleePreference = true;
-    override energy = 2;
+    override maxEnergy = 7;
     override sightRange = 6;
     override damage = 30;
     override accuracy = 0.05; //chance to miss
@@ -528,8 +478,8 @@ export class OppressorUnitAI extends BasicEnemyAI {
         }
         const controller = GameController.current;
         if (!controller) return;
-        if (this.TargetCoords.length == 0) return;
-        const target = this.TargetCoords[0] as Player;
+        if (this.Targets.length == 0) return;
+        const target = this.Targets[0] as Player;
         
         target.Health.damageLimb(targetLimb,[['Fracture',damageDealt]]);
         if (stunChance < 0.3){
@@ -542,8 +492,8 @@ export class OppressorUnitAI extends BasicEnemyAI {
 export class TrapperUnitAI extends BasicEnemyAI {
     override hostile = false;
     override meleePreference = false;
-    override energy = 5;
-    override sightRange = 2;
+    override maxEnergy = 5;
+    override sightRange = 3;
     override attackRange = 2;
     override damage = 1;
     override accuracy = 0.1; //chance to miss
@@ -552,13 +502,12 @@ export class TrapperUnitAI extends BasicEnemyAI {
  export class ScorcherUnitAI extends BasicEnemyAI {
     override hostile = true;
     override meleePreference = false
-    override nonMelee = true;
-    override energy = 3;
-    override sightRange = 6;
+    override rangedOnly = true;
+    override maxEnergy = 5;
+    override sightRange = 5;
     override attackRange = 3;
     override damage = 5;
    
-
     getConeTiles(centerX: number, centerY: number, range: number, angle: number, coneAngle: number): [number, number][] {
         const tiles: [number, number][] = [];
         const controller = GameController.current;
@@ -589,8 +538,8 @@ export class TrapperUnitAI extends BasicEnemyAI {
 
     override RangedAttack(){
         const controller = GameController.current;
-        if (!controller || this.TargetCoords.length === 0) return;
-        const target = this.TargetCoords[0] as Player;
+        if (!controller || this.Targets.length === 0) return;
+        const target = this.Targets[0] as Player;
         const dx = target.posX - this.posX;
         const dy = target.posY - this.posY;
         const angleToTarget = Math.atan2(dy, dx);
@@ -602,24 +551,19 @@ export class TrapperUnitAI extends BasicEnemyAI {
             let tileRange = Math.max(Math.abs(x - this.posX), Math.abs(y - this.posY));
             let fireChance = controller.generateRandomNumber(1, tileRange);
             if (fireChance <= 2){
-                controller.ignite(x, y, (100 - tileRange*15), true, true); 
+                controller.ignite(x, y, (50 - tileRange*15), true, true); 
             }
             
             for (const entity of entities) {
                 if (entity instanceof Player) {
                     // Damage player, perhaps with fire damage
                     // For now, use existing damage logic
-                   
-                   
                 }
             }
         }
         
-        this.stunned += 1; //scorcher stuns itself after attack
+        //this.stunned += 1; //scorcher stuns itself after attack
         console.log("Scorcher used Ranged Attack and is stunned for "+ this.stunned+" turn.");
     }
-
-    
-
 
  }
