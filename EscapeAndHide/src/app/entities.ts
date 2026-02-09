@@ -1,7 +1,7 @@
 import { Entity } from './entity';
 import { Player } from './player';
 import { GameController } from './game.controller';
-import { gun, medkit } from './items/items';
+import { SmallGun, Medkit } from './items/items';
 
 export class Wall1 extends Entity {
   override name = 'Wall';
@@ -12,10 +12,14 @@ export class Wall1 extends Entity {
   override spriteBottomCap = '/sprites/entities/wall_placeholder_bottomcap.png';
   override spriteLeftCap = '/sprites/entities/wall_placeholder_leftcap.png';
   override spriteRightCap = '/sprites/entities/wall_placeholder_rightcap.png';
-  override spriteTopLeftCorner = '/sprites/entities/wall_placeholder_topleftcorner.png';
-  override spriteTopRightCorner = '/sprites/entities/wall_placeholder_toprightcorner.png';
-  override spriteBottomLeftCorner = '/sprites/entities/wall_placeholder_bottomleftcorner.png';
-  override spriteBottomRightCorner = '/sprites/entities/wall_placeholder_bottomrightcorner.png';
+  override spriteTopLeftCorner =
+    '/sprites/entities/wall_placeholder_topleftcorner.png';
+  override spriteTopRightCorner =
+    '/sprites/entities/wall_placeholder_toprightcorner.png';
+  override spriteBottomLeftCorner =
+    '/sprites/entities/wall_placeholder_bottomleftcorner.png';
+  override spriteBottomRightCorner =
+    '/sprites/entities/wall_placeholder_bottomrightcorner.png';
   override collidable = true;
   override damageable = true;
   override health = 500;
@@ -33,10 +37,14 @@ export class WallCorner1 extends Entity {
   override spriteBottomCap = '/sprites/entities/wall_placeholder_bottomcap.png';
   override spriteLeftCap = '/sprites/entities/wall_placeholder_leftcap.png';
   override spriteRightCap = '/sprites/entities/wall_placeholder_rightcap.png';
-  override spriteTopLeftCorner = '/sprites/entities/wall_placeholder_topleftcorner.png';
-  override spriteTopRightCorner = '/sprites/entities/wall_placeholder_toprightcorner.png';
-  override spriteBottomLeftCorner = '/sprites/entities/wall_placeholder_bottomleftcorner.png';
-  override spriteBottomRightCorner = '/sprites/entities/wall_placeholder_bottomrightcorner.png';
+  override spriteTopLeftCorner =
+    '/sprites/entities/wall_placeholder_topleftcorner.png';
+  override spriteTopRightCorner =
+    '/sprites/entities/wall_placeholder_toprightcorner.png';
+  override spriteBottomLeftCorner =
+    '/sprites/entities/wall_placeholder_bottomleftcorner.png';
+  override spriteBottomRightCorner =
+    '/sprites/entities/wall_placeholder_bottomrightcorner.png';
   override collidable = true;
   override damageable = false;
   override health = 0;
@@ -71,7 +79,7 @@ export class Door extends Entity {
       this.blocked = false;
       let entities = GameController.current?.getAllEntitiesOnTile(
         this.posX,
-        this.posY
+        this.posY,
       )!;
       for (let i = 0; i < entities.length!; i++) {
         if (entities[i].name != 'Door') {
@@ -167,7 +175,7 @@ export class WeaponCrate extends Entity {
   override hiddenOutsideLOS = true;
   override blockLOS = false;
   override flammable = true;
-  lootTable = [new gun()];
+  lootTable = [new SmallGun()];
 }
 
 export class MedicalCrate extends Entity {
@@ -180,7 +188,7 @@ export class MedicalCrate extends Entity {
   override hiddenOutsideLOS = true;
   override blockLOS = false;
   override flammable = true;
-  lootTable = [new medkit()];
+  lootTable = [new Medkit()];
 }
 
 export class Mine extends Entity {
@@ -195,13 +203,18 @@ export class Mine extends Entity {
   override flammable = true;
 
   override onSteppedOn(user: Entity | null) {
-    GameController.current?.createExplosion(this.posX, this.posY, 3, 200, false);
+    GameController.current?.createExplosion(
+      this.posX,
+      this.posY,
+      3,
+      200,
+      false,
+    );
   }
 
-  override onEndTurn(){
-    this.sprite = "/sprites/effects/hidden.png";
+  override onEndTurn() {
+    this.sprite = '/sprites/effects/hidden.png';
   }
-
 }
 
 export class GlassShards extends Entity {
@@ -225,5 +238,4 @@ export class GlassShards extends Entity {
       ]);
     }
   }
-  
 }

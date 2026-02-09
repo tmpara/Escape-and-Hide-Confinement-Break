@@ -1,7 +1,9 @@
 import { GameController } from './game.controller';
-import { Health } from './health/health';
+import { Afflcition } from './health/afflictions';
+import { affliction, LimbName } from './health/health';
 import { Inventory } from './inventory/inventory';
 import { Item } from './items/items';
+import { Player } from './player';
 export abstract class Entity {
   id = 0;
   name = '';
@@ -39,32 +41,35 @@ export abstract class Entity {
   inventorySize = 0;
   inventory = new Inventory();
 
-  takeDamage(damage: number, damageType: string) {
-    this.damageResistance = 0;
+  takeDamage(user: any) {
+    let targetLimb: LimbName = 'torso';
+    if (!this.Health) return;
+    let miss = Math.random();
+    if (miss > user.accuracy) {
+      return; //missed attack
+    } else if (miss > user.accuracy * 2) {
+      const limbs: LimbName[] = [
+        'head',
+        'leftArm',
+        'rightArm',
+        'leftLeg',
+        'rightLeg',
+      ];
+      const randomIndex = Math.floor(Math.random() * limbs.length);
+      targetLimb = limbs[randomIndex];
+    }
+    let afflictions: affliction[] = [];
+    for (let affliction of user.weaponSlot.afflictions) {
+      afflictions.push([affliction[0], affliction[1]]);
+    }
+    this.Health.damageLimb(targetLimb, afflictions);
+  }
+
+  takeStructureDamage(damage: number, damageType: string) {
     this.onTakeDamage(damage, damageType);
-    if (this.damageable == true && this.destroyed == false) {
-      if (this.inventory.headArmorSlot) {
-        this.damageResistance += this.inventory.headArmorSlot.defense;
-      }
-      if (this.inventory.torsoArmorSlot) {
-        this.damageResistance += this.inventory.torsoArmorSlot.defense;
-      }
-      if (this.inventory.fullbodyArmorSlot) {
-        this.damageResistance += this.inventory.fullbodyArmorSlot.defense;
-      }
-      console.log('total damage resistance: ' + this.damageResistance);
-      const finalDamage = Math.max(0, damage - this.damageResistance);
-      if (this.Health) {
-        this.Health.currentHealth -= finalDamage;
-        if (this.Health.currentHealth <= 0) {
-          this.destroy(damage, damageType);
-        }
-      } else {
-        this.health -= finalDamage;
-        if (this.health <= 0) {
-          this.destroy(damage, damageType);
-        }
-      }
+    this.health -= damage;
+    if (this.health <= 0) {
+      this.destroy(damage, damageType);
     }
   }
 
@@ -109,11 +114,16 @@ export abstract class Entity {
         // console.log('Equipped weapon:', item.name);
       } else if (item.slot && item.slot === 'head') {
         this.inventory.headArmorSlot = item;
+        this.damageResistance += item.defense;
         // console.log('Equipped head armor:', item.name);
       } else if (item.slot && item.slot === 'torso') {
         this.inventory.torsoArmorSlot = item;
+        this.damageResistance += item.defense;
+        // console.log('Equipped torso armor:', item.name);
       } else if (item.slot && item.slot === 'fullbody') {
         this.inventory.fullbodyArmorSlot = item;
+        this.damageResistance += item.defense;
+        // console.log('Equipped full body armor:', item.name);
       }
       const emptyIndex = this.inventory.inventorySlots.indexOf(null);
       if (emptyIndex !== -1) {

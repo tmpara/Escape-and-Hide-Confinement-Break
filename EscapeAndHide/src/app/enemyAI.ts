@@ -6,6 +6,8 @@ import { Torso } from './health/limbs';
 import { Lacerations } from './health/afflictions';
 import { Health, LimbName } from './health/health';
 import { tile } from './tile';
+import { Item, StunGun } from './items/items';
+import { Inventory } from './inventory/inventory';
 
 export class BasicEnemyAI extends Entity {
   parentEntity: Entity | null = null;
@@ -390,34 +392,10 @@ export class LightInterferanceUnitAI extends BasicEnemyAI {
   override sightRange = 5;
   override attackRange = 3;
   override damage = 1;
-  override accuracy = 0.1; //chance to miss
+  override accuracy = 0.9; //chance to hit
 
   override RangedAttack() {
-    let targetLimb: LimbName = 'torso';
-    let miss = Math.random(); //chance to miss or hit random limb
-    if (miss < this.accuracy) {
-      return; //missed attack
-    } else if (miss < this.accuracy * 2) {
-      const limbs: LimbName[] = [
-        'head',
-        'leftArm',
-        'rightArm',
-        'leftLeg',
-        'rightLeg',
-      ];
-      const randomIndex = Math.floor(Math.random() * limbs.length);
-      targetLimb = limbs[randomIndex];
-    }
-    const controller = GameController.current;
-    if (!controller) return;
-    if (this.TargetCoords.length == 0) return;
-    const target = this.TargetCoords[0] as Player;
-    let damageDealt = this.damage;
-    target.Health.damageLimb(targetLimb, [
-      ['Lacerations', damageDealt * 2],
-      ['Bleeding', damageDealt * 2],
-    ]);
-    target.Health.torso.zapped.increaseSeverity(damageDealt * 5);
+    this.TargetCoords[0].takeDamage(this);
   }
 
   override MeleeAttack() {
@@ -456,36 +434,15 @@ export class MediumInterferanceUnitAI extends BasicEnemyAI {
   override sightRange = 7;
   override attackRange = 4;
   override damage = 5;
-  override accuracy = 0.4; //chance to miss
+  override accuracy = 0.6; //chance to hit
   burst = 4; //number of shots in a burst
 
   override async RangedAttack() {
-    let targetLimb: LimbName = 'head';
     for (let i = 0; i < this.burst; i++) {
-      let miss = Math.random(); //chance to miss or hit random limb
-      if (miss < this.accuracy) {
-        return; //missed attack
-      } else if (miss < this.accuracy * 2) {
-        const limbs: LimbName[] = [
-          'torso',
-          'leftArm',
-          'rightArm',
-          'leftLeg',
-          'rightLeg',
-        ];
-        const randomIndex = Math.floor(Math.random() * limbs.length);
-        targetLimb = limbs[randomIndex];
-      }
+      this.TargetCoords[0].takeDamage(this);
       const controller = GameController.current;
       if (!controller) return;
-      if (this.TargetCoords.length == 0) return;
-      const target = this.TargetCoords[0] as Player;
-      let damageDealt = this.damage;
-      target.Health.damageLimb(targetLimb, [
-        ['GunshotWound', damageDealt],
-        ['Bleeding', damageDealt * 5],
-      ]);
-      // Add 0.5 second cooldown between shots
+      // Add 0. second cooldown between shots
       (await controller.delay?.(200)) ??
         new Promise((res) => setTimeout(res, 200));
     }
@@ -630,8 +587,8 @@ export class ScorcherUnitAI extends BasicEnemyAI {
   override nonMelee = true;
   override energy = 3;
   override sightRange = 6;
-  override attackRange = 3;
-  override damage = 5;
+  // override attackRange = 3;
+  // override damage = 5;
 
   getConeTiles(
     centerX: number,

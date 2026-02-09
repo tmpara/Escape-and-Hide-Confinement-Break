@@ -22,7 +22,7 @@ export type LimbName =
   | 'rightLeg'
   | 'head'
   | 'torso';
-type affliction = [string, number];
+export type affliction = [string, number];
 
 export class Health {
   maxHealth: number = 5000;
@@ -61,6 +61,9 @@ export class Health {
       if (affliction[0] == 'Bleeding') {
         this[limb].bleeding.increaseSeverity(affliction[1]);
       }
+      if (affliction[0] == 'Zapped') {
+        this[limb].zapped.increaseSeverity(affliction[1]);
+      }
       if (affliction[0] == 'GunshotWound') {
         this[limb].gunshotWound.increaseSeverity(affliction[1]);
       }
@@ -81,6 +84,9 @@ export class Health {
       }
       if (affliction[0] === 'Bleeding') {
         this[limb].bleeding.decreaseSeverity(affliction[1]);
+      }
+      if (affliction[0] === 'Zapped') {
+        this[limb].zapped.decreaseSeverity(affliction[1]);
       }
       if (affliction[0] == 'GunshotWound') {
         this[limb].gunshotWound.decreaseSeverity(affliction[1]);

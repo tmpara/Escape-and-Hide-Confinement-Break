@@ -4,7 +4,7 @@ import { Text, Assets } from 'pixi.js';
 import { GameGrid } from './grid';
 import { World } from './world';
 import { Player } from './player';
-import { bigGun, gun, helmet, Item, vest } from './items/items';
+import { BigGun, SmallGun, Helmet, Item, Vest } from './items/items';
 import { WorldMapRenderer } from './worldMapRenderer';
 import { Inventory } from './inventory/inventory';
 import {
@@ -38,7 +38,7 @@ export class GameController {
   miu = new MediumInterferanceUnit();
   hiu = new HeavyInterferanceUnit();
   oppressor = new OppressorUnit();
-  scorcher = new ScorcherUnit();
+  scorcher = new LightInterferanceUnit();
   world = new World();
   spriteContainer = new Container();
   effectContainer = new Container();
@@ -218,10 +218,10 @@ export class GameController {
     this.loadEntity(5, 2, this.dummy1, this.map);
     this.loadEntity(5, 3, this.heavyDummy1, this.map);
     this.loadEntity(2, 2, this.glass, this.map);
-    this.spawnItem(1, 3, new gun());
-    this.spawnItem(2, 3, new bigGun());
-    this.spawnItem(3, 3, new vest());
-    this.spawnItem(4, 3, new helmet());
+    this.spawnItem(1, 3, new SmallGun());
+    this.spawnItem(2, 3, new BigGun());
+    this.spawnItem(3, 3, new Vest());
+    this.spawnItem(4, 3, new Helmet());
 
     // Draw grid, player
     this.drawGrid();
@@ -1971,7 +1971,7 @@ export class GameController {
           },
         );
         const entity = this.map.tiles[coords.x][coords.y].entity;
-        console.log(entity[0].inventory.inventorySlots);
+        console.log(entity[0]);
         if (entity[0].lootable) {
           this.inventory.showLootPopup(entity[0]);
         }
@@ -1987,10 +1987,7 @@ export class GameController {
           )
         ) {
           if (entity && entity.length > 0) {
-            const weapon = this.inventory.getEquippedWeapon();
-            if (weapon) {
-              weapon.dealDamage(entity[0]);
-            }
+            entity[0].takeDamage(player);
           }
         }
       }
