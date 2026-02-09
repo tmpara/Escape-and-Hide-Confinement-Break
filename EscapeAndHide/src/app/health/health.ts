@@ -51,10 +51,7 @@ export class Health {
   }
 
   hitRandomLimb(bleedingIncrease: number) {}
-
-
   
-
   damageLimb(limb: LimbName, afflictions: affliction[]) {  
   for (let affliction of afflictions) {
       if (affliction[0] == 'Lacerations') {

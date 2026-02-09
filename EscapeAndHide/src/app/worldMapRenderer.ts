@@ -13,7 +13,7 @@ export class WorldMapRenderer {
   constructor(
     container: PIXI.Container,
     world: World,
-    cellSize = 48,
+    cellSize = 32,
     padding = 4
   ) {
     this.container = container;
@@ -38,6 +38,7 @@ export class WorldMapRenderer {
     this.graphics.beginFill(0x0b0b0b, 0.6);
     this.graphics.drawRect(0, 0, w * this.cellSize, h * this.cellSize);
     this.graphics.endFill();
+    this.graphics.zIndex = 1;
 
     // draw room cells
     for (let x = 0; x < w; x++) {
@@ -57,6 +58,7 @@ export class WorldMapRenderer {
         this.graphics.lineStyle(1, 0x222222, 1);
         this.graphics.drawRect(px, py, size, size);
         this.graphics.endFill();
+        this.graphics.zIndex = 2;
       }
     }
 
@@ -101,6 +103,7 @@ export class WorldMapRenderer {
 
           this.graphics.moveTo(cx, cy);
           this.graphics.lineTo(ncx, ncy);
+          this.graphics.zIndex = 3;
         }
       }
     }
@@ -113,6 +116,7 @@ export class WorldMapRenderer {
       this.graphics.beginFill(0x0000ff, 1);
       this.graphics.drawRect(px + size / 4, py + size / 4, size / 2, size / 2);
       this.graphics.endFill();
+      this.graphics.zIndex = 4;
     }
   }
 
