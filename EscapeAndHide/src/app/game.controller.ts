@@ -1496,16 +1496,16 @@ export class GameController {
     // Redraw player at new position
     // update minimap if present (set player pos first)
     if (this.mapRenderer) {
-      this.mapRenderer.setPlayer(this.playerWorldX, this.playerWorldY);
-      this.mapRenderer.update();
+     // this.mapRenderer.setPlayer(this.playerWorldX, this.playerWorldY);
+     // this.mapRenderer.update();
     }
     this.drawGrid();
-    this.drawPlayer();
-    this.drawHealthBar();
-    this.drawEnergyBar();
-    this.drawReticle();
-    this.drawAfflictions();
-    this.centerMap();
+    //this.drawPlayer();
+    //this.drawHealthBar();
+   // this.drawEnergyBar();
+    //this.drawReticle();
+    //this.drawAfflictions();
+    //this.centerMap();
     requestAnimationFrame(() => this.gameLoop());
   }
 
