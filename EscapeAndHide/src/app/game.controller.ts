@@ -385,6 +385,12 @@ export class GameController {
     return number;
   }
 
+  getDistanceTo(posX: number, posY: number, targetX: number, targetY: number){
+    const dx = Math.abs(posX - targetX);
+    const dy = Math.abs(posY - targetY);
+    return Math.ceil(Math.max(dx, dy) + 0.5 * Math.min(dx, dy),);
+  }
+
   castRay(
     x1: number,
     y1: number,
@@ -1752,17 +1758,12 @@ export class GameController {
   }
 
   updateTarget(x: number, y: number){
-  this.map.tiles[x][y].entity!.forEach((entity) => {
-        if (entity.ai){
-          if (entity instanceof BasicEnemyAI){
-            entity.findTargets();
-            
-           
-          }else{
-            
-          }
+    this.map.tiles[x][y].entity!.forEach((entity) => {
+      if (entity.ai){
+        if (entity instanceof BasicEnemyAI){
+          entity.handleTargets();
         }
-
+      }
     });
   }
 
