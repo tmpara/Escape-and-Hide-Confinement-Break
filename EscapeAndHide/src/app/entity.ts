@@ -59,17 +59,21 @@ export abstract class Entity {
       targetLimb = limbs[randomIndex];
     }
     let afflictions: affliction[] = [];
-    for (let affliction of user.weaponSlot.afflictions) {
-      afflictions.push([affliction[0], affliction[1]]);
+    if (user && user.inventory.weaponSlot && Array.isArray(user.inventory.weaponSlot.afflictions)) {
+      for (const a of user.inventory.weaponSlot.afflictions) {
+        if (Array.isArray(a) && a.length >= 2) {
+          afflictions.push([a[0], a[1]]);
+        }
+      }
     }
     this.Health.damageLimb(targetLimb, afflictions);
   }
 
-  takeStructureDamage(damage: number, damageType: string) {
-    this.onTakeDamage(damage, damageType);
+  takeStructureDamage(damage: number) {
+    this.onTakeDamage(damage);
     this.health -= damage;
     if (this.health <= 0) {
-      this.destroy(damage, damageType);
+      this.destroy(damage);
     }
   }
 
@@ -90,10 +94,10 @@ export abstract class Entity {
     }
   }
 
-  destroy(damage: number, damageType: string) {
+  destroy(damage: number) {
     if (this.destroyed == false) {
       this.destroyed = true;
-      this.onDestroyed(damage, damageType);
+      this.onDestroyed(damage);
       GameController.current?.removeEntities(this.posX, this.posY);
     }
   }
@@ -133,9 +137,9 @@ export abstract class Entity {
     console.log('entity inventory: ', this.inventory.inventorySlots);
   }
 
-  onTakeDamage(damage: number, damageType: string) {}
+  onTakeDamage(damage: number) {}
 
-  onDestroyed(damage: number, damageType: string) {}
+  onDestroyed(damage: number) {}
 
   onUse(user: Entity | null) {}
 

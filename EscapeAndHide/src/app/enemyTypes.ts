@@ -15,7 +15,7 @@ import {
   Medkit,
   Vest,
   StunGun,
-  Item,
+  Flamethrower,
 } from './items/items';
 
 export class Dummy extends Entity {
@@ -46,14 +46,14 @@ export class Dummy extends Entity {
     this.generateLoot();
   }
 
-  override destroy(damage: number, damageType: string): void {
+  override destroy(damage: number): void {
     if (this.destroyed == false) {
       this.destroyed = true;
-      this.onDestroyed(damage, damageType);
+      this.onDestroyed(damage);
       this.sprite = this.deadSprite;
     }
   }
-  override onDestroyed(damage: number, damageType: string): void {
+  override onDestroyed(damage: number): void {
     this.lootable = true;
   }
 }
@@ -87,14 +87,14 @@ export class HeavyDummy extends Entity {
     this.generateLoot();
   }
 
-  override destroy(damage: number, damageType: string): void {
+  override destroy(damage: number): void {
     if (this.destroyed == false) {
       this.destroyed = true;
-      this.onDestroyed(damage, damageType);
+      this.onDestroyed(damage);
       this.sprite = this.deadSprite;
     }
   }
-  override onDestroyed(damage: number, damageType: string): void {
+  override onDestroyed(damage: number): void {
     this.lootable = true;
   }
 }
@@ -115,14 +115,13 @@ export class LightInterferanceUnit extends LightInterferanceUnitAI {
   override parentEntity = this;
   override ai = true;
   isDead = false;
-  override itemPool = [new StunGun()];
-
+  private weaponInitialized = false
   constructor() {
     super();
-    this.generateLoot();
+    this.inventory.weaponSlot = new StunGun();
   }
 
-  override onDestroyed(damage: number, damageType: string): void {
+  override onDestroyed(damage: number): void {
     this.lootable = true;
   }
 }
@@ -140,6 +139,12 @@ export class MediumInterferanceUnit extends MediumInterferanceUnitAI {
   override parentEntity = this;
   override ai = true;
   isDead = false;
+
+  constructor() {
+    super();
+    this.inventory.weaponSlot = new BigGun();
+  }
+
 }
 export class HeavyInterferanceUnit extends HeavyInterferanceUnitAI {
   override name = 'Heavy Interferance Unit';
@@ -155,6 +160,10 @@ export class HeavyInterferanceUnit extends HeavyInterferanceUnitAI {
   override parentEntity = this;
   override ai = true;
   isDead = false;
+
+  constructor() {
+    super();
+  }
 }
 
 export class OppressorUnit extends OppressorUnitAI {
@@ -170,6 +179,12 @@ export class OppressorUnit extends OppressorUnitAI {
   override parentEntity = this;
   override ai = true;
   isDead = false;
+  private weaponInitialized = false;
+
+  constructor() {
+    super();
+  }
+
 }
 export class ScorcherUnit extends ScorcherUnitAI {
   override name = 'Scorcher Unit';
@@ -184,4 +199,9 @@ export class ScorcherUnit extends ScorcherUnitAI {
   override parentEntity = this;
   override ai = true;
   isDead = false;
+  private weaponInitialized = false;
+
+  constructor() {
+    super();
+  }
 }

@@ -397,34 +397,6 @@ export class LightInterferanceUnitAI extends BasicEnemyAI {
   override RangedAttack() {
     this.TargetCoords[0].takeDamage(this);
   }
-
-  override MeleeAttack() {
-    let targetLimb: LimbName = 'torso';
-    let miss = Math.random(); //chance to miss or hit random limb
-    if (miss < this.accuracy) {
-      return; //missed attack
-    } else if (miss < this.accuracy * 2) {
-      const limbs: LimbName[] = [
-        'head',
-        'leftArm',
-        'rightArm',
-        'leftLeg',
-        'rightLeg',
-      ];
-      const randomIndex = Math.floor(Math.random() * limbs.length);
-      targetLimb = limbs[randomIndex];
-    }
-    const controller = GameController.current;
-    if (!controller) return;
-    if (this.TargetCoords.length == 0) return;
-    const target = this.TargetCoords[0] as Player;
-    let damageDealt = this.damage * 2;
-    target.Health.damageLimb(targetLimb, [
-      ['Lacerations', damageDealt * 2],
-      ['Bleeding', damageDealt * 2],
-    ]);
-    target.Health.torso.zapped.increaseSeverity(damageDealt * 5);
-  }
 }
 
 export class MediumInterferanceUnitAI extends BasicEnemyAI {
@@ -449,30 +421,31 @@ export class MediumInterferanceUnitAI extends BasicEnemyAI {
   }
 
   override MeleeAttack() {
-    let targetLimb: LimbName = 'head';
-    let miss = Math.random(); //chance to miss or hit random limb
-    if (miss < this.accuracy) {
-      return; //missed attack
-    } else if (miss < this.accuracy * 2) {
-      const limbs: LimbName[] = [
-        'torso',
-        'leftArm',
-        'rightArm',
-        'leftLeg',
-        'rightLeg',
-      ];
-      const randomIndex = Math.floor(Math.random() * limbs.length);
-      targetLimb = limbs[randomIndex];
-    }
-    const controller = GameController.current;
-    if (!controller) return;
-    if (this.TargetCoords.length == 0) return;
-    const target = this.TargetCoords[0] as Player;
-    let damageDealt = 10;
-    target.Health.damageLimb(targetLimb, [
-      ['Lacerations', damageDealt * 2],
-      ['Bleeding', damageDealt * 5],
-    ]);
+    this.TargetCoords[0].takeDamage(this);
+    // let targetLimb: LimbName = 'head';
+    // let miss = Math.random(); //chance to miss or hit random limb
+    // if (miss < this.accuracy) {
+    //   return; //missed attack
+    // } else if (miss < this.accuracy * 2) {
+    //   const limbs: LimbName[] = [
+    //     'torso',
+    //     'leftArm',
+    //     'rightArm',
+    //     'leftLeg',
+    //     'rightLeg',
+    //   ];
+    //   const randomIndex = Math.floor(Math.random() * limbs.length);
+    //   targetLimb = limbs[randomIndex];
+    // }
+    // const controller = GameController.current;
+    // if (!controller) return;
+    // if (this.TargetCoords.length == 0) return;
+    // const target = this.TargetCoords[0] as Player;
+    // let damageDealt = 10;
+    // target.Health.damageLimb(targetLimb, [
+    //   ['Lacerations', damageDealt * 2],
+    //   ['Bleeding', damageDealt * 5],
+    // ]);
   }
 }
 

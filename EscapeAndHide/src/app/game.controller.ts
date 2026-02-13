@@ -653,6 +653,17 @@ export class GameController {
     return hitTiles;
   }
 
+  getRandomTileInRadius(target: Player, radius: number) {
+    const tiles = this.getTilesInSphere(
+      target.posX,
+      target.posY,
+      radius,
+    );
+    if (tiles.length == 0) return null;
+    const randomIndex = Math.floor(Math.random() * tiles.length);
+    return tiles[randomIndex];
+  }
+
   getDistance(posX: number, posY: number, targetX: number, targetY: number) {
     return Math.max(Math.abs(posX - targetX), Math.abs(posY - targetY));
   }
