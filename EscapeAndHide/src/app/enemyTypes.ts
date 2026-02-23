@@ -1,7 +1,24 @@
-import { BasicEnemyAI, HeavyInterferanceUnitAI, LightInterferanceUnitAI, MediumInterferanceUnitAI, TrapperUnitAI, OppressorUnitAI, ScorcherUnitAI } from './enemyAI';
+import {
+  BasicEnemyAI,
+  HeavyInterferanceUnitAI,
+  LightInterferanceUnitAI,
+  MediumInterferanceUnitAI,
+  TrapperUnitAI,
+  OppressorUnitAI,
+  ScorcherUnitAI,
+} from './enemyAI';
 import { Entity } from './entity';
-import { Item } from './items/items';
-import { gun,bigGun,bandage,medkit } from './items/items';
+import { Health } from './health/health';
+import {
+  Bandage,
+  BigGun,
+  SmallGun,
+  Helmet,
+  Medkit,
+  Vest,
+  StunGun,
+  Flamethrower,
+} from './items/items';
 
 export class Dummy extends Entity {
   override name = 'dummy';
@@ -10,17 +27,36 @@ export class Dummy extends Entity {
   override deadSprite = '/sprites/npc/dummyDead.png';
   override posX = 0;
   override posY = 0;
+
   override collidable = true;
   override damageable = true;
-  override health = 2;
-  override hiddenOutsideLOS = true;
+  override Health = new Health(10, 10);
   override blockLOS = false;
   override flammable = true;
-  override removeOnDestroy = false;
   override tags: string[] | null = ['dummy'];
-  lootTable = [new gun(), new bandage()];
+  override inventorySize = 10;
+  override itemPool = [
+    new SmallGun(),
+    new BigGun(),
+    new Helmet(),
+    new Vest(),
+    new Bandage(),
+    new Medkit(),
+  ];
 
-  override onDestroyed(damage: number, damageType: string): void{
+  constructor() {
+    super();
+    this.generateLoot();
+  }
+
+  override destroy(damage: number): void {
+    if (this.destroyed == false) {
+      this.destroyed = true;
+      this.onDestroyed(damage);
+      this.sprite = this.deadSprite;
+    }
+  }
+  override onDestroyed(damage: number): void {
     this.lootable = true;
   }
 }
@@ -31,110 +67,148 @@ export class HeavyDummy extends Entity {
   override deadSprite = '/sprites/npc/heavyDummyDead.png';
   override posX = 0;
   override posY = 0;
+  override zIndex = 3;
   override collidable = true;
   override damageable = true;
-  override health = 4;
+  override Health = new Health(5000, 5000);
   override hiddenOutsideLOS = true;
   override blockLOS = false;
   override flammable = true;
-  override removeOnDestroy = false;
   override tags: string[] | null = ['dummy'];
-  lootTable = [new bigGun(), new medkit()];
+  override inventorySize = 10;
+  override itemPool = [
+    new SmallGun(),
+    new BigGun(),
+    new Helmet(),
+    new Vest(),
+    new Bandage(),
+    new Medkit(),
+  ];
 
-  override onDestroyed(damage: number, damageType: string): void{
+  constructor() {
+    super();
+    this.generateLoot();
+  }
+
+  override destroy(damage: number): void {
+    if (this.destroyed == false) {
+      this.destroyed = true;
+      this.onDestroyed(damage);
+      this.sprite = this.deadSprite;
+    }
+  }
+  override onDestroyed(damage: number): void {
     this.lootable = true;
   }
 }
 
-export class LightInterferanceUnit extends LightInterferanceUnitAI{
-  override name = "Light Interferance Unit";
-  override description = "A small robotic unit made to stop you in your tracks. Nonlethal."
-  override sprite = "/sprites/npc/heavyDummy.png";
+export class LightInterferanceUnit extends LightInterferanceUnitAI {
+  override name = 'Light Interferance Unit';
+  override description =
+    'A small robotic unit made to stop you in your tracks. Nonlethal.';
+  override sprite = '/sprites/npc/heavyDummy.png';
   override deadSprite = '/sprites/npc/heavyDummyDead.png';
   override collidable = true;
   override damageable = true;
-  override health = 50;
+  override Health = new Health(1000, 1000);
   override hiddenOutsideLOS = true;
   override blockLOS = false;
   override flammable = true;
   override removeOnDestroy = false;
   override parentEntity = this;
   override ai = true;
-  
   isDead = false;
-  lootTable = [];
+  private weaponInitialized = false
+  constructor() {
+    super();
+    this.inventory.weaponSlot = new StunGun();
+  }
 
-  override onDestroyed(damage: number, damageType: string): void{
+  override onDestroyed(damage: number): void {
     this.lootable = true;
+  }
+}
+export class MediumInterferanceUnit extends MediumInterferanceUnitAI {
+  override name = 'Medium Interferance Unit';
+  override description =
+    'A 4-legged robot with two double-cannons on mounted at its sides, lethal.';
+  override sprite = '/sprites/npc/heavyDummy.png';
+  override collidable = true;
+  override damageable = true;
+  override Health = new Health(2500, 2500);
+  override hiddenOutsideLOS = true;
+  override blockLOS = false;
+  override flammable = true;
+  override parentEntity = this;
+  override ai = true;
+  isDead = false;
+
+  constructor() {
+    super();
+    this.inventory.weaponSlot = new BigGun();
   }
 
 }
-export class MediumInterferanceUnit extends MediumInterferanceUnitAI{
-  override name = "Medium Interferance Unit";
-  override description = "A 4-legged robot with two double-cannons on mounted at its sides, lethal."
-  override sprite = "/sprites/npc/heavyDummy.png";
+export class HeavyInterferanceUnit extends HeavyInterferanceUnitAI {
+  override name = 'Heavy Interferance Unit';
+  override description =
+    'A large 4-legged robotic unit with extreme destruction capabilities, extremely lethal.';
+  override sprite = '/sprites/npc/heavyDummy.png';
   override collidable = true;
   override damageable = true;
-  override health = 100;
+  override Health = new Health(5000, 5000);
   override hiddenOutsideLOS = true;
   override blockLOS = false;
   override flammable = true;
   override parentEntity = this;
   override ai = true;
-  
   isDead = false;
-  lootTable = [new gun(), new bandage()];
+
+  constructor() {
+    super();
+  }
 }
-export class HeavyInterferanceUnit extends HeavyInterferanceUnitAI{
-  override name = "Heavy Interferance Unit";
-  override description = "A large 4-legged robotic unit with extreme destruction capabilities, extremely lethal."
-  override sprite = "/sprites/npc/heavyDummy.png"
+
+export class OppressorUnit extends OppressorUnitAI {
+  override name = 'Oppressor Unit';
+  override description =
+    'A large robotic unit built to crush anything in its path, extremely lethal.';
+  override sprite = '/sprites/npc/heavyDummy.png';
   override collidable = true;
-  override damageable = true;
-  override health = 500;
+  override Health = new Health(2500, 2500);
   override hiddenOutsideLOS = true;
   override blockLOS = false;
   override flammable = true;
   override parentEntity = this;
   override ai = true;
-  
   isDead = false;
-  lootTable = [new gun(), new bandage()];
-}
 
-export class OppressorUnit extends OppressorUnitAI{
-  override name = "Oppressor Unit";
-  override description = "A large robotic unit built to crush anything in its path, extremely lethal."
-  override sprite = "/sprites/npc/heavyDummy.png"
-  override collidable = true
-  override health = 300;
-  override hiddenOutsideLOS = true;
-  override blockLOS = false;
-  override flammable = true;
-  override parentEntity = this;
-  override ai = true;
-  
-  isDead = false;
-  lootTable = [new gun(), new bandage()];
-}
+  constructor() {
+    super();
+  }
 
-export class ScorcherUnit extends ScorcherUnitAI{
-  override name = "Scorcher Unit";
-  override description = "A heavy robotic unit equipped with a flamethrower, lethal."
-  override sprite = "/sprites/npc/heavyDummy.png"
-  override collidable = true
-  override health = 400;
+}
+export class ScorcherUnit extends ScorcherUnitAI {
+  override name = 'Scorcher Unit';
+  override description =
+    'A heavy robotic unit equipped with a flamethrower, lethal.';
+  override sprite = '/sprites/npc/heavyDummy.png';
+  override collidable = true;
+  override Health = new Health(2000, 2000);
   override hiddenOutsideLOS = true;
   override blockLOS = false;
   override flammable = false;
   override parentEntity = this;
   override ai = true;
-
   isDead = false;
-  lootTable = [new gun(), new bandage()];
+  private weaponInitialized = false;
+
+  constructor() {
+    super();
+  }
 }
 
-export class TrapperUnit extends TrapperUnitAI{
+export class TrapperUnit extends TrapperUnitAI {
   override name = "Trapper Unit";
   override description = "A small robotic unit that deploys traps to hinder your movement."
   override sprite = "/sprites/npc/heavyDummy.png"
@@ -145,7 +219,5 @@ export class TrapperUnit extends TrapperUnitAI{
   override flammable = false;
   override parentEntity = this;
   override ai = true;
-
   isDead = false;
-  lootTable = [new gun(), new bandage()];
 }
