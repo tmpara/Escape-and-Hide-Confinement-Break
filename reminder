@@ -1,0 +1,7 @@
+override destroy(damage: number, damageType: string): void {
+    if (this.destroyed == false) {
+      this.destroyed = true;
+      this.onDestroyed(damage, damageType);
+      this.sprite = this.deadSprite;
+    }
+  }
