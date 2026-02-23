@@ -5,25 +5,30 @@ import { Inventory } from './inventory/inventory';
 import { Item } from './items/items';
 import { Player } from './player';
 export abstract class Entity {
-  id = 0;
-  name = '';
-  description = '';
-  sprite = 'placeholder.png';
-  deadSprite = '';
-  tags: string[] | null = null;
-  connectsWith: string | null = null;
-  spriteTopCap = '';
-  spriteBottomCap = '';
-  spriteLeftCap = '';
-  spriteRightCap = '';
-  spriteTopLeftCorner = '';
-  spriteTopRightCorner = '';
-  spriteBottomLeftCorner = '';
-  spriteBottomRightCorner = '';
+  
+  id=0;
+  name = "";
+  description = "";
+  sprite = "placeholder.png";
+  deadSprite = "";
+  sizeOffsetX = 0;
+  sizeOffsetY = 0;
   posX = 0;
   posY = 0;
-  zIndex = 4;
+  zIndex = 5;
+  spriteTopCap = "";
+  spriteBottomCap = "";
+  spriteLeftCap = "";
+  spriteRightCap = "";
+  spriteTopLeftCorner = "";
+  spriteTopRightCorner = "";
+  spriteBottomLeftCorner = "";
+  spriteBottomRightCorner = "";
+  connectsWith: string | null = null
+  tags: string[] | null = null;
+  interactable = false;
   collidable = false;
+  pushable = false;
   damageable = false;
   health = 0;
   Health: import('./health/health').Health | null = null;
@@ -98,40 +103,10 @@ export abstract class Entity {
     if (this.destroyed == false) {
       this.destroyed = true;
       this.onDestroyed(damage);
-      GameController.current?.removeEntities(this.posX, this.posY);
-    }
-  }
-
-  generateLoot() {
-    const lootLimit = Math.floor(Math.random() * 5) + 1;
-    const selectedItems: Item[] = [];
-    while (
-      selectedItems.length < this.inventorySize ||
-      selectedItems.length < lootLimit
-    ) {
-      const lootIndex = Math.floor(Math.random() * this.itemPool.length);
-      selectedItems.push(this.itemPool[lootIndex]);
-    }
-    for (const item of selectedItems) {
-      if (item.slot && item.slot === 'weapon') {
-        this.inventory.weaponSlot = item;
-        // console.log('Equipped weapon:', item.name);
-      } else if (item.slot && item.slot === 'head') {
-        this.inventory.headArmorSlot = item;
-        this.damageResistance += item.defense;
-        // console.log('Equipped head armor:', item.name);
-      } else if (item.slot && item.slot === 'torso') {
-        this.inventory.torsoArmorSlot = item;
-        this.damageResistance += item.defense;
-        // console.log('Equipped torso armor:', item.name);
-      } else if (item.slot && item.slot === 'fullbody') {
-        this.inventory.fullbodyArmorSlot = item;
-        this.damageResistance += item.defense;
-        // console.log('Equipped full body armor:', item.name);
-      }
-      const emptyIndex = this.inventory.inventorySlots.indexOf(null);
-      if (emptyIndex !== -1) {
-        this.inventory.inventorySlots[emptyIndex] = item;
+      if (this.removeOnDestroy == true){
+        GameController.current?.removeEntities(this.posX, this.posY,this.id);
+      }else{
+        this.sprite = this.deadSprite;
       }
     }
     console.log('entity inventory: ', this.inventory.inventorySlots);

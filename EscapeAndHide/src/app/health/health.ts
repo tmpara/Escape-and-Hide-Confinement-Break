@@ -52,9 +52,9 @@ export class Health {
   }
 
   hitRandomLimb(bleedingIncrease: number) {}
-
-  damageLimb(limb: LimbName, afflictions: affliction[]) {
-    for (let affliction of afflictions) {
+  
+  damageLimb(limb: LimbName, afflictions: affliction[]) {  
+  for (let affliction of afflictions) {
       if (affliction[0] == 'Lacerations') {
         this[limb].lacerations.increaseSeverity(affliction[1]);
       }

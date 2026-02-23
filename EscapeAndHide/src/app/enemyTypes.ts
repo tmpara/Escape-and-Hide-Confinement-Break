@@ -1,7 +1,9 @@
 import {
+  BasicEnemyAI,
   HeavyInterferanceUnitAI,
   LightInterferanceUnitAI,
   MediumInterferanceUnitAI,
+  TrapperUnitAI,
   OppressorUnitAI,
   ScorcherUnitAI,
 } from './enemyAI';
@@ -20,6 +22,7 @@ import {
 
 export class Dummy extends Entity {
   override name = 'dummy';
+  override description = "Dummy description."
   override sprite = '/sprites/npc/dummy.png';
   override deadSprite = '/sprites/npc/dummyDead.png';
   override posX = 0;
@@ -179,7 +182,6 @@ export class OppressorUnit extends OppressorUnitAI {
   override parentEntity = this;
   override ai = true;
   isDead = false;
-  private weaponInitialized = false;
 
   constructor() {
     super();
@@ -204,4 +206,18 @@ export class ScorcherUnit extends ScorcherUnitAI {
   constructor() {
     super();
   }
+}
+
+export class TrapperUnit extends TrapperUnitAI {
+  override name = "Trapper Unit";
+  override description = "A small robotic unit that deploys traps to hinder your movement."
+  override sprite = "/sprites/npc/heavyDummy.png"
+  override collidable = true
+  override health = 200;
+  override hiddenOutsideLOS = true;
+  override blockLOS = false;
+  override flammable = false;
+  override parentEntity = this;
+  override ai = true;
+  isDead = false;
 }

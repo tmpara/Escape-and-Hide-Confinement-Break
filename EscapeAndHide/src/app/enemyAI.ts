@@ -554,6 +554,17 @@ export class OppressorUnitAI extends BasicEnemyAI {
     }
   }
 }
+
+export class TrapperUnitAI extends BasicEnemyAI {
+    override hostile = false;
+    override meleePreference = false;
+    override energy = 5;
+    override sightRange = 2;
+    override attackRange = 2;
+    override damage = 1;
+    override accuracy = 0.1; //chance to miss
+}
+      
 export class ScorcherUnitAI extends BasicEnemyAI {
   override hostile = true;
   override meleePreference = false;
@@ -633,11 +644,7 @@ export class ScorcherUnitAI extends BasicEnemyAI {
       }
     }
 
-    this.stunned += 1; //scorcher stuns itself after attack
-    console.log(
-      'Scorcher used Ranged Attack and is stunned for ' +
-        this.stunned +
-        ' turn.',
-    );
-  }
-}
+    
+
+
+ }
