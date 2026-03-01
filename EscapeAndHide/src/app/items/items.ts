@@ -3,24 +3,47 @@ import { Entity } from '../entity';
 export abstract class Item {
   name = '';
   category = '';
-  displayed = false;
   sprite = 'placeholder.png';
-  isEquipped = false;
   structureDamage = 1;
   accuracy = 1;
   range = 1;
-  afflictions: (string | number)[][] = [[' ', 0]]; // [afflictionType, amount][]
+  afflictions: (string | number)[][] = [[' ', 0]]; // [[afflictionType, amount]]
   defense = 0;
   slot = '';
 
   heal(target: Entity) {
     target.heal(0);
   }
+  
+  getStats() {
+    switch (this.category) {
+      case 'weapon':
+        return {
+          name: 'Name: ' + this.name,
+          afflictions: this.afflictions,
+          structureDamage: 'Structure damage: ' + this.structureDamage,
+          accuracy: 'Accuracy: ' + this.accuracy,
+          range: 'Range: ' + this.range,
+        };
+      case 'armor':
+        return {
+          name: 'Name: ' + this.name,
+          defense: 'Defense: ' + this.defense,
+        };
+      
+      case 'usable_heal':
+        return {
+          name: 'Name: ' + this.name,
+          afflictions: this.afflictions,
+        };
+      default:
+        return;
+    }
+  }
 }
 export class SmallGun extends Item {
   override name = 'gun';
   override category = 'weapon';
-  override displayed = false;
   override sprite = '/sprites/items/gun.png';
   override structureDamage = 50;
   override accuracy = 0.8;
@@ -34,7 +57,6 @@ export class SmallGun extends Item {
 export class BigGun extends Item {
   override name = 'bigGun';
   override category = 'weapon';
-  override displayed = false;
   override sprite = '/sprites/items/biggun.png';
   override structureDamage = 100;
   override accuracy = 0.7;
@@ -48,7 +70,6 @@ export class BigGun extends Item {
 export class Flamethrower extends Item {
   override name = 'flamethrower';
   override category = 'weapon';
-  override displayed = false;
   override sprite = '/sprites/items/flamethrower.png';
   override structureDamage = 10;
   override range = 5;
@@ -58,7 +79,6 @@ export class Flamethrower extends Item {
 export class StunGun extends Item {
   override name = 'stunGun';
   override category = 'weapon';
-  override displayed = false;
   override sprite = '/sprites/items/placeholder.png';
   override structureDamage = 1;
   override range = 5;
@@ -72,8 +92,7 @@ export class StunGun extends Item {
 }
 export class Bandage extends Item {
   override name = 'bandage';
-  override category = 'consumable_heal';
-  override displayed = false;
+  override category = 'usable_heal';
   override sprite = '/sprites/items/bandage.png';
   override afflictions = [
     ['Lacerations', 20],
@@ -95,8 +114,7 @@ export class Bandage extends Item {
 }
 export class Medkit extends Item {
   override name = 'medkit';
-  override category = 'consumable_heal';
-  override displayed = false;
+  override category = 'usable_heal';
   override sprite = '/sprites/items/medkit.png';
   override afflictions: (any | null)[][] = [
     ['Lacerations', 50],
@@ -119,7 +137,6 @@ export class Medkit extends Item {
 export class Helmet extends Item {
   override name = 'helmet';
   override category = 'armor';
-  override displayed = false;
   override sprite = '/sprites/items/helmet.png';
   override defense = 10;
   override slot = 'head';
@@ -127,7 +144,6 @@ export class Helmet extends Item {
 export class Vest extends Item {
   override name = 'vest';
   override category = 'armor';
-  override displayed = false;
   override sprite = '/sprites/items/vest.png';
   override defense = 20;
   override slot = 'torso';

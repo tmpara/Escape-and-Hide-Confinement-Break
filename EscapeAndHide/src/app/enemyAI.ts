@@ -643,8 +643,5 @@ export class ScorcherUnitAI extends BasicEnemyAI {
         }
       }
     }
-
-    
-
-
+  }
  }

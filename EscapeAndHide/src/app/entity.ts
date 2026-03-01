@@ -112,6 +112,52 @@ export abstract class Entity {
     console.log('entity inventory: ', this.inventory.inventorySlots);
   }
 
+  generateLoot() {
+    if (!this.itemPool || this.itemPool.length === 0) {
+      return;
+    }
+    const lootLimit = Math.floor(Math.random() * 5) + 1;
+    const selectedItems: Item[] = [];
+    while (
+      selectedItems.length < this.inventorySize && selectedItems.length < lootLimit
+    ) {
+      const lootIndex = Math.floor(Math.random() * this.itemPool.length);
+      const item = this.itemPool[lootIndex];
+      if (item) {
+        const newItem = new (item.constructor as any)();
+        selectedItems.push(newItem);
+      }
+    }
+    for (const item of selectedItems) {
+      if (!item) continue;
+      
+      if (item.slot) {
+        if (item.slot === 'weapon') {
+          this.inventory.weaponSlot = item;
+          // console.log('Equipped weapon:', item.name);
+        } else if (item.slot === 'head') {
+          this.inventory.headArmorSlot = item;
+          this.damageResistance += item.defense;
+          // console.log('Equipped head armor:', item.name);
+        } else if (item.slot === 'torso') {
+          this.inventory.torsoArmorSlot = item;
+          this.damageResistance += item.defense;
+          // console.log('Equipped torso armor:', item.name);
+        } else if (item.slot === 'fullbody') {
+          this.inventory.fullbodyArmorSlot = item;
+          this.damageResistance += item.defense;
+          // console.log('Equipped full body armor:', item.name);
+        }
+      }
+    
+      const emptyIndex = this.inventory.inventorySlots.indexOf(null);
+      if (emptyIndex !== -1) {
+        this.inventory.inventorySlots[emptyIndex] = item;
+      }
+    }
+    console.log('entity inventory: ', this.inventory.inventorySlots);
+  }
+
   onTakeDamage(damage: number) {}
 
   onDestroyed(damage: number) {}

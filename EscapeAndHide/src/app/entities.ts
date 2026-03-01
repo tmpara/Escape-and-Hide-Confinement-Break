@@ -1,7 +1,7 @@
 import { Entity } from './entity';
 import { Player } from './player';
 import { GameController } from './game.controller';
-import { SmallGun, Medkit } from './items/items';
+import { SmallGun, Medkit, BigGun, Bandage } from './items/items';
 
 export class Wall1 extends Entity {
   override name = 'Wall';
@@ -164,7 +164,13 @@ export class Crate extends Entity {
   override hiddenOutsideLOS = true;
   override blockLOS = false;
   override flammable = true;
-  lootTable = [];
+  override inventorySize = 3;
+  override itemPool: any[] = [];
+
+  constructor() {
+    super();
+    this.generateLoot();
+  }
 }
 
 export class WeaponCrate extends Entity {
@@ -179,7 +185,13 @@ export class WeaponCrate extends Entity {
   override hiddenOutsideLOS = true;
   override blockLOS = false;
   override flammable = true;
-  lootTable = [new SmallGun()];
+  override inventorySize = 2;
+  override itemPool = [new SmallGun(), new BigGun()];
+
+  constructor() {
+    super();
+    this.generateLoot();
+  }
 }
 
 export class MedicalCrate extends Entity {
@@ -188,13 +200,18 @@ export class MedicalCrate extends Entity {
   override lootable = true;
   override interactable = true;
   override collidable = true;
-  override pushable = true;
+  override inventorySize = 2;
   override damageable = true;
   override health = 25;
   override hiddenOutsideLOS = true;
   override blockLOS = false;
   override flammable = true;
-  lootTable = [new Medkit()];
+  override itemPool = [new Bandage(), new Medkit()];
+  
+  constructor() {
+    super();
+    this.generateLoot();
+  }
 }
 
 export class CryoChamber extends Entity {
