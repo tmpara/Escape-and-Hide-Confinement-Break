@@ -18,6 +18,7 @@ export class Player extends Entity {
   Energy = new Energy(100, 100);
   renderX = this.posX;
   renderY = this.posY;
+  factionID = 1;
 
   playerAction(energyCost: number) {
     this.Health.updateAfflictions();

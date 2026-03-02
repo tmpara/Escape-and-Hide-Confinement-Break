@@ -38,6 +38,8 @@ export class GameController {
   healthBar = new Graphics();
   energyBar = new Graphics();
   tile = new Graphics();
+
+  mapRenderer?: WorldMapRenderer;
   
   statcardOverlayVisible: boolean = false;
   lootOverlayVisible: boolean = false;
@@ -59,8 +61,10 @@ export class GameController {
   playerWorldY = this.world.startY;
   tileSize = 32; // Size of each tile in pixels
   lastUsedId = 0;
-  mapRenderer?: WorldMapRenderer;
+
   enemyTurnList: Entity[] = [];
+  enemyTurn = false;
+  
 
   constructor() {}
 
@@ -446,6 +450,12 @@ export class GameController {
       return max;
     }
     return number;
+  }
+
+  getDistanceTo(posX: number, posY: number, targetX: number, targetY: number){
+    const dx = Math.abs(posX - targetX);
+    const dy = Math.abs(posY - targetY);
+    return Math.ceil(Math.max(dx, dy) + 0.5 * Math.min(dx, dy),);
   }
 
   castRay(
@@ -2020,28 +2030,13 @@ export class GameController {
     }
   }
 
-   updateAllTiles() {
+  updateAllTiles() {
     this.enemyTurnList = [];
     for (let x = 0; x < this.map.width; x++) {
       for (let y = 0; y < this.map.height; y++) {
         this.updateTile(x, y);
       }
-    }
-
-    for (const entity of this.enemyTurnList) {
-      try {
-        // Let the entity take its turn (may be synchronous)
-        if (entity instanceof BasicEnemyAI) {
-          entity.aiTurn();
-        }
-      } catch (err) {
-        console.warn('Error during entity turn', err);
-      }
-
-      // redraw so player sees the result immediately
-      this.drawGrid();
-      this.drawPlayer();
-    }
+    }    
   }
 
   updateTile(x: number, y: number) {
@@ -2102,7 +2097,6 @@ export class GameController {
         if (entity.ai && !(entity as any).isSubEntity){
           this.enemyTurnList.push(entity);
         }
-        
     });
   }
 
@@ -2114,12 +2108,11 @@ export class GameController {
     }
   }
 
-  updateTarget(x: number, y: number) {
+  updateTarget(x: number, y: number){
     this.map.tiles[x][y].entity!.forEach((entity) => {
-      if (entity.ai) {
-        if (entity instanceof BasicEnemyAI) {
-          entity.findTargets();
-        } else {
+      if (entity.ai){
+        if (entity instanceof BasicEnemyAI){
+          entity.handleTargets();
         }
       }
     });
@@ -2319,25 +2312,50 @@ export class GameController {
     this.map.tiles[x][y].item = null;
   }
 
-  endTurn() {
+  changeTurn(){
+    this.player1.playerAction(0);
     this.updateAllTiles();
+    if(this.enemyTurn){
+      this.startPlayerTurn();
+    }else{
+      this.startEnemyTurn();
+    }
+  }
+
+  startPlayerTurn() {
+    this.enemyTurn = false;
     this.player1.Energy.setEnergy(100);
-    if (this.player1.Health.torso.zapped.severity > 0) {
-      this.player1.Energy.loseEnergy(this.player1.Health.torso.zapped.severity);
-      if (this.player1.Health.torso.zapped.severity >= 5) {
-        this.player1.Health.torso.zapped.severity =
-          this.player1.Health.torso.zapped.severity - 5;
-      } else {
-        this.player1.Health.torso.zapped.severity = 0;
+    this.addLog("Player's turn started.");
+  }
+
+  async startEnemyTurn() {
+    this.addLog("Enemy's turn started.");
+    this.enemyTurn = true;
+    // Let all entities take their turn (may be synchronous)
+    for (const entity of this.enemyTurnList) {
+      try {
+        if (entity instanceof BasicEnemyAI){
+          await entity.aiTurn();
+        }
+      } catch (err) {
+        console.warn('Error during entity turn', err);
+        this.startPlayerTurn();
       }
     }
-    this.player1.playerAction(0);
+    this.startPlayerTurn();
+    // redraw so player sees the result immediately
+    this.drawGrid();
+    this.drawPlayer();
   }
 
   listenForMovement(player: Player) {
     window.addEventListener('keydown', (event) => {
       let targetX = player.posX;
       let targetY = player.posY;
+
+      if(this.enemyTurn){
+        return;
+      }
 
       switch (event.key.toLowerCase()) {
         case 'w':
@@ -2366,10 +2384,15 @@ export class GameController {
 
   listenForInput(player: Player) {
     window.addEventListener('keydown', (event) => {
+
+      if(this.enemyTurn){
+        return;
+      }
+
       switch (event.key.toLowerCase()) {
         case 'x':
           this.addLog("Player ended their turn.");
-          this.endTurn();
+          this.changeTurn();
           break;
         case 'f':
           this.addLog("Aim mode: " + (this.aimMode ? "off" : "on") + ".");
@@ -2378,7 +2401,7 @@ export class GameController {
         case 'p':
           this.addLog("(DEBUG) Explosion created at player position.");
           this.createExplosion(player.posX, player.posY, 3, 100, true);
-          this.endTurn();
+          this.changeTurn();
           break;
         case 'l':
           this.addLog("(DEBUG) Healed bleeding.");
@@ -2424,6 +2447,10 @@ export class GameController {
     });
 
     window.addEventListener('click', (event) => {
+
+      if(this.enemyTurn){
+        return;
+      }
 
       const rect = this.app.view.getBoundingClientRect();
 
@@ -2479,6 +2506,11 @@ export class GameController {
   }
 
   teleportToRoom(worldX: number, worldY: number) {
+
+    if(this.enemyTurn){
+      return;
+    }
+
     // ensure target room exists
     if (!this.world.rooms[worldX] || !this.world.rooms[worldX][worldY]) return;
 

@@ -277,15 +277,22 @@ export class RoomsData {
         this.endingRoom.layout[12][6] = new RoomTransition("down");
         /* ---- Room code end ---- */
             
+        
         /* ---- Room code start ---- */
         this.crossHall1 = new Room(28, 28, ["up", "left", "right", "down"], []);
         this.crossHall1.layout = Array.from({ length: this.crossHall1.width }, () => Array.from({ length: this.crossHall1.height }));
         this.crossHall1.layout[0][13] = new RoomTransition("left");
+        this.crossHall1.layout[8][4] = new LightInterferanceUnit();
+        this.crossHall1.layout[8][19] = new MediumInterferanceUnit();
         this.crossHall1.layout[13][0] = new RoomTransition("up");
         this.crossHall1.layout[13][27] = new RoomTransition("down");
+        this.crossHall1.layout[14][11] = new OppressorUnit();
+        this.crossHall1.layout[20][4] = new ScorcherUnit();
+        this.crossHall1.layout[20][19] = new HeavyInterferanceUnit();
         this.crossHall1.layout[27][13] = new RoomTransition("right");
         this.crossHall1.layout[13][13] = new Boss1Unit();
         /* ---- Room code end ---- */
+
 
         this.verticalHall = new Room(5, 15, ["up", "down"], []);
         this.verticalHall.layout = Array.from({ length: this.verticalHall.width }, () => Array.from({ length: this.verticalHall.height }));
