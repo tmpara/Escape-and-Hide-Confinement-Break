@@ -220,38 +220,6 @@ export class TrapperUnit extends TrapperUnitAI {
   override parentEntity = this;
   override ai = true;
   isDead = false;
-  lootTable = [new gun(), new bandage()];
+  lootTable = [new SmallGun(), new Bandage()];
 }
 
-export class Boss1Unit extends Boss1AI{
-  override name = "The Immovable One";
-  override description = "The first boss of the game, a giant robotic unit with immense health and powerful attacks. It has four legs that can attack independently, and a main body that can also attack. It is extremely lethal."
-  override sprite = "/sprites/npc/heavyDummy.png"
-  override collidable = true
-  override health = 2000
-  // render above its legs
-  override zIndex = 9;
-  override hiddenOutsideLOS = true;
-  override blockLOS = false;
-  override flammable = false;
-  override parentEntity = this;
-  override ai = true;
-}
-
-export class Boss1UnitLeg extends Boss1AILeg{
-
-  override name = "The Immovable One's Leg";
-  override description = "One of the legs of The Immovable One. It can attack independently, but is much weaker than the main body."
-  override sprite = "/sprites/npc/heavyDummy.png"
-  // Legs should not block movement for their parent boss
-  override collidable = false
-  // legs render below the boss
-  override zIndex = 6;
-  override health = 250;
-  override hiddenOutsideLOS = true;
-  override blockLOS = false;
-  override flammable = false;
-  override parentEntity = this;
-  override ai = true;
-
-}

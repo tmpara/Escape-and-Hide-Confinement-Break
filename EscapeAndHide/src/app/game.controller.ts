@@ -62,6 +62,16 @@ export class GameController {
   mapRenderer?: WorldMapRenderer;
   enemyTurnList: Entity[] = [];
 
+  //flags for render
+
+  MiniMapFlag = true;
+  GridFlag = true;
+  PlayerFlag = true;
+  HealthBarFlag = true;
+  EnergyBarFlag = true;
+  ReticleFlag = true;
+  AfflictionsFlag = true;
+
   constructor() {}
 
   async init(container: HTMLDivElement): Promise<void> {
@@ -1513,6 +1523,7 @@ export class GameController {
     this.playerSprite.removeChildren();
     this.playerSprite.clear();
     this.playerSprite.beginFill(0x00ff00);
+  
     this.playerSprite.drawCircle(
       this.player1.renderX * this.tileSize + this.tileSize / 2,
       this.player1.renderY * this.tileSize + this.tileSize / 2,
@@ -1774,11 +1785,12 @@ export class GameController {
   }
 
   // Generic entity animation helper (works for Player and non-player entities)
-  animateEntityMove(
+  async animateEntityMove(
     entity: any,
     targetX: number,
     targetY: number,
     duration: number = 150,
+    isPlayer: boolean = false
   ) {
     // Ensure entity has render positions; if not, initialize
     if (entity.renderX === undefined) entity.renderX = entity.posX;
@@ -1790,7 +1802,7 @@ export class GameController {
     const deltaY = targetY - startY;
     const startTime = performance.now();
 
-    const animate = (now: number) => {
+     const animate = async (now: number) => {
       const elapsed = now - startTime;
       const t = Math.min(elapsed / duration, 1);
       entity.renderX = startX + deltaX * t;
@@ -1800,9 +1812,14 @@ export class GameController {
       } else {
         entity.renderX = targetX;
         entity.renderY = targetY;
+        if(isPlayer){
+        await this.delay(50);
+        this.PlayerFlag = false;
+        }
       }
     };
     requestAnimationFrame(animate);
+    
   }
 
   // Backwards-compatible wrapper for player-specific calls
@@ -1812,23 +1829,35 @@ export class GameController {
     targetY: number,
     duration: number = 150
   ) {
-    this.animateEntityMove(player, targetX, targetY, duration);
+    this.animateEntityMove(player, targetX, targetY, duration, true);
+    debugger
+    
   }
 
   gameLoop() {
     // Redraw player at new position
     // update minimap if present (set player pos first)
     if (this.mapRenderer) {
-     // this.mapRenderer.setPlayer(this.playerWorldX, this.playerWorldY);
-     // this.mapRenderer.update();
+      this.mapRenderer.setPlayer(this.playerWorldX, this.playerWorldY);
+      this.mapRenderer.update();
     }
-    this.drawGrid();
-    //this.drawPlayer();
-    //this.drawHealthBar();
-   // this.drawEnergyBar();
-    //this.drawReticle();
-    //this.drawAfflictions();
-    //this.centerMap();
+
+    if(this.GridFlag){
+      this.drawGrid();
+      this.GridFlag = false;
+    }
+
+    if(this.PlayerFlag){
+      
+      this.drawPlayer();
+      //this.PlayerFlag = false;
+    }
+    this.drawHealthBar();
+    this.drawEnergyBar();
+    this.drawReticle();
+    this.drawAfflictions();
+    this.centerMap();
+    
     requestAnimationFrame(() => this.gameLoop());
   }
 
@@ -1873,6 +1902,8 @@ export class GameController {
       this.removePlayer(playerPosX, playerPosY);
       player.posX = targetX;
       player.posY = targetY;
+      this.PlayerFlag = true;
+      
       this.animatePlayerMove(player, targetX, targetY);
       this.player1.playerAction(0);
       let entities = this.getAllEntitiesOnTile(targetX, targetY);
@@ -1880,6 +1911,8 @@ export class GameController {
         entities[i].onSteppedOn(player);
       }
     }
+    
+    this.GridFlag = true;
   }
 
   findRoom(player: Player, transition: RoomTransition) {
@@ -2338,6 +2371,7 @@ export class GameController {
     window.addEventListener('keydown', (event) => {
       let targetX = player.posX;
       let targetY = player.posY;
+     
 
       switch (event.key.toLowerCase()) {
         case 'w':
@@ -2359,13 +2393,15 @@ export class GameController {
         default:
           return;
       }
-
+     
       this.tryToMovePlayer(player, targetX, targetY);
     });
   }
 
   listenForInput(player: Player) {
     window.addEventListener('keydown', (event) => {
+      this.PlayerFlag = true;
+      this.GridFlag = true;
       switch (event.key.toLowerCase()) {
         case 'x':
           this.addLog("Player ended their turn.");
@@ -2397,7 +2433,10 @@ export class GameController {
         default:
           return;
       }
-    });
+      
+    }
+    
+  );
     window.addEventListener('mousemove', (event) => {
       if (!this.app || !this.app.view) return;
       const rect = this.app.view.getBoundingClientRect();
@@ -2424,6 +2463,7 @@ export class GameController {
     });
 
     window.addEventListener('click', (event) => {
+      this.GridFlag = true;
 
       const rect = this.app.view.getBoundingClientRect();
 
