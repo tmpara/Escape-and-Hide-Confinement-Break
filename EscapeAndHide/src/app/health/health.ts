@@ -30,7 +30,8 @@ export type LimbName =
   | 'rightLeg'
   | 'head'
   | 'torso';
-type affliction = [string, number];
+export type affliction = [string, number];
+
 export class Health {
   genetics = new Genetics();
   genes = this.genetics.genes;
@@ -60,11 +61,10 @@ export class Health {
     this.head,
     this.torso,
   ];
-  
 
-  constructor(maxBlood: number, currentHealth: number) {
-    this.maxBlood = maxBlood;
-    this.currentBlood = currentHealth;
+  constructor(maxHealth: number, currentHealth: number) {
+    this.maxHealth = maxHealth;
+    this.currentHealth = currentHealth;
   }
 
   hitRandomLimb(bleedingIncrease: number) {}
@@ -77,6 +77,9 @@ export class Health {
       if (affliction[0] == 'Bleeding') {
         this[limb].bleeding.increaseSeverity(affliction[1]);
       }
+      if (affliction[0] == 'Zapped') {
+        this[limb].zapped.increaseSeverity(affliction[1]);
+      }
       if (affliction[0] == 'GunshotWound') {
         this[limb].gunshotWound.increaseSeverity(affliction[1]);
       }
@@ -86,9 +89,32 @@ export class Health {
       if (affliction[0] == 'Fracture') {
         this[limb].addFracture();
       }
+    }
   }
-}
 
+  healLimb(afflictionType: affliction[]) {
+    const limb = GameController.current?.selectedLimb as LimbName;
+    for (let affliction of afflictionType) {
+      if (affliction[0] === 'Lacerations') {
+        this[limb].lacerations.decreaseSeverity(affliction[1]);
+      }
+      if (affliction[0] === 'Bleeding') {
+        this[limb].bleeding.decreaseSeverity(affliction[1]);
+      }
+      if (affliction[0] === 'Zapped') {
+        this[limb].zapped.decreaseSeverity(affliction[1]);
+      }
+      if (affliction[0] == 'GunshotWound') {
+        this[limb].gunshotWound.decreaseSeverity(affliction[1]);
+      }
+      if (affliction[0] == 'Burn') {
+        this[limb].burn.decreaseSeverity(affliction[1]);
+      }
+      if (affliction[0] == 'Fracture') {
+        this[limb].addFracture();
+      }
+    }
+  }
   updateAfflictions() {
     //Genetic effects
 
@@ -107,18 +133,18 @@ export class Health {
       this.bloodLoss.increaseSeverity(limb.bleeding.severity);
     }
     //console.log('bloodloss: ' + this.bloodLoss.severity);
-    this.currentBlood -= this.bloodLoss.severity;
-    if (this.currentBlood < 0) {
-      this.currentBlood = 0;
+    this.currentHealth -= this.bloodLoss.severity;
+    if (this.currentHealth < 0) {
+      this.currentHealth = 0;
     } else {
-      if (this.currentBlood + this.regeneration < this.maxBlood) {
-        this.currentBlood += this.regeneration;
+      if (this.currentHealth + this.regeneration < this.maxHealth) {
+        this.currentHealth += this.regeneration;
       } else {
-        this.currentBlood = this.maxBlood;
+        this.currentHealth = this.maxHealth;
       }
     }
     if (
-      this.currentBlood < this.maxBlood * 0.5 &&
+      this.currentHealth < this.maxHealth * 0.5 &&
       this.hypoxemia.severity < 100
     ) {
       this.hypoxemia.increaseSeverity(this.bloodLoss.severity / 20);
