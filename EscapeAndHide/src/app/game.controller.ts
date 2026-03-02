@@ -4,7 +4,7 @@ import { Text, Assets } from 'pixi.js';
 import { GameGrid } from './grid';
 import { World } from './world';
 import { Player } from './player';
-import { Item, SmallGun} from './items/items';
+import { Item} from './items/items';
 import { WorldMapRenderer } from './worldMapRenderer';
 import { Inventory } from './inventory/inventory';
 import { Entity } from './entity';
@@ -88,13 +88,9 @@ export class GameController {
     await Assets.load('/sprites/entities/wall_placeholder_leftcap.png');
     await Assets.load('/sprites/entities/wall_placeholder_rightcap.png');
     await Assets.load('/sprites/entities/wall_placeholder_toprightcorner.png');
-    await Assets.load(
-      '/sprites/entities/wall_placeholder_bottomleftcorner.png',
-    );
+    await Assets.load('/sprites/entities/wall_placeholder_bottomleftcorner.png');
     await Assets.load('/sprites/entities/wall_placeholder_topleftcorner.png');
-    await Assets.load(
-      '/sprites/entities/wall_placeholder_bottomrightcorner.png',
-    );
+    await Assets.load('/sprites/entities/wall_placeholder_bottomrightcorner.png');
     await Assets.load('/sprites/entities/door1.png');
     await Assets.load('/sprites/entities/glass_shards.png');
     await Assets.load('/sprites/entities/explosiveBarrel.png');
@@ -151,7 +147,8 @@ export class GameController {
       width: window.innerWidth * 0.7,
       height: window.innerHeight * 1,
       backgroundColor: 0x222222,
-      antialias: true,
+      antialias: false,
+      roundPixels: true,
     });
     container.style.width = "100%";
     container.style.height = "100%";
@@ -212,7 +209,7 @@ export class GameController {
       height: equippedRect.height || window.innerHeight * 0.2,
       antialias: true,
       backgroundColor: 0x333333,
-      resolution: window.devicePixelRatio,
+      resolution: 2
     });
     this.equippedApp.view.style.display = 'block' ;
     equippedColumn.appendChild(this.equippedApp.view as HTMLCanvasElement);
@@ -224,7 +221,7 @@ export class GameController {
       height: inventoryRect.height || window.innerHeight * 0.3,
       antialias: true,
       backgroundColor: 0x252525,
-      resolution: window.devicePixelRatio,
+      resolution: 2
     });
     this.inventoryApp.view.style.display = 'block';
     inventoryColumn.appendChild(this.inventoryApp.view as HTMLCanvasElement);
@@ -302,7 +299,7 @@ export class GameController {
       height: healthRect.height || window.innerHeight * 0.3,
       backgroundColor: 0x222222,
       antialias: true,
-      resolution: window.devicePixelRatio,
+      resolution: 2
     });
     this.healthUIApp.view.style.display = 'block';
 
@@ -312,7 +309,7 @@ export class GameController {
       height: healthRect.height || window.innerHeight * 0.3,
       backgroundColor: 0x222222,
       antialias: true,
-      resolution: window.devicePixelRatio,
+      resolution: 2
     });
     this.afflictionsApp.view.style.display = 'block';
 
@@ -343,7 +340,7 @@ export class GameController {
       height: logRect.height || window.innerHeight * 0.2,
       backgroundColor: 0x222222,
       antialias: true,
-      resolution: window.devicePixelRatio,
+      resolution: 2,
     });
     this.logUIApp.view.style.display = 'block';
 
@@ -353,7 +350,7 @@ export class GameController {
       height: logRect.height || window.innerHeight * 0.2,
       backgroundColor: 0x222222,
       antialias: true,
-      resolution: window.devicePixelRatio,
+      resolution: 2
     });
     this.mapUIApp.view.style.display = 'block';
 
@@ -754,6 +751,35 @@ export class GameController {
       }
     }
     return hitTiles;
+  }
+
+  getTilesInCone(centerX: number,centerY: number,range: number,angle: number,coneAngle: number,): [number, number][] {
+    const tiles: [number, number][] = [];
+    const controller = GameController.current;
+    for (let x = centerX - range; x <= centerX + range; x++) {
+      for (let y = centerY - range; y <= centerY + range; y++) {
+        const dx = Math.abs(x - centerX);
+        const dy = Math.abs(y - centerY);
+        const dist = Math.ceil(Math.max(dx, dy) + 0.5 * Math.min(dx, dy));
+        if (dist > range || dist === 0) continue; // exclude center
+
+        // skip tiles that are out of the current map bounds
+        if (controller && controller.map && !controller.map.isValidTile(x, y))
+          continue;
+
+        const angleToTile = Math.atan2(y - centerY, x - centerX);
+        let angleDiff = angleToTile - angle;
+        // Robust normalization to [-PI, PI]
+        while (angleDiff <= -Math.PI) angleDiff += 2 * Math.PI;
+        while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
+        // small epsilon to avoid cutting off exact-edge tiles due to fp errors
+        const eps = 1e-9;
+        if (Math.abs(angleDiff) <= coneAngle / 2 + eps) {
+          tiles.push([x, y]);
+        }
+      }
+    }
+    return tiles;
   }
 
   getRandomTileInRadius(target: Player, radius: number) {
@@ -1303,12 +1329,10 @@ export class GameController {
               entity.texture = Assets.get(entity.deadSprite.toString());
               entitySprite.texture = entity.texture;
             }
-            const fw = (entity.footprintWidth ?? 1) as number;
-            const fh = (entity.footprintHeight ?? 1) as number;
             entitySprite.x = x * this.tileSize + (entity.sizeOffsetX ?? 0);
             entitySprite.y = y * this.tileSize + (entity.sizeOffsetY ?? 0);
-            entitySprite.width = this.tileSize * fw;
-            entitySprite.height = this.tileSize * fh;
+            entitySprite.width = this.tileSize - (entity.sizeOffsetX ?? 0);
+            entitySprite.height = this.tileSize - (entity.sizeOffsetY ?? 0);
             entitySprite._zIndex = entity.zIndex;
             this.spriteContainer.addChild(entitySprite);
             // handle wall connections
@@ -1829,16 +1853,16 @@ export class GameController {
     // Redraw player at new position
     // update minimap if present (set player pos first)
     if (this.mapRenderer) {
-     // this.mapRenderer.setPlayer(this.playerWorldX, this.playerWorldY);
-     // this.mapRenderer.update();
+      this.mapRenderer.setPlayer(this.playerWorldX, this.playerWorldY);
+      this.mapRenderer.update();
     }
     this.drawGrid();
-    //this.drawPlayer();
-    //this.drawHealthBar();
-   // this.drawEnergyBar();
-    //this.drawReticle();
-    //this.drawAfflictions();
-    //this.centerMap();
+    this.drawPlayer();
+    this.drawHealthBar();
+    this.drawEnergyBar();
+    this.drawReticle();
+    this.drawAfflictions();
+    this.centerMap();
     requestAnimationFrame(() => this.gameLoop());
   }
 
@@ -2160,7 +2184,6 @@ export class GameController {
             sprite.height = this.tileSize;
             sprite._zIndex = 0;
             this.effectContainer.addChild(sprite);
-            this.damageEntities(tile[0], tile[1], strength / size, 'explosion');
             if (this.player1.posX == tile[0] && this.player1.posY == tile[1]) {
               // this.player1.Health.Damage(strength / size / 10);
             }
@@ -2210,7 +2233,10 @@ export class GameController {
       entity.posY = y;
       entity.id = this.lastUsedId;
       this.lastUsedId += 1;
-      entity.onSpawn();
+      if(entity.initialised == false){
+        entity.onSpawn();
+        entity.initialised = true
+      }
     }
   }
 

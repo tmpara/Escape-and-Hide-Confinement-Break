@@ -226,6 +226,11 @@ export class CryoChamber extends Entity {
   override hiddenOutsideLOS = true;
   override blockLOS = false;
   override flammable = true;
+
+  override onDestroyed(damage: number) {
+      GameController.current?.loadEntity(this.posX, this.posY, new GlassShards, GameController.current.map);
+  }
+
 }
 
 export class WallSign1 extends Entity {
