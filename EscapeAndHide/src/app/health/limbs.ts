@@ -1,4 +1,11 @@
-import { Bleeding, Lacerations, Fracture,Zapped, Burn, GunshotWound } from './afflictions';
+import {
+  Bleeding,
+  Lacerations,
+  Fracture,
+  Zapped,
+  Burn,
+  GunshotWound,
+} from './afflictions';
 export class Limbs {
   bleeding: Bleeding = new Bleeding();
   lacerations: Lacerations = new Lacerations();
@@ -13,24 +20,40 @@ export class Limbs {
   }
   addLaceration(amount: number) {
     this.lacerations.increaseSeverity(amount);
-    if(amount > 30 && this.fracture.severity === 0 && Math.random() < 0.5) {
+    if (amount > 30 && this.fracture.severity === 0 && Math.random() < 0.5) {
       this.addFracture();
     }
   }
   addFracture() {
     this.fracture.increaseSeverity(100);
   }
-
+  removeFracture() {
+    this.fracture.decreaseSeverity(100);
+  }
 
   returnAfflictions() {
     console.log(
-      "Bleeding: " + this.bleeding.severity +
-      ", Lacerations: \n" +
-      this.lacerations.severity +
-      ", Fracture: \n" +
-      this.fracture.severity
+      'Bleeding: ' +
+        this.bleeding.severity +
+        ', Lacerations: \n' +
+        this.lacerations.severity +
+        ', Fracture: \n' +
+        this.fracture.severity +
+        ', Zapped: \n' +
+        this.zapped.severity +
+        ', Burn: \n' +
+        this.burn.severity +
+        ', GunshotWound: \n' +
+        this.gunshotWound.severity,
     );
-    return [ this.bleeding, this.lacerations, this.fracture, this.zapped, this.burn, this.gunshotWound];
+    return [
+      this.bleeding,
+      this.lacerations,
+      this.fracture,
+      this.zapped,
+      this.burn,
+      this.gunshotWound,
+    ];
   }
 }
 
@@ -67,5 +90,4 @@ export class Torso extends Limbs {
   constructor() {
     super();
   }
-  
 }

@@ -1,7 +1,7 @@
 
 import { Room } from "./room";
 import { Wall1,WallCorner1,ExplosiveBarrel,DoorHorizontal,DoorVertical,RoomTransition,Crate,WeaponCrate,MedicalCrate,Mine,CryoChamber,GlassShards,WallSign1,RandomSpawner} from './entities'
-import { LightInterferanceUnit, MediumInterferanceUnit, HeavyInterferanceUnit, OppressorUnit, ScorcherUnit } from "./enemyTypes";
+import { LightInterferanceUnit, MediumInterferanceUnit, HeavyInterferanceUnit, OppressorUnit, ScorcherUnit, Boss1Unit } from "./enemyTypes";
 
 export class RoomsData {
 
@@ -290,6 +290,7 @@ export class RoomsData {
         this.crossHall1.layout[20][4] = new ScorcherUnit();
         this.crossHall1.layout[20][19] = new HeavyInterferanceUnit();
         this.crossHall1.layout[27][13] = new RoomTransition("right");
+        this.crossHall1.layout[13][13] = new Boss1Unit();
         /* ---- Room code end ---- */
 
 

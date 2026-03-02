@@ -1,6 +1,13 @@
+import { range } from 'rxjs';
 import { Entity } from './entity';
 import { GameController } from './game.controller';
 import { Player } from './player';
+import { Torso } from './health/limbs';
+import { Lacerations } from './health/afflictions';
+import { Health, LimbName } from './health/health';
+import { tile } from './tile';
+import { Item, StunGun } from './items/items';
+import { Inventory } from './inventory/inventory';
 import { LimbName } from './health/health';
 import { setPositions } from 'pixi.js';
 
@@ -29,8 +36,6 @@ export class BasicEnemyAI extends Entity {
   energy = this.maxEnergy;
   Targets: Entity[] = [];
   LastKnownTargetCoords: [number, number] | null = null;
-
-  //TO DO: FIX ENEMY TURN GETTING STUCK AFTER ATTACKING
 
   async aiTurn() {
     await this.Main();
@@ -231,6 +236,10 @@ export class BasicEnemyAI extends Entity {
     if (!path || path.length <= 1) {
       return;
     }
+    const controller = GameController.current;
+    if (!controller) return;
+    if (this.TargetCoords.length == 0) return;
+    const target = this.TargetCoords[0] as Player;
 
     // move up to `energy` steps along the path
     const steps = 1; //maybe will be changed later

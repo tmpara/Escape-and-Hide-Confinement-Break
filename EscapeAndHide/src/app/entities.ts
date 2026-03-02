@@ -1,8 +1,7 @@
 import { Entity } from './entity';
 import { Player } from './player';
 import { GameController } from './game.controller';
-import { Item } from './items/items';
-import { gun,bandage } from './items/items';
+import { SmallGun, Medkit, BigGun, Bandage } from './items/items';
 
 export class Wall1 extends Entity {
   override name = 'Wall';
@@ -76,7 +75,7 @@ export class Door extends Entity {
       this.blocked = false;
       let entities = GameController.current?.getAllEntitiesOnTile(
         this.posX,
-        this.posY
+        this.posY,
       )!;
       for (let i = 0; i < entities.length!; i++) {
         if (entities[i].name != 'Door') {
@@ -165,7 +164,13 @@ export class Crate extends Entity {
   override hiddenOutsideLOS = true;
   override blockLOS = false;
   override flammable = true;
-  lootTable = [];
+  override inventorySize = 3;
+  override itemPool: any[] = [];
+
+  constructor() {
+    super();
+    this.generateLoot();
+  }
 }
 
 export class WeaponCrate extends Entity {
@@ -180,7 +185,13 @@ export class WeaponCrate extends Entity {
   override hiddenOutsideLOS = true;
   override blockLOS = false;
   override flammable = true;
-  lootTable = [new gun()];
+  override inventorySize = 2;
+  override itemPool = [new SmallGun(), new BigGun()];
+
+  constructor() {
+    super();
+    this.generateLoot();
+  }
 }
 
 export class MedicalCrate extends Entity {
@@ -189,13 +200,18 @@ export class MedicalCrate extends Entity {
   override lootable = true;
   override interactable = true;
   override collidable = true;
-  override pushable = true;
+  override inventorySize = 2;
   override damageable = true;
   override health = 25;
   override hiddenOutsideLOS = true;
   override blockLOS = false;
   override flammable = true;
-  lootTable = [new bandage()];
+  override itemPool = [new Bandage(), new Medkit()];
+  
+  constructor() {
+    super();
+    this.generateLoot();
+  }
 }
 
 export class CryoChamber extends Entity {
@@ -256,10 +272,9 @@ export class Mine extends Entity {
     GameController.current?.createExplosion(this.posX, this.posY, 3, 200, false, msg);
   }
 
-  override onEndTurn(){
-    this.sprite = "/sprites/effects/hidden.png";
+  override onEndTurn() {
+    this.sprite = '/sprites/effects/hidden.png';
   }
-
 }
 
 export class RandomSpawner extends Entity {
@@ -310,5 +325,4 @@ export class GlassShards extends Entity {
       ]);
     }
   }
-  
 }
