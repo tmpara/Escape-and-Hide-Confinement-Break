@@ -1,4 +1,5 @@
 import { Entity } from '../entity';
+import { affliction, LimbName } from '../health/health';
 
 export abstract class Item {
   name = '';
@@ -11,10 +12,32 @@ export abstract class Item {
   defense = 0;
   slot = '';
 
-  heal(target: Entity) {
-    target.heal(0);
+  use(target: Entity) {}
+
+  checkForMiss(target: Entity) {
+    let miss = Math.random();
+    if (miss > this.accuracy) return null;
+    else if (miss > this.accuracy * 2) {
+      let targetLimb: LimbName = 'torso';
+      let miss = Math.random();
+      if (miss > this.accuracy) return;
+      else if (miss > this.accuracy * 2) {
+        if (!target.Health) return 'isStructure';
+        const limbs: LimbName[] = [
+          'head',
+          'leftArm',
+          'rightArm',
+          'leftLeg',
+          'rightLeg',
+        ];
+        const randomIndex = Math.floor(Math.random() * limbs.length);
+        targetLimb = limbs[randomIndex];
+      }
+      return targetLimb;
+    }
+    return 'torso';
   }
-  
+
   getStats() {
     switch (this.category) {
       case 'weapon':
@@ -30,7 +53,7 @@ export abstract class Item {
           name: 'Name: ' + this.name,
           defense: 'Defense: ' + this.defense,
         };
-      
+
       case 'usable_heal':
         return {
           name: 'Name: ' + this.name,
@@ -53,6 +76,21 @@ export class SmallGun extends Item {
   ];
   override range = 25;
   override slot = 'weapon';
+
+  override use(target: Entity) {
+    const targetLimb = this.checkForMiss(target);
+    if (targetLimb == 'isStructure') {
+      console.log('this does not appear to be working');
+      target.takeStructureDamage(this.structureDamage);
+    } else if (targetLimb) {
+      let afflictions: affliction[] = [];
+      for (const affliction of this.afflictions) {
+        if (Array.isArray(affliction) && affliction.length >= 2) {
+          afflictions.push([affliction[0] as string, affliction[1] as number]);
+        }
+      }
+    }
+  }
 }
 export class BigGun extends Item {
   override name = 'bigGun';
@@ -99,18 +137,18 @@ export class Bandage extends Item {
     ['Bleeding', 20],
   ];
 
-  override heal(target: Entity) {
-    if (target.Health) {
-      for (let affliction of this.afflictions) {
-        if (affliction[0] === 'Lacerations') {
-          target.Health.healLimb([[affliction[0], affliction[1] as number]]);
-        }
-        if (affliction[0] === 'Bleeding') {
-          target.Health.healLimb([[affliction[0], affliction[1] as number]]);
-        }
-      }
-    }
-  }
+  // override heal(target: Entity) {
+  //   if (target.Health) {
+  //     for (let affliction of this.afflictions) {
+  //       if (affliction[0] === 'Lacerations') {
+  //         target.Health.healLimb([[affliction[0], affliction[1] as number]]);
+  //       }
+  //       if (affliction[0] === 'Bleeding') {
+  //         target.Health.healLimb([[affliction[0], affliction[1] as number]]);
+  //       }
+  //     }
+  //   }
+  // }
 }
 export class Medkit extends Item {
   override name = 'medkit';
@@ -121,18 +159,18 @@ export class Medkit extends Item {
     ['Bleeding', 50],
   ];
 
-  override heal(target: Entity) {
-    if (target.Health) {
-      for (let affliction of this.afflictions) {
-        if (affliction[0] === 'Lacerations') {
-          target.Health.healLimb([affliction[0], affliction[1]]);
-        }
-        if (affliction[0] === 'Bleeding') {
-          target.Health.healLimb([affliction[0], affliction[1]]);
-        }
-      }
-    }
-  }
+  // override heal(target: Entity) {
+  //   if (target.Health) {
+  //     for (let affliction of this.afflictions) {
+  //       if (affliction[0] === 'Lacerations') {
+  //         target.Health.healLimb([affliction[0], affliction[1]]);
+  //       }
+  //       if (affliction[0] === 'Bleeding') {
+  //         target.Health.healLimb([affliction[0], affliction[1]]);
+  //       }
+  //     }
+  //   }
+  // }
 }
 export class Helmet extends Item {
   override name = 'helmet';
