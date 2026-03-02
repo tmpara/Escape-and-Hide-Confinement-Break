@@ -1,6 +1,8 @@
 import { Entity } from './entity';
 import { Health } from './health/health';
 import { Energy } from './energy/energy';
+import { GameController } from './game.controller';
+import { Genetics } from './health/genetics';
 
 export class Player extends Entity {
   override name = '';
