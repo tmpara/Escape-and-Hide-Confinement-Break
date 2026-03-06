@@ -102,7 +102,6 @@ export class RoomsData {
         this.storageComplex1.layout[5][12] = new Wall1();
         this.storageComplex1.layout[5][13] = new Wall1();
         this.storageComplex1.layout[7][0] = new RoomTransition("up");
-        this.storageComplex1.layout[7][7] = new RandomSpawner([null,LightInterferanceUnit]);
         this.storageComplex1.layout[7][14] = new RoomTransition("down");
         this.storageComplex1.layout[9][1] = new Wall1();
         this.storageComplex1.layout[9][2] = new Wall1();
