@@ -18,7 +18,6 @@ export class Player extends Entity {
   renderY = this.posY;
 
   playerAction(energyCost: number) {
-    this.Health.updateAfflictions();
     this.Energy.loseEnergy(energyCost);
     this.Health.bleedingRegen();
   }

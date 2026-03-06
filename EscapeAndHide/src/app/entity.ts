@@ -2,6 +2,7 @@ import { GameController } from './game.controller';
 import { affliction, LimbName } from './health/health';
 import { Inventory } from './inventory/inventory';
 import { Item } from './items/items';
+import { Health } from './health/health';
 export abstract class Entity {
   id = 0;
   name = '';
@@ -28,7 +29,7 @@ export abstract class Entity {
   pushable = false;
   damageable = false;
   health = 0;
-  Health: import('./health/health').Health | null = null;
+  Health: Health | null = null;
   damageResistance = 0;
   hiddenOutsideLOS = false;
   blockLOS = false;
@@ -82,7 +83,7 @@ export abstract class Entity {
       `${this.name} took ${damage} structure damage. Remaining health: ${this.health}`,
     );
     if (this.health <= 0) {
-      this.destroy(damage);
+      this.destroy();
     }
   }
 
@@ -103,17 +104,15 @@ export abstract class Entity {
     }
   }
 
-  destroy(damage: number) {
+  destroy() {
     if (this.destroyed == false) {
       this.destroyed = true;
-      this.onDestroyed(damage);
       if (this.removeOnDestroy == true) {
         GameController.current?.removeEntities(this.posX, this.posY, this.id);
       } else {
         this.sprite = this.deadSprite;
       }
     }
-    console.log('entity inventory: ', this.inventory.inventorySlots);
   }
 
   generateLoot() {

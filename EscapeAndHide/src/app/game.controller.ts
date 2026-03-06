@@ -751,6 +751,41 @@ export class GameController {
     return hitTiles;
   }
 
+  getConeTiles(
+    centerX: number,
+    centerY: number,
+    range: number,
+    angle: number,
+    coneAngle: number,
+  ): [number, number][] {
+    const tiles: [number, number][] = [];
+    const controller = GameController.current;
+    for (let x = centerX - range; x <= centerX + range; x++) {
+      for (let y = centerY - range; y <= centerY + range; y++) {
+        const dx = Math.abs(x - centerX);
+        const dy = Math.abs(y - centerY);
+        const dist = Math.ceil(Math.max(dx, dy) + 0.5 * Math.min(dx, dy));
+        if (dist > range || dist === 0) continue; // exclude center
+
+        // skip tiles that are out of the current map bounds
+        if (controller && controller.map && !controller.map.isValidTile(x, y))
+          continue;
+
+        const angleToTile = Math.atan2(y - centerY, x - centerX);
+        let angleDiff = angleToTile - angle;
+        // Robust normalization to [-PI, PI]
+        while (angleDiff <= -Math.PI) angleDiff += 2 * Math.PI;
+        while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
+        // small epsilon to avoid cutting off exact-edge tiles due to fp errors
+        const eps = 1e-9;
+        if (Math.abs(angleDiff) <= coneAngle / 2 + eps) {
+          tiles.push([x, y]);
+        }
+      }
+    }
+    return tiles;
+  }
+
   getRandomTileInRadius(target: Player, radius: number) {
     const tiles = this.getTilesInSphere(target.posX, target.posY, radius);
     if (tiles.length == 0) return null;
@@ -1654,7 +1689,18 @@ export class GameController {
             true,
           )
         ) {
-          sprite = Assets.get('crosshair_aimmode.png') as PIXI.Texture;
+          if (
+            this.getDistance(
+              this.player1.posX,
+              this.player1.posY,
+              tileX,
+              tileY,
+            ) && this.inWeaponRange(tileX, tileY)
+          ) {
+            sprite = Assets.get('crosshair_aimmode.png') as PIXI.Texture;
+          } else {
+            sprite = Assets.get('crosshair_aimmode_invalid.png') as PIXI.Texture;
+          }
         } else {
           sprite = Assets.get('crosshair_aimmode_invalid.png') as PIXI.Texture;
         }
@@ -2340,6 +2386,20 @@ export class GameController {
     this.map.tiles[x][y].item = null;
   }
 
+  inWeaponRange(targetX: number, targetY: number) {
+    if (this.player1.inventory && this.player1.inventory.weaponSlot) {
+      const weaponRange = this.player1.inventory.weaponSlot.range;
+      const distance = this.getDistance(
+        this.player1.posX,
+        this.player1.posY,
+        targetX,
+        targetY,
+      );
+      return distance <= weaponRange;
+    }
+    return false;
+  }
+
   endTurn() {
     this.updateAllTiles();
     this.player1.Energy.setEnergy(100);
@@ -2413,9 +2473,6 @@ export class GameController {
         case 't':
           this.addLog('(DEBUG) Enabled map teleportation.');
           this.mapContainer!.interactive = true;
-          break;
-        case 'm':
-          this.toggleStatcardOverlay();
           break;
         default:
           return;
@@ -2534,10 +2591,11 @@ export class GameController {
                 coords.y,
                 true,
                 true,
-              )
+              ) && this.inWeaponRange(coords.x, coords.y)
             ) {
               const weapon = this.player1.inventory.weaponSlot;
               console.log(weapon);
+              console.log(entity[0].Health?.torso);
               if (weapon) {
                 weapon.use(entity[0]);
               }

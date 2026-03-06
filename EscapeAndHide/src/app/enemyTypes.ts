@@ -49,10 +49,9 @@ export class Dummy extends Entity {
     this.generateLoot();
   }
 
-  override destroy(damage: number): void {
+  override destroy(): void {
     if (this.destroyed == false) {
       this.destroyed = true;
-      this.onDestroyed(damage);
       this.sprite = this.deadSprite;
     }
   }
@@ -90,10 +89,9 @@ export class HeavyDummy extends Entity {
     this.generateLoot();
   }
 
-  override destroy(damage: number): void {
+  override destroy(): void {
     if (this.destroyed == false) {
       this.destroyed = true;
-      this.onDestroyed(damage);
       this.sprite = this.deadSprite;
     }
   }

@@ -1,7 +1,7 @@
 import { Entity } from './entity';
 import { Player } from './player';
 import { GameController } from './game.controller';
-import { SmallGun, Medkit, BigGun, Bandage } from './items/items';
+import { SmallGun, Medkit, BigGun, Bandage, Flamethrower } from './items/items';
 
 export class Wall1 extends Entity {
   override name = 'Wall';
@@ -186,7 +186,7 @@ export class WeaponCrate extends Entity {
   override blockLOS = false;
   override flammable = true;
   override inventorySize = 2;
-  override itemPool = [new SmallGun(), new BigGun()];
+  override itemPool = [new SmallGun(), new BigGun(), new Flamethrower()];
 
   constructor() {
     super();
