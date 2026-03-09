@@ -48,14 +48,13 @@ export class Dummy extends Entity {
     this.generateLoot();
   }
 
-  override destroy(damage: number): void {
+  override destroy() {
     if (this.destroyed == false) {
       this.destroyed = true;
-      this.onDestroyed(damage);
       this.sprite = this.deadSprite;
     }
   }
-  override onDestroyed(damage: number): void {
+  override onDestroyed(damage: number) {
     this.lootable = true;
   }
 }
@@ -89,14 +88,13 @@ export class HeavyDummy extends Entity {
     this.generateLoot();
   }
 
-  override destroy(damage: number): void {
+  override destroy() {
     if (this.destroyed == false) {
       this.destroyed = true;
-      this.onDestroyed(damage);
       this.sprite = this.deadSprite;
     }
   }
-  override onDestroyed(damage: number): void {
+  override onDestroyed(damage: number) {
     this.lootable = true;
   }
 }
@@ -117,13 +115,19 @@ export class LightInterferanceUnit extends LightInterferanceUnitAI {
   override parentEntity = this;
   override ai = true;
   isDead = false;
-  private weaponInitialized = false
+
   constructor() {
     super();
     this.inventory.weaponSlot = new StunGun();
   }
 
-  override onDestroyed(damage: number): void {
+  override destroy(){
+    if (this.destroyed == false) {
+      this.destroyed = true;
+      this.sprite = this.deadSprite;
+    }
+  }
+  override onDestroyed(damage: number) {
     this.lootable = true;
   }
 }
@@ -200,10 +204,10 @@ export class ScorcherUnit extends ScorcherUnitAI {
   override parentEntity = this;
   override ai = true;
   isDead = false;
-  private weaponInitialized = false;
 
   constructor() {
     super();
+    this.inventory.weaponSlot = new Flamethrower();
   }
   
 }

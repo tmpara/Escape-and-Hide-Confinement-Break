@@ -24,6 +24,11 @@ export class GameController {
   statcardOverlayApp!: PIXI.Application;
   lootOverlayApp!: PIXI.Application;
 
+  reticleSpriteDefault?: PIXI.Sprite;
+  reticleSpriteInvalid?: PIXI.Sprite;
+  reticleSpriteAim?: PIXI.Sprite;
+  reticleSpriteAimInvalid?: PIXI.Sprite;
+
   player1 = new Player();
   world = new World();
 
@@ -47,13 +52,13 @@ export class GameController {
   mouseX: number = 0;
   mouseY: number = 0;
   mouseTileX: number = 0;
-  
+
   mouseTileY: number = 0;
   healthLimbContainer = new Container();
   limbSprites: Record<string, PIXI.Sprite> = {};
   selectedLimb: string = '';
   afflictions: any = {};
-  
+
   currentItemSource?: { floorX: number; floorY: number } | any;
   logs: String[] = [];
 
@@ -66,18 +71,31 @@ export class GameController {
   enemyTurn = false;
   
 
+  //flags for render
+
+  MiniMapFlag = true;
+  GridFlag = true;
+  PlayerFlag = true;
+  HealthBarFlag = true;
+  EnergyBarFlag = true;
+  ReticleFlag = true;
+  AfflictionsFlag = true;
+
+  ReticleInitialized = false;
+
   constructor() {}
 
   async init(container: HTMLDivElement): Promise<void> {
     GameController.current = this;
     await document.fonts.ready;
 
+    await Assets.load('/sprites/entities/player.png');
     await Assets.load('crosshair_aimmode_invalid.png');
     await Assets.load('crosshair_aimmode.png');
     await Assets.load('crosshair_default.png');
     await Assets.load('crosshair_default_invalid.png');
     await Assets.load('head.png');
-    await Assets.load('torso.png'); 
+    await Assets.load('torso.png');
     await Assets.load('leftarm.png');
     await Assets.load('rightarm.png');
     await Assets.load('leftleg.png');
@@ -133,7 +151,7 @@ export class GameController {
     // Create map and player
     this.map = this.world.rooms[this.playerWorldX][this.playerWorldY];
     console.log(this.map.width + ' ' + this.map.height);
-    this.loadPlayer(1, 1, this.player1,1);
+    this.loadPlayer(1, 1, this.player1, 1);
 
     // Create PIXI app
     this.app = new Application();
@@ -144,10 +162,10 @@ export class GameController {
       antialias: false,
       roundPixels: true,
     });
-    container.style.width = "100%";
-    container.style.height = "100%";
-    container.style.overflow = "hidden";
-    container.style.position = "fixed";
+    container.style.width = '100%';
+    container.style.height = '100%';
+    container.style.overflow = 'hidden';
+    container.style.position = 'fixed';
     container.appendChild(this.app.canvas as HTMLCanvasElement);
 
     // Create map and player
@@ -196,7 +214,7 @@ export class GameController {
     // blur prevention
     const equippedRect = equippedColumn.getBoundingClientRect();
     const inventoryRect = inventoryColumn.getBoundingClientRect();
-    
+
     this.equippedApp = new PIXI.Application();
     await this.equippedApp.init({
       width: equippedRect.width || window.innerWidth * 0.3,
@@ -205,7 +223,7 @@ export class GameController {
       backgroundColor: 0x333333,
       resolution: 2
     });
-    this.equippedApp.view.style.display = 'block' ;
+    this.equippedApp.view.style.display = 'block';
     equippedColumn.appendChild(this.equippedApp.view as HTMLCanvasElement);
     this.equippedContainer = this.equippedApp.stage;
 
@@ -228,10 +246,11 @@ export class GameController {
     this.statcardOverlayApp = new PIXI.Application();
     await this.statcardOverlayApp.init({
       width: equippedRect.width / 2 || window.innerWidth * 0.15,
-      height: equippedRect.height + inventoryRect.height || window.innerHeight * 0.5,
+      height:
+        equippedRect.height + inventoryRect.height || window.innerHeight * 0.5,
       antialias: true,
       backgroundColor: 0x444444,
-      resolution: window.devicePixelRatio,
+      roundPixels: true,
     });
     this.statcardOverlayApp.view.style.display = 'none';
     this.statcardOverlayApp.view.style.position = 'absolute';
@@ -286,14 +305,14 @@ export class GameController {
     container.appendChild(healthStatusRow);
 
     const healthRect = healthStatusRow.getBoundingClientRect();
-    
+
     this.healthUIApp = new PIXI.Application();
     await this.healthUIApp.init({
       width: (healthRect.width || window.innerWidth * 0.3) / 2,
       height: healthRect.height || window.innerHeight * 0.3,
       backgroundColor: 0x222222,
       antialias: true,
-      resolution: 2
+      resolution: 2,
     });
     this.healthUIApp.view.style.display = 'block';
 
@@ -303,7 +322,7 @@ export class GameController {
       height: healthRect.height || window.innerHeight * 0.3,
       backgroundColor: 0x222222,
       antialias: true,
-      resolution: 2
+      resolution: 2,
     });
     this.afflictionsApp.view.style.display = 'block';
 
@@ -327,7 +346,7 @@ export class GameController {
     container.appendChild(logRow);
 
     const logRect = logRow.getBoundingClientRect();
-    
+
     this.logUIApp = new PIXI.Application();
     await this.logUIApp.init({
       width: (window.innerWidth * 0.3) / 2,
@@ -344,7 +363,7 @@ export class GameController {
       height: logRect.height || window.innerHeight * 0.2,
       backgroundColor: 0x222222,
       antialias: true,
-      resolution: 2
+      resolution: 2,
     });
     this.mapUIApp.view.style.display = 'block';
 
@@ -419,15 +438,21 @@ export class GameController {
     this.loadPlayer(1, 1, this.player1, 1);
   }
 
-  centerMap(){
-    this.spriteContainer.x = this.spriteContainer!.x = (this.app.screen.width - this.spriteContainer.width) / 2;
-    this.spriteContainer.y = this.spriteContainer!.y = (this.app.screen.height - this.spriteContainer.height) / 2;
+  centerMap() {
+    this.spriteContainer.x = this.spriteContainer!.x =
+      (this.app.screen.width - this.spriteContainer.width) / 2;
+    this.spriteContainer.y = this.spriteContainer!.y =
+      (this.app.screen.height - this.spriteContainer.height) / 2;
 
-    this.effectContainer.x = this.effectContainer!.x = (this.app.screen.width - this.spriteContainer.width) / 2;
-    this.effectContainer.y = this.effectContainer!.y = (this.app.screen.height - this.spriteContainer.height) / 2;
+    this.effectContainer.x = this.effectContainer!.x =
+      (this.app.screen.width - this.spriteContainer.width) / 2;
+    this.effectContainer.y = this.effectContainer!.y =
+      (this.app.screen.height - this.spriteContainer.height) / 2;
 
-    this.playerSprite.x = this.playerSprite!.x = (this.app.screen.width - this.spriteContainer.width) / 2;
-    this.playerSprite.y = this.playerSprite!.y = (this.app.screen.height - this.spriteContainer.height) / 2;
+    this.playerSprite.x = this.playerSprite!.x =
+      (this.app.screen.width - this.spriteContainer.width) / 2;
+    this.playerSprite.y = this.playerSprite!.y =
+      (this.app.screen.height - this.spriteContainer.height) / 2;
   }
 
   generateRandomNumber(min: number, max: number) {
@@ -747,7 +772,13 @@ export class GameController {
     return hitTiles;
   }
 
-  getTilesInCone(centerX: number,centerY: number,range: number,angle: number,coneAngle: number,): [number, number][] {
+  getTilesInCone(
+    centerX: number,
+    centerY: number,
+    range: number,
+    angle: number,
+    coneAngle: number,
+  ): [number, number][] {
     const tiles: [number, number][] = [];
     const controller = GameController.current;
     for (let x = centerX - range; x <= centerX + range; x++) {
@@ -777,11 +808,7 @@ export class GameController {
   }
 
   getRandomTileInRadius(target: Player, radius: number) {
-    const tiles = this.getTilesInSphere(
-      target.posX,
-      target.posY,
-      radius,
-    );
+    const tiles = this.getTilesInSphere(target.posX, target.posY, radius);
     if (tiles.length == 0) return null;
     const randomIndex = Math.floor(Math.random() * tiles.length);
     return tiles[randomIndex];
@@ -789,6 +816,18 @@ export class GameController {
 
   getDistance(posX: number, posY: number, targetX: number, targetY: number) {
     return Math.max(Math.abs(posX - targetX), Math.abs(posY - targetY));
+  }
+
+  removeItemFromInventory(item: Item) {
+    if (!this.player1.inventory) return;
+    const index = this.player1.inventory.inventorySlots.findIndex(
+      (i) => i === item,
+    );
+    if (index !== -1) {
+      this.player1.inventory.inventorySlots[index] = null;
+      this.drawInventoryTab();
+      this.drawEquippedTab();
+    }
   }
 
   drawInventoryTab() {
@@ -809,7 +848,7 @@ export class GameController {
           style: {
             fill: '#ffffff',
             fontFamily: 'Orbitron',
-            fontSize: fontSize, 
+            fontSize: fontSize,
           },
         });
         text.resolution = 2;
@@ -818,7 +857,7 @@ export class GameController {
         text.y = 0;
         text.eventMode = 'static';
         text.cursor = 'pointer';
-        text.onclick = () => {          
+        text.onclick = () => {
           if (!this.statcardOverlayVisible) {
             this.toggleStatcardOverlay();
           }
@@ -845,10 +884,10 @@ export class GameController {
   drawEquippedTab() {
     if (!this.player1.inventory) return;
     this.equippedApp.stage.removeChildren();
-    
+
     const fontSize = 15;
     const lineHeight = fontSize * 1.4;
-    
+
     const slots: { name: string; item: any | null }[] = [
       { name: 'Weapon', item: this.player1.inventory.weaponSlot },
       { name: 'Head', item: this.player1.inventory.headArmorSlot },
@@ -860,7 +899,7 @@ export class GameController {
     for (let i = 0; i < slots.length; i++) {
       const slot = slots[i];
       const itemName = slot.item ? slot.item.name : 'Empty';
-      
+
       const slotNameText = new Text({
         text: slot.name,
         style: {
@@ -873,13 +912,13 @@ export class GameController {
       });
       slotNameText.resolution = 2;
       this.equippedApp.stage.addChild(slotNameText);
-      
+
       const square = new PIXI.Graphics();
       slot.item ? square.beginFill(0xffffff) : square.beginFill(0x555555);
       square.drawRect(12, yOffset + fontSize + 3, 10, 12);
       square.endFill();
       this.equippedApp.stage.addChild(square);
-      
+
       const itemNameText = new Text(itemName, {
         fontFamily: 'Orbitron',
         fontSize: fontSize,
@@ -888,7 +927,7 @@ export class GameController {
       itemNameText.resolution = 2;
       itemNameText.x = 30;
       itemNameText.y = yOffset + fontSize;
-      
+
       if (slot.item) {
         itemNameText.eventMode = 'static';
         itemNameText.cursor = 'pointer';
@@ -900,7 +939,7 @@ export class GameController {
         });
       }
       this.equippedApp.stage.addChild(itemNameText);
-      
+
       yOffset += lineHeight * 2;
     }
   }
@@ -919,14 +958,20 @@ export class GameController {
   drawStatcardOverlay(entity: Entity | Item) {
     this.statcardOverlayApp.stage.removeChildren();
 
-    if(entity instanceof Item){
+    if (entity instanceof Item) {
       const closeButtonSize = 30;
-      const closeButtonX = this.statcardOverlayApp.screen.width - closeButtonSize - 5;
+      const closeButtonX =
+        this.statcardOverlayApp.screen.width - closeButtonSize - 5;
       const closeButtonY = 5;
-      
+
       const closeBtnBg = new PIXI.Graphics();
       closeBtnBg.beginFill(0x333333);
-      closeBtnBg.drawRect(closeButtonX, closeButtonY, closeButtonSize, closeButtonSize);
+      closeBtnBg.drawRect(
+        closeButtonX,
+        closeButtonY,
+        closeButtonSize,
+        closeButtonSize,
+      );
       closeBtnBg.endFill();
       closeBtnBg.interactive = true;
       closeBtnBg.cursor = 'pointer';
@@ -939,7 +984,7 @@ export class GameController {
           fontSize: 18,
           fill: '#ffffff',
           fontWeight: 'normal',
-        }
+        },
       });
       closeText.resolution = 2;
       closeText.x = closeButtonX + (closeButtonSize - closeText.width) / 2;
@@ -951,19 +996,20 @@ export class GameController {
       sprite.width = this.statcardOverlayApp.screen.width / 2 - 20;
       sprite.height = this.statcardOverlayApp.screen.width / 2 - 20;
       sprite.x = (this.statcardOverlayApp.screen.width / 2 - sprite.width) / 2;
-      sprite.y = (this.statcardOverlayApp.screen.height / 3 - sprite.height) / 2;
+      sprite.y =
+        (this.statcardOverlayApp.screen.height / 3 - sprite.height) / 2;
       this.statcardOverlayApp.stage.addChild(sprite);
 
       let statsText = '';
       const statsData = entity.getStats();
       if (statsData) {
         for (const [key, value] of Object.entries(statsData)) {
-          if (key === 'afflictions'){
+          if (key === 'afflictions') {
             const afflictions = value;
             if (afflictions.length > 0) {
-              if(entity.category === 'usable_heal'){
+              if (entity.category === 'usable_heal') {
                 statsText += `Heals:\n`;
-              } else if(entity.category === 'weapon'){
+              } else if (entity.category === 'weapon') {
                 statsText += `Deals:\n`;
               }
               afflictions.forEach((affliction: any) => {
@@ -983,7 +1029,7 @@ export class GameController {
           fill: '#ffffff',
           wordWrap: true,
           wordWrapWidth: this.statcardOverlayApp.screen.width - 20,
-        }
+        },
       });
       stats.resolution = 2;
       stats.x = 10;
@@ -995,34 +1041,57 @@ export class GameController {
       const buttonHeight = 30;
       const buttonSpacing = 10;
       const startX = 10;
-      const isEquipped = this.player1.inventory &&
+      const isEquipped =
+        this.player1.inventory &&
         (this.player1.inventory.weaponSlot === entity ||
-         this.player1.inventory.headArmorSlot === entity ||
-         this.player1.inventory.torsoArmorSlot === entity ||
-         this.player1.inventory.fullbodyArmorSlot === entity);
-      const isInInventory = this.player1.inventory?.inventorySlots.includes(entity) || isEquipped;
+          this.player1.inventory.headArmorSlot === entity ||
+          this.player1.inventory.torsoArmorSlot === entity ||
+          this.player1.inventory.fullbodyArmorSlot === entity);
+      const isInInventory =
+        this.player1.inventory?.inventorySlots.includes(entity) || isEquipped;
       const isUsable = entity.category === 'usable_heal';
 
       let buttons;
       if (isInInventory) {
         buttons = [
-          { label: isUsable ? '' : isEquipped ? 'Unequip' : 'Equip', x: startX, action: () => {
-            isEquipped ? this.player1.inventory.unequip(entity) : this.player1.inventory.equip(entity, this.player1.inventory.inventorySlots.indexOf(entity));
-          }},
-          { label: isUsable ? 'Use' : '', x: isUsable ? startX : startX + buttonWidth + buttonSpacing, action: () => {
-            this.player1.inventory.use(entity);
-          }},
-          { label: 'Drop', x: startX + buttonWidth + buttonSpacing, action: () => {
-            this.player1.inventory.drop(entity, isEquipped);
-          }}
+          {
+            label: isUsable ? '' : isEquipped ? 'Unequip' : 'Equip',
+            x: startX,
+            action: () => {
+              isEquipped
+                ? this.player1.inventory.unequip(entity)
+                : this.player1.inventory.equip(
+                    entity,
+                    this.player1.inventory.inventorySlots.indexOf(entity),
+                  );
+            },
+          },
+          {
+            label: isUsable ? 'Use' : '',
+            x: isUsable ? startX : startX + buttonWidth + buttonSpacing,
+            action: () => {
+              entity.use(this.player1);
+            },
+          },
+          {
+            label: 'Drop',
+            x: startX + buttonWidth + buttonSpacing,
+            action: () => {
+              this.player1.inventory.drop(entity, isEquipped);
+            },
+          },
         ];
       } else {
         buttons = [
-          { label: 'Pick Up', x: startX, action: () => {
-            this.player1.inventory.pickUp(entity, this.currentItemSource);
-            this.drawInventoryTab();
-            this.drawEquippedTab();
-          }}
+          {
+            label: 'Pick Up',
+            x: startX,
+            action: () => {
+              this.player1.inventory.pickUp(entity, this.currentItemSource);
+              this.drawInventoryTab();
+              this.drawEquippedTab();
+            },
+          },
         ];
       }
 
@@ -1047,7 +1116,7 @@ export class GameController {
             fontFamily: 'Orbitron',
             fontSize: 15,
             fill: '#ffffff',
-          }
+          },
         });
         btnText.resolution = 2;
         btnText.x = btnConfig.x + (buttonWidth - btnText.width) / 2;
@@ -1055,7 +1124,66 @@ export class GameController {
         this.statcardOverlayApp.stage.addChild(btnText);
       });
     } else if (entity instanceof Entity && !(entity instanceof Player)) {
+      const closeButtonSize = 30;
+      const closeButtonX =
+        this.statcardOverlayApp.screen.width - closeButtonSize - 5;
+      const closeButtonY = 5;
 
+      const closeBtnBg = new PIXI.Graphics();
+      closeBtnBg.beginFill(0x333333);
+      closeBtnBg.drawRect(
+        closeButtonX,
+        closeButtonY,
+        closeButtonSize,
+        closeButtonSize,
+      );
+      closeBtnBg.endFill();
+      closeBtnBg.interactive = true;
+      closeBtnBg.cursor = 'pointer';
+      closeBtnBg.on('pointerdown', () => this.toggleStatcardOverlay());
+      this.statcardOverlayApp.stage.addChild(closeBtnBg);
+      const closeText = new Text({
+        text: 'X',
+        style: {
+          fontFamily: 'Orbitron',
+          fontSize: 18,
+          fill: '#ffffff',
+          fontWeight: 'normal',
+        },
+      });
+      closeText.resolution = 2;
+      closeText.x = closeButtonX + (closeButtonSize - closeText.width) / 2;
+      closeText.y = closeButtonY + (closeButtonSize - closeText.height) / 2;
+      this.statcardOverlayApp.stage.addChild(closeText);
+
+      const texture = Assets.get(entity.sprite.toString());
+      const sprite = new PIXI.Sprite(texture);
+      sprite.width = this.statcardOverlayApp.screen.width / 2 - 20;
+      sprite.height = this.statcardOverlayApp.screen.width / 2 - 20;
+      sprite.x = (this.statcardOverlayApp.screen.width / 2 - sprite.width) / 2;
+      sprite.y =
+        (this.statcardOverlayApp.screen.height / 3 - sprite.height) / 2;
+      this.statcardOverlayApp.stage.addChild(sprite);
+
+      let statsText = '';
+      const statsData = entity.getInfo();
+      for (const [key, value] of Object.entries(statsData)) {
+        statsText += `${value}\n`;
+      }
+      const stats = new Text({
+        text: statsText,
+        style: {
+          fontFamily: 'Orbitron',
+          fontSize: 14,
+          fill: '#ffffff',
+          wordWrap: true,
+          wordWrapWidth: this.statcardOverlayApp.screen.width - 20,
+        },
+      });
+      stats.resolution = 2;
+      stats.x = 10;
+      stats.y = sprite.y + sprite.height + 10;
+      this.statcardOverlayApp.stage.addChild(stats);
     }
   }
 
@@ -1078,10 +1206,15 @@ export class GameController {
     const closeButtonSize = 30;
     const closeButtonX = this.lootOverlayApp.screen.width - closeButtonSize - 5;
     const closeButtonY = 5;
-    
+
     const closeBtnBg = new PIXI.Graphics();
     closeBtnBg.beginFill(0x333333);
-    closeBtnBg.drawRect(closeButtonX, closeButtonY, closeButtonSize, closeButtonSize);
+    closeBtnBg.drawRect(
+      closeButtonX,
+      closeButtonY,
+      closeButtonSize,
+      closeButtonSize,
+    );
     closeBtnBg.endFill();
     closeBtnBg.interactive = true;
     closeBtnBg.cursor = 'pointer';
@@ -1094,13 +1227,13 @@ export class GameController {
         fontSize: 18,
         fill: '#ffffff',
         fontWeight: 'normal',
-      }
+      },
     });
     closeText.resolution = 2;
     closeText.x = closeButtonX + (closeButtonSize - closeText.width) / 2;
     closeText.y = closeButtonY + (closeButtonSize - closeText.height) / 2;
     this.lootOverlayApp.stage.addChild(closeText);
-    
+
     const lineHeight = 15 + 10;
     const title = new Text({
       text: entity.name,
@@ -1109,7 +1242,7 @@ export class GameController {
         fontSize: 18,
         fill: '#ffffff',
         fontWeight: 'normal',
-      }
+      },
     });
     title.resolution = 2;
     title.x = 10;
@@ -1255,7 +1388,7 @@ export class GameController {
 
     // Energy
     const energyPercentage =
-    this.player1.Energy.currentEnergy / this.player1.Energy.maxEnergy;
+      this.player1.Energy.currentEnergy / this.player1.Energy.maxEnergy;
     this.energyBar.beginFill(0xffff00);
     this.energyBar.drawRect(x, y, barWidth * energyPercentage, barHeight);
     this.energyBar.endFill();
@@ -1264,6 +1397,7 @@ export class GameController {
   drawGrid() {
     this.spriteContainer.removeChildren();
     this.tile.clear();
+    this.ReticleInitialized = false;
 
     for (let x = 0; x < this.map.width; x++) {
       for (let y = 0; y < this.map.height; y++) {
@@ -1558,27 +1692,21 @@ export class GameController {
         this.spriteContainer.addChild(this.tile);
       }
     }
+    //this.drawReticle();
   }
 
   drawPlayer() {
-    this.playerSprite.removeChildren();
-    this.playerSprite.clear();
-    this.playerSprite.beginFill(0x00ff00);
-    this.playerSprite.drawCircle(
-      this.player1.renderX * this.tileSize + this.tileSize / 2,
-      this.player1.renderY * this.tileSize + this.tileSize / 2,
-      this.tileSize / 3,
-    );
-    this.playerSprite.endFill();
-    this.playerSprite._zIndex = 8;
+    
+   
   }
 
   drawReticle() {
     let sprite = Assets.get('crosshair_default.png') as PIXI.Texture;
-    const tileX = this.mouseTileX;
-    const tileY = this.mouseTileY;
-    const centerX = tileX * this.tileSize + this.tileSize / 2;
-    const centerY = tileY * this.tileSize + this.tileSize / 2;
+    let tileX = this.mouseTileX;
+    let tileY = this.mouseTileY;
+    let centerX = tileX * this.tileSize + this.tileSize / 2;
+    let centerY = tileY * this.tileSize + this.tileSize / 2;
+
     if (this.map.isValidTile(tileX, tileY)) {
       if (!this.aimMode) {
         if (
@@ -1597,9 +1725,11 @@ export class GameController {
             true,
           )
         ) {
-          sprite = Assets.get('crosshair_default.png') as PIXI.Texture;
+          if (this.reticleSpriteDefault) this.reticleSpriteDefault.alpha = 1;
+          if (this.reticleSpriteInvalid) this.reticleSpriteInvalid.alpha = 0;
         } else {
-          sprite = Assets.get('crosshair_default_invalid.png') as PIXI.Texture;
+          if (this.reticleSpriteInvalid) this.reticleSpriteInvalid.alpha = 1;
+          if (this.reticleSpriteDefault) this.reticleSpriteDefault.alpha = 0;
         }
       } else {
         if (
@@ -1612,19 +1742,67 @@ export class GameController {
             true,
           )
         ) {
-          sprite = Assets.get('crosshair_aimmode.png') as PIXI.Texture;
+          if(this.reticleSpriteAim)this.reticleSpriteAim.alpha = 1;
+          if(this.reticleSpriteAimInvalid)this.reticleSpriteAimInvalid.alpha = 0;
         } else {
-          sprite = Assets.get('crosshair_aimmode_invalid.png') as PIXI.Texture;
+          if(this.reticleSpriteAimInvalid)this.reticleSpriteAimInvalid.alpha = 1;
+          if(this.reticleSpriteAim)this.reticleSpriteAim.alpha = 0;
         }
       }
-      let reticleSprite = new PIXI.Sprite(sprite);
-      reticleSprite.alpha = 1;
-      reticleSprite.width = this.tileSize;
-      reticleSprite.height = this.tileSize;
-      reticleSprite.anchor.set(0.5);
-      reticleSprite._zIndex = 50;
-      reticleSprite.position.set(centerX, centerY);
-      this.spriteContainer.addChild(reticleSprite);
+
+
+      if(this.ReticleInitialized){
+        this.spriteContainer.getChildByName('reticle')?.position.set(centerX, centerY); 
+        this.spriteContainer.getChildByName('reticleInvalid')?.position.set(centerX, centerY);
+        this.spriteContainer.getChildByName('reticleAim')?.position.set(centerX, centerY);
+        this.spriteContainer.getChildByName('reticleAimInvalid')?.position.set(centerX, centerY);
+      }
+      if(this.ReticleInitialized == false){
+
+        this.reticleSpriteDefault = new PIXI.Sprite(Assets.get('crosshair_default.png') as PIXI.Texture);
+        this.reticleSpriteDefault.label = 'reticle';
+        this.reticleSpriteDefault.alpha = 0;
+        this.reticleSpriteDefault.width = this.tileSize;
+        this.reticleSpriteDefault.height = this.tileSize;
+        this.reticleSpriteDefault.anchor.set(0.5);
+        this.reticleSpriteDefault._zIndex = 50;
+        this.reticleSpriteDefault.position.set(centerX, centerY);
+
+        this.reticleSpriteInvalid = new PIXI.Sprite(Assets.get('crosshair_default_invalid.png') as PIXI.Texture);
+        this.reticleSpriteInvalid.label = 'reticleInvalid';
+        this.reticleSpriteInvalid.alpha = 0;
+        this.reticleSpriteInvalid.width = this.tileSize;
+        this.reticleSpriteInvalid.height = this.tileSize;
+        this.reticleSpriteInvalid.anchor.set(0.5);
+        this.reticleSpriteInvalid._zIndex = 50;
+        this.reticleSpriteInvalid.position.set(centerX, centerY);
+
+        this.reticleSpriteAim = new PIXI.Sprite(Assets.get('crosshair_aimmode.png') as PIXI.Texture);
+        this.reticleSpriteAim.label = 'reticleAim';
+        this.reticleSpriteAim.alpha = 0;
+        this.reticleSpriteAim.width = this.tileSize;
+        this.reticleSpriteAim.height = this.tileSize;
+        this.reticleSpriteAim.anchor.set(0.5);
+        this.reticleSpriteAim._zIndex = 50;
+        this.reticleSpriteAim.position.set(centerX, centerY);
+
+        this.reticleSpriteAimInvalid = new PIXI.Sprite(Assets.get('crosshair_aimmode_invalid.png') as PIXI.Texture);
+        this.reticleSpriteAimInvalid.label = 'reticleAimInvalid';
+        this.reticleSpriteAimInvalid.alpha = 0;
+        this.reticleSpriteAimInvalid.width = this.tileSize;
+        this.reticleSpriteAimInvalid.height = this.tileSize;
+        this.reticleSpriteAimInvalid.anchor.set(0.5);
+        this.reticleSpriteAimInvalid._zIndex = 50;
+        this.reticleSpriteAimInvalid.position.set(centerX, centerY);
+
+
+        this.spriteContainer.addChild(this.reticleSpriteDefault);
+        this.spriteContainer.addChild(this.reticleSpriteInvalid);
+        this.spriteContainer.addChild(this.reticleSpriteAim);
+        this.spriteContainer.addChild(this.reticleSpriteAimInvalid);
+        this.ReticleInitialized = true;
+      }
+      
     }
   }
 
@@ -1707,6 +1885,7 @@ export class GameController {
       this.selectedLimb = limbName;
       this.drawHealthUI();
       console.log(limbName);
+      this.setAfflictionsFlag(true);
     });
     this.healthLimbContainer.addChild(sprite);
   }
@@ -1771,7 +1950,7 @@ export class GameController {
     }
   }
 
-  drawLogsUI(){
+  drawLogsUI() {
     // clear previous content and mask
     this.logUIApp.stage.removeChildren();
     this.logUIApp.stage.mask = null;
@@ -1779,7 +1958,6 @@ export class GameController {
     const padding = 10;
     const spacing = 5;
     const maxWidth = Math.max(0, this.logUIApp.screen.width - padding * 2);
-    const maxHeight = Math.max(0, this.logUIApp.screen.height - padding * 2);
 
     // Start from bottom and render newest logs at the bottom
     let yOffset = this.logUIApp.screen.height - padding;
@@ -1825,11 +2003,12 @@ export class GameController {
   }
 
   // Generic entity animation helper (works for Player and non-player entities)
-  animateEntityMove(
+  async animateEntityMove(
     entity: any,
     targetX: number,
     targetY: number,
     duration: number = 150,
+    isPlayer: boolean = false
   ) {
     // Ensure entity has render positions; if not, initialize
     if (entity.renderX === undefined) entity.renderX = entity.posX;
@@ -1841,7 +2020,7 @@ export class GameController {
     const deltaY = targetY - startY;
     const startTime = performance.now();
 
-    const animate = (now: number) => {
+     const animate = async (now: number) => {
       const elapsed = now - startTime;
       const t = Math.min(elapsed / duration, 1);
       entity.renderX = startX + deltaX * t;
@@ -1851,9 +2030,13 @@ export class GameController {
       } else {
         entity.renderX = targetX;
         entity.renderY = targetY;
+        if(isPlayer){
+        await this.delay(50);
+        }
       }
     };
     requestAnimationFrame(animate);
+    
   }
 
   // Backwards-compatible wrapper for player-specific calls
@@ -1863,23 +2046,52 @@ export class GameController {
     targetY: number,
     duration: number = 150
   ) {
-    this.animateEntityMove(player, targetX, targetY, duration);
+    this.animateEntityMove(player, targetX, targetY, duration, true);
+    
+    
   }
 
   gameLoop() {
     // Redraw player at new position
     // update minimap if present (set player pos first)
     if (this.mapRenderer) {
+      if(this.MiniMapFlag){
       this.mapRenderer.setPlayer(this.playerWorldX, this.playerWorldY);
       this.mapRenderer.update();
+      this.setMinimapFlag(false);
+      
+      }
     }
-    this.drawGrid();
-    this.drawPlayer();
-    this.drawHealthBar();
-    this.drawEnergyBar();
-    this.drawReticle();
-    this.drawAfflictions();
+
+    if(this.GridFlag){
+      this.drawGrid();
+      this.setGridFlag(false);
+     
+    }
+
+    if(this.HealthBarFlag){
+      this.drawHealthBar();
+      this.setHealthBarFlag(false);
+      
+    }
+    if(this.EnergyBarFlag){
+      this.drawEnergyBar();
+      this.setEnergyBarFlag(false);
+      
+    }
+    if(this.ReticleFlag){
+        this.drawReticle();
+        this.setReticleFlag(false);
+    }
+
+    if(this.AfflictionsFlag){
+      this.drawAfflictions();
+      this.setAfflictionsFlag(false);
+      
+    }
     this.centerMap();
+
+    
     requestAnimationFrame(() => this.gameLoop());
   }
 
@@ -1924,13 +2136,16 @@ export class GameController {
       this.removePlayer(playerPosX, playerPosY);
       player.posX = targetX;
       player.posY = targetY;
+      
       this.animatePlayerMove(player, targetX, targetY);
-      this.player1.playerAction(0);
+      this.player1.playerAction(10);
       let entities = this.getAllEntitiesOnTile(targetX, targetY);
       for (let i = 0; i < entities.length; i++) {
         entities[i].onSteppedOn(player);
       }
     }
+
+    this.setGridFlag(true);
   }
 
   findRoom(player: Player, transition: RoomTransition) {
@@ -1949,7 +2164,7 @@ export class GameController {
         let x = this.findEntrance('right')!.x;
         let y = this.findEntrance('right')!.y;
         this.teleportPlayer(this.player1, x, y);
-        this.activateSpawners()
+        this.activateSpawners();
         console.log('Moved to left room');
         console.log(
           'World coordinates: ' + this.playerWorldX + ', ' + this.playerWorldY,
@@ -1964,7 +2179,7 @@ export class GameController {
         let x = this.findEntrance('left')!.x;
         let y = this.findEntrance('left')!.y;
         this.teleportPlayer(this.player1, x, y);
-        this.activateSpawners()
+        this.activateSpawners();
         console.log('Moved to right room');
         console.log(
           'World coordinates: ' + this.playerWorldX + ', ' + this.playerWorldY,
@@ -1979,7 +2194,7 @@ export class GameController {
         let x = this.findEntrance('down')!.x;
         let y = this.findEntrance('down')!.y;
         this.teleportPlayer(this.player1, x, y);
-        this.activateSpawners()
+        this.activateSpawners();
         console.log('Moved to up room');
         console.log(
           'World coordinates: ' + this.playerWorldX + ', ' + this.playerWorldY,
@@ -1994,13 +2209,14 @@ export class GameController {
         let x = this.findEntrance('up')!.x;
         let y = this.findEntrance('up')!.y;
         this.teleportPlayer(this.player1, x, y);
-        this.activateSpawners()
+        this.activateSpawners();
         console.log('Moved to down room');
         console.log(
           'World coordinates: ' + this.playerWorldX + ', ' + this.playerWorldY,
         );
       }
     }
+    this.setMinimapFlag(true);
   }
 
   findEntrance(side: string) {
@@ -2060,13 +2276,14 @@ export class GameController {
     return;
   }
 
-  activateSpawners(){
+  activateSpawners() {
     for (let x = 0; x < this.map.width; x++) {
       for (let y = 0; y < this.map.height; y++) {
         this.map.tiles[x][y].entity!.forEach((entity) => {
-        if (entity instanceof RandomSpawner){
-          entity.spawn()
-        }})
+          if (entity instanceof RandomSpawner) {
+            entity.spawn();
+          }
+        });
       }
     }
   }
@@ -2082,7 +2299,6 @@ export class GameController {
 
   updateTile(x: number, y: number) {
     if (this.map.tiles[x][y].fireValue > 0) {
-      this.damageEntities(x, y, this.map.tiles[x][y].fireValue / 2, 'burn');
       this.map.tiles[x][y].fireValue = this.clampNumber(
         this.map.tiles[x][y].fireValue - this.generateRandomNumber(10, 20),
         0,
@@ -2184,7 +2400,7 @@ export class GameController {
     size: number,
     strength: number,
     startFires: boolean = false,
-    cause: string = ""
+    cause: string = '',
   ) {
     (async () => {
       for (let i = 0; i < size; i++) {
@@ -2215,10 +2431,10 @@ export class GameController {
       this.effectContainer.removeChildren();
     })();
     // Log exlosions
-    if(cause!=""){
-      this.addLog(cause + " caused an explosion!");
-    }else{
-      this.addLog("Something exploded!");
+    if (cause != '') {
+      this.addLog(cause + ' caused an explosion!');
+    } else {
+      this.addLog('Something exploded!');
     }
   }
 
@@ -2338,29 +2554,26 @@ export class GameController {
     return false;
   }
 
-  damageEntities(
-    x: number,
-    y: number,
-    damage: number,
-    damageType: string,
-    ignoredId: number | null = null,
-  ) {
-    let entities = this.getAllEntitiesOnTile(x, y);
-    for (let i = 0; i < entities.length; i++) {
-      if (ignoredId != null && ignoredId != entities[i].id) {
-        entities[i].takeDamage(damage, damageType);
-      } else if (ignoredId == null) {
-        entities[i].takeDamage(damage, damageType);
-      }
-    }
-  }
-
   spawnItem(x: number, y: number, item: Item) {
     this.map.tiles[x][y].item = item;
   }
 
   removeItem(x: number, y: number, effect?: string) {
     this.map.tiles[x][y].item = null;
+  }
+
+  inWeaponRange(targetX: number, targetY: number) {
+    if (this.player1.inventory && this.player1.inventory.weaponSlot) {
+      const weaponRange = this.player1.inventory.weaponSlot.range;
+      const distance = this.getDistance(
+        this.player1.posX,
+        this.player1.posY,
+        targetX,
+        targetY,
+      );
+      return distance <= weaponRange;
+    }
+    return false;
   }
 
   changeTurn(){
@@ -2403,6 +2616,7 @@ export class GameController {
     window.addEventListener('keydown', (event) => {
       let targetX = player.posX;
       let targetY = player.posY;
+     
 
       if(this.enemyTurn){
         return;
@@ -2428,54 +2642,56 @@ export class GameController {
         default:
           return;
       }
-
+     
       this.tryToMovePlayer(player, targetX, targetY);
     });
   }
 
   listenForInput(player: Player) {
     window.addEventListener('keydown', (event) => {
-
       if(this.enemyTurn){
         return;
       }
-
+      this.setGridFlag(true);
       switch (event.key.toLowerCase()) {
         case 'x':
           this.addLog("Player ended their turn.");
           this.changeTurn();
           break;
         case 'f':
-          this.addLog("Aim mode: " + (this.aimMode ? "off" : "on") + ".");
+          this.addLog('Aim mode: ' + (this.aimMode ? 'off' : 'on') + '.');
           this.aimMode = !this.aimMode;
           break;
         case 'p':
-          this.addLog("(DEBUG) Explosion created at player position.");
+          this.addLog('(DEBUG) Explosion created at player position.');
           this.createExplosion(player.posX, player.posY, 3, 100, true);
           this.changeTurn();
           break;
         case 'l':
-          this.addLog("(DEBUG) Healed bleeding.");
+          this.addLog('(DEBUG) Healed bleeding.');
           this.player1.Health.stopBleeding();
           break;
         case 'o':
-          this.addLog("(DEBUG) This is a very long message to test the logging system in the game. It should properly handle wrapping and display multiple lines if necessary.");
+          this.addLog(
+            '(DEBUG) This is a very long message to test the logging system in the game. It should properly handle wrapping and display multiple lines if necessary.',
+          );
           break;
         case 't':
-          this.addLog("(DEBUG) Enabled map teleportation.");
+          this.addLog('(DEBUG) Enabled map teleportation.');
           this.mapContainer!.interactive = true;
-          break;
-        case 'm':
-          this.toggleStatcardOverlay();
           break;
         default:
           return;
       }
-    });
+     
+    }
+    
+  );
     window.addEventListener('mousemove', (event) => {
+      this.setReticleFlag(true);
       if (!this.app || !this.app.view) return;
       const rect = this.app.view.getBoundingClientRect();
-      
+
       const canvasX = event.clientX - rect.left;
       const canvasY = event.clientY - rect.top;
 
@@ -2487,7 +2703,11 @@ export class GameController {
       const mapLocalX = canvasX - containerX;
       const mapLocalY = canvasY - containerY;
 
-      const coords = this.map.getTileCoords(mapLocalX, mapLocalY, this.tileSize);
+      const coords = this.map.getTileCoords(
+        mapLocalX,
+        mapLocalY,
+        this.tileSize,
+      );
       if (coords) {
         this.mouseTileX = coords.x;
         this.mouseTileY = coords.y;
@@ -2498,6 +2718,7 @@ export class GameController {
     });
 
     window.addEventListener('click', (event) => {
+      this.setGridFlag(true);
 
       if(this.enemyTurn){
         return;
@@ -2507,7 +2728,7 @@ export class GameController {
 
       const canvasX = event.clientX - rect.left;
       const canvasY = event.clientY - rect.top;
-      
+
       this.mouseX = canvasX;
       this.mouseY = canvasY;
 
@@ -2516,36 +2737,85 @@ export class GameController {
       const mapLocalX = canvasX - containerX;
       const mapLocalY = canvasY - containerY;
 
-      const coords = this.map.getTileCoords(mapLocalX, mapLocalY, this.tileSize);
+      const coords = this.map.getTileCoords(
+        mapLocalX,
+        mapLocalY,
+        this.tileSize,
+      );
 
       if (coords) {
         const tileInfo = this.map.tiles[coords.x][coords.y].getTileInfo();
         console.log(coords, tileInfo);
 
-        this.onTileClick(coords.x, coords.y, tileInfo);
-
         if (!this.aimMode) {
-          if (this.getDistance(this.player1.posX, this.player1.posY, coords.x, coords.y) <=1 && !this.isLineObstructed(this.player1.posX,this.player1.posY,coords.x, coords.y,true,true)){
+          if (
+            this.getDistance(
+              this.player1.posX,
+              this.player1.posY,
+              coords.x,
+              coords.y,
+            ) <= 1 &&
+            !this.isLineObstructed(
+              this.player1.posX,
+              this.player1.posY,
+              coords.x,
+              coords.y,
+              true,
+              true,
+            )
+          ) {
             this.getAllEntitiesOnTile(coords.x, coords.y)?.forEach(
               (entity: any) => {
                 entity.onUse(player);
-              }
+              },
             );
             const entities = this.map.tiles[coords.x][coords.y].entity;
+            const item = this.map.tiles[coords.x][coords.y].item;
+            if (item) {
+              if (!this.statcardOverlayVisible) {
+                this.toggleStatcardOverlay();
+              }
+              this.currentItemSource = { floorX: coords.x, floorY: coords.y };
+              this.drawStatcardOverlay(item);
+            }
+
             if (entities && entities.length > 0) {
-              const lootableEntity = entities.find((e: any) => e.lootable && e.inventory);
+              const lootableEntity = entities.find(
+                (e: any) => e.lootable && e.inventory,
+              );
               if (lootableEntity) {
                 if (!this.lootOverlayVisible) {
                   this.toggleLootOverlay();
                 }
                 this.drawLootOverlay(lootableEntity);
+              } else {
+                if (!this.statcardOverlayVisible) {
+                  this.toggleStatcardOverlay();
+                }
+                this.drawStatcardOverlay(entities[0]);
               }
             }
           }
-        }else{
+        } else {
           const entity = this.map.tiles[coords.x][coords.y].entity;
-          if (entity && entity.length > 0) { 
-
+          if (entity && entity.length > 0) {
+            if (
+              !this.isLineObstructed(
+                this.player1.posX,
+                this.player1.posY,
+                coords.x,
+                coords.y,
+                true,
+                true,
+              ) && this.inWeaponRange(coords.x, coords.y)
+            ) {
+              const weapon = this.player1.inventory.weaponSlot;
+              console.log(weapon);
+              console.log(entity[0].Health?.torso);
+              if (weapon) {
+                weapon.use(entity[0]);
+              }
+            }
           }
         }
       }
@@ -2612,5 +2882,47 @@ export class GameController {
       this.currentItemSource = { floorX: x, floorY: y };
       this.drawStatcardOverlay(item);
     }
+  }
+
+  // Getters and setters for flags
+  getGridFlag() {
+    return this.GridFlag;
+  } 
+  setGridFlag(value: boolean) {
+    this.GridFlag = value;
+  }
+
+  getMinimapFlag() {
+    return this.MiniMapFlag;
+  }
+  setMinimapFlag(value: boolean) {
+    this.MiniMapFlag = value;
+  }
+
+  getHealthBarFlag() {
+    return this.HealthBarFlag;
+  }
+  setHealthBarFlag(value: boolean) {
+    this.HealthBarFlag = value;
+  }
+
+  getEnergyBarFlag() {
+    return this.EnergyBarFlag;
+  }
+  setEnergyBarFlag(value: boolean) {
+    this.EnergyBarFlag = value;
+  }
+
+  getReticleFlag() {
+    return this.ReticleFlag;
+  }
+  setReticleFlag(value: boolean) {
+    this.ReticleFlag = value;
+  }
+  getAfflictionsFlag() {
+    return this.AfflictionsFlag;
+  }
+  setAfflictionsFlag(value: boolean) {
+    this.AfflictionsFlag = value;
   }
 }

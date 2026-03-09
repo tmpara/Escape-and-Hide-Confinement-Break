@@ -34,6 +34,7 @@ export type LimbName =
 export type affliction = [string, number];
 
 export class Health {
+  gameController = GameController;
   genetics = new Genetics();
   genes = this.genetics.genes;
   maxHealth: number = 5000;
@@ -68,6 +69,11 @@ export class Health {
     this.currentHealth = currentHealth;
   }
 
+  updateBars() {
+      GameController.current?.setHealthBarFlag(true);
+      GameController.current?.setEnergyBarFlag(true);
+  }
+
   hitRandomLimb(bleedingIncrease: number) {}
   
   damageLimb(limb: LimbName, afflictions: affliction[]) {  
@@ -91,9 +97,11 @@ export class Health {
         this[limb].addFracture();
       }
     }
+    this.updateAfflictions();
   }
 
   healLimb(afflictionType: affliction[]) {
+    
     const limb = GameController.current?.selectedLimb as LimbName;
     for (let affliction of afflictionType) {
       if (affliction[0] === 'Lacerations') {
@@ -112,9 +120,10 @@ export class Health {
         this[limb].burn.decreaseSeverity(affliction[1]);
       }
       if (affliction[0] == 'Fracture') {
-        this[limb].addFracture();
+        this[limb].removeFracture();
       }
     }
+    this.updateAfflictions();
   }
   updateAfflictions() {
     //Genetic effects
@@ -133,7 +142,6 @@ export class Health {
     for (let limb of this.limbs) {
       this.bloodLoss.increaseSeverity(limb.bleeding.severity);
     }
-    //console.log('bloodloss: ' + this.bloodLoss.severity);
     this.currentHealth -= this.bloodLoss.severity;
     if (this.currentHealth < 0) {
       this.currentHealth = 0;
@@ -149,11 +157,12 @@ export class Health {
       this.hypoxemia.severity < 100
     ) {
       this.hypoxemia.increaseSeverity(this.bloodLoss.severity / 20);
-      //console.log('hypoxemia: ' + this.hypoxemia.severity);
       if (this.hypoxemia.severity >= 100) {
         this.isUnconscious = true;
       }
     }
+    this.updateBars();
+    this.gameController.current?.setAfflictionsFlag(true);
   }
 
   bleedingRegen() {
@@ -161,6 +170,7 @@ export class Health {
       limb.bleeding.naturalHeal(this.regeneration);
     }
     this.bloodLoss.decreaseSeverity(this.regeneration);
+    this.updateBars();
   }
 
   stopBleeding() {
@@ -168,5 +178,6 @@ export class Health {
       limb.bleeding.severity = 0;
     }
     this.bloodLoss.severity = 0;
+    this.updateBars();
   }
 }

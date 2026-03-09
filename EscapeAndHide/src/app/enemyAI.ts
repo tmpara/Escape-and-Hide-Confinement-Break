@@ -340,59 +340,7 @@ export class LightInterferanceUnitAI extends BasicEnemyAI {
   override accuracy = 0.1; //chance to miss
 
   override RangedAttack() {
-    let targetLimb: LimbName = 'torso';
-    let miss = Math.random(); //chance to miss or hit random limb
-    if (miss < this.accuracy) {
-      return; //missed attack
-    } else if (miss < this.accuracy * 2) {
-      const limbs: LimbName[] = [
-        'head',
-        'leftArm',
-        'rightArm',
-        'leftLeg',
-        'rightLeg',
-      ];
-      const randomIndex = Math.floor(Math.random() * limbs.length);
-      targetLimb = limbs[randomIndex];
-    }
-    const controller = GameController.current;
-    if (!controller) return;
-    if (this.Targets.length == 0) return;
-    const target = this.Targets[0] as Player;
-    let damageDealt = this.damage;
-    target.Health.damageLimb(targetLimb, [
-      ['Lacerations', damageDealt * 2],
-      ['Bleeding', damageDealt * 2],
-    ]);
-    target.Health.torso.zapped.increaseSeverity(damageDealt * 5);
-  }
-
-  override MeleeAttack() {
-    let targetLimb: LimbName = 'torso';
-    let miss = Math.random(); //chance to miss or hit random limb
-    if (miss < this.accuracy) {
-      return; //missed attack
-    } else if (miss < this.accuracy * 2) {
-      const limbs: LimbName[] = [
-        'head',
-        'leftArm',
-        'rightArm',
-        'leftLeg',
-        'rightLeg',
-      ];
-      const randomIndex = Math.floor(Math.random() * limbs.length);
-      targetLimb = limbs[randomIndex];
-    }
-    const controller = GameController.current;
-    if (!controller) return;
-    if (this.Targets.length == 0) return;
-    const target = this.Targets[0] as Player;
-    let damageDealt = this.damage * 2;
-    target.Health.damageLimb(targetLimb, [
-      ['Lacerations', damageDealt * 2],
-      ['Bleeding', damageDealt * 2],
-    ]);
-    target.Health.torso.zapped.increaseSeverity(damageDealt * 5);
+    this.inventory.weaponSlot?.use(this.Targets[0]);
   }
 }
 

@@ -2,13 +2,13 @@ import { GameController } from './game.controller';
 import { affliction, LimbName } from './health/health';
 import { Inventory } from './inventory/inventory';
 import { Item } from './items/items';
+import { Health } from './health/health';
 export abstract class Entity {
-  
-  id=0;
-  name = "";
-  description = "";
-  sprite = "placeholder.png";
-  deadSprite = "";
+  id = 0;
+  name = '';
+  description = '';
+  sprite = 'placeholder.png';
+  deadSprite = '';
   sizeOffsetX = 0;
   sizeOffsetY = 0;
   sizeX = 1;
@@ -26,7 +26,7 @@ export abstract class Entity {
   pushable = false;
   damageable = false;
   health = 0;
-  Health: import('./health/health').Health | null = null;
+  Health: Health | null = null;
   damageResistance = 0;
   hiddenOutsideLOS = false;
   blockLOS = false;
@@ -60,7 +60,11 @@ export abstract class Entity {
       targetLimb = limbs[randomIndex];
     }
     let afflictions: affliction[] = [];
-    if (user && user.inventory.weaponSlot && Array.isArray(user.inventory.weaponSlot.afflictions)) {
+    if (
+      user &&
+      user.inventory.weaponSlot &&
+      Array.isArray(user.inventory.weaponSlot.afflictions)
+    ) {
       for (const a of user.inventory.weaponSlot.afflictions) {
         if (Array.isArray(a) && a.length >= 2) {
           afflictions.push([a[0], a[1]]);
@@ -73,8 +77,11 @@ export abstract class Entity {
   takeStructureDamage(damage: number) {
     this.onTakeDamage(damage);
     this.health -= damage;
+    console.log(
+      `${this.name} took ${damage} structure damage. Remaining health: ${this.health}`,
+    );
     if (this.health <= 0) {
-      this.destroy(damage);
+      this.destroy();
     }
   }
 
@@ -95,17 +102,15 @@ export abstract class Entity {
     }
   }
 
-  destroy(damage: number) {
+  destroy() {
     if (this.destroyed == false) {
       this.destroyed = true;
-      this.onDestroyed(damage);
-      if (this.removeOnDestroy == true){
-        GameController.current?.removeEntities(this.posX, this.posY,this.id);
-      }else{
+      if (this.removeOnDestroy == true) {
+        GameController.current?.removeEntities(this.posX, this.posY, this.id);
+      } else {
         this.sprite = this.deadSprite;
       }
     }
-    console.log('entity inventory: ', this.inventory.inventorySlots);
   }
 
   generateLoot() {
@@ -115,7 +120,8 @@ export abstract class Entity {
     const lootLimit = Math.floor(Math.random() * 5) + 1;
     const selectedItems: Item[] = [];
     while (
-      selectedItems.length < this.inventorySize && selectedItems.length < lootLimit
+      selectedItems.length < this.inventorySize &&
+      selectedItems.length < lootLimit
     ) {
       const lootIndex = Math.floor(Math.random() * this.itemPool.length);
       const item = this.itemPool[lootIndex];
@@ -126,7 +132,7 @@ export abstract class Entity {
     }
     for (const item of selectedItems) {
       if (!item) continue;
-      
+
       if (item.slot) {
         if (item.slot === 'weapon') {
           this.inventory.weaponSlot = item;
@@ -145,7 +151,7 @@ export abstract class Entity {
           // console.log('Equipped full body armor:', item.name);
         }
       }
-    
+
       const emptyIndex = this.inventory.inventorySlots.indexOf(null);
       if (emptyIndex !== -1) {
         this.inventory.inventorySlots[emptyIndex] = item;
@@ -167,5 +173,13 @@ export abstract class Entity {
   onHeal(amountHealed: number) {}
 
   onSpawn() {}
-  
+
+  getInfo() {
+    return {
+      name: 'Name: ' + this.name,
+      description: 'Description: ' + this.description,
+      maxHealth: 'Max Health: ' + this.maxHealth,
+      damageResistance: 'Damage resistance: ' + this.damageResistance,
+    };
+  }
 }
