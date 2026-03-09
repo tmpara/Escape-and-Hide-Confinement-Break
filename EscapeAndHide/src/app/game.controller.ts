@@ -797,6 +797,18 @@ export class GameController {
     return Math.max(Math.abs(posX - targetX), Math.abs(posY - targetY));
   }
 
+  removeItemFromInventory(item: Item) {
+    if (!this.player1.inventory) return;
+    const index = this.player1.inventory.inventorySlots.findIndex(
+      (i) => i === item,
+    );
+    if (index !== -1) {
+      this.player1.inventory.inventorySlots[index] = null;
+      this.drawInventoryTab();
+      this.drawEquippedTab();
+    }
+  }
+
   drawInventoryTab() {
     const fontSize = 15;
     if (!this.player1.inventory) return;

@@ -33,7 +33,6 @@ export abstract class Item {
       const randomIndex = Math.floor(Math.random() * limbs.length);
       return limbs[randomIndex];
     }
-    
     return 'torso';
   }
 
@@ -141,11 +140,14 @@ export class Flamethrower extends Item {
   override slot = 'weapon';
   override afflictions = [['Burn', 10]];
 
-  override use(player: Entity) {
+  override use(target: Entity) {
     const controller = GameController.current;
-    if (!controller || !player) return;
+    if (!controller) return;
+    
+    const player = controller.player1;
+    if (!player) return;
 
-    const firingAngle = (player as any).lastFacingAngle ?? 0;
+    const firingAngle = Math.atan2(target.posY - player.posY, target.posX - player.posX);
     
     const coneTiles = controller.getConeTiles(
       player.posX,
@@ -196,6 +198,26 @@ export class StunGun extends Item {
     ['Lacerations', 2],
     ['Bleeding', 2],
   ];
+
+  override use(target: Entity) {
+    const targetLimb = this.checkForMiss(target);
+    if (targetLimb == 'isStructure') {
+      target.takeStructureDamage(this.structureDamage);
+    } else if (targetLimb) {
+      let afflictions: affliction[] = [];
+      for (const affliction of this.afflictions) {
+        if (Array.isArray(affliction) && affliction.length >= 2) {
+          afflictions.push([affliction[0] as string, affliction[1] as number]);
+        }
+      }
+      if (target.Health) {
+        target.Health.damageLimb(targetLimb as LimbName, afflictions);
+        if(target.Health.currentHealth <= 0) {
+          target.destroy();
+        }
+      }
+    }
+  }
 }
 export class Bandage extends Item {
   override name = 'bandage';
@@ -206,18 +228,18 @@ export class Bandage extends Item {
     ['Bleeding', 20],
   ];
 
-  // override heal(target: Entity) {
-  //   if (target.Health) {
-  //     for (let affliction of this.afflictions) {
-  //       if (affliction[0] === 'Lacerations') {
-  //         target.Health.healLimb([[affliction[0], affliction[1] as number]]);
-  //       }
-  //       if (affliction[0] === 'Bleeding') {
-  //         target.Health.healLimb([[affliction[0], affliction[1] as number]]);
-  //       }
-  //     }
-  //   }
-  // }
+  override use(target: Entity) {
+    if (target.Health) {
+      let afflictions: affliction[] = [];
+      for (let affliction of this.afflictions) {
+        if (Array.isArray(affliction) && affliction.length >= 2) {
+          afflictions.push([affliction[0] as string, affliction[1] as number]);
+        }
+      }
+      target.Health.healLimb(afflictions);
+    }
+    GameController.current?.removeItemFromInventory(this);
+  }
 }
 export class Medkit extends Item {
   override name = 'medkit';
@@ -228,18 +250,18 @@ export class Medkit extends Item {
     ['Bleeding', 50],
   ];
 
-  // override heal(target: Entity) {
-  //   if (target.Health) {
-  //     for (let affliction of this.afflictions) {
-  //       if (affliction[0] === 'Lacerations') {
-  //         target.Health.healLimb([affliction[0], affliction[1]]);
-  //       }
-  //       if (affliction[0] === 'Bleeding') {
-  //         target.Health.healLimb([affliction[0], affliction[1]]);
-  //       }
-  //     }
-  //   }
-  // }
+  override use(target: Entity) {
+    if (target.Health) {
+      let afflictions: affliction[] = [];
+      for (let affliction of this.afflictions) {
+        if (Array.isArray(affliction) && affliction.length >= 2) {
+          afflictions.push([affliction[0] as string, affliction[1] as number]);
+        }
+      }
+      target.Health.healLimb(afflictions);
+    }
+    GameController.current?.removeItemFromInventory(this);
+  }
 }
 export class Helmet extends Item {
   override name = 'helmet';
