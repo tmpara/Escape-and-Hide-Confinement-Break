@@ -1,9 +1,7 @@
 import { GameController } from './game.controller';
-import { Afflcition } from './health/afflictions';
 import { affliction, LimbName } from './health/health';
 import { Inventory } from './inventory/inventory';
 import { Item } from './items/items';
-import { Player } from './player';
 export abstract class Entity {
   
   id=0;
@@ -13,20 +11,14 @@ export abstract class Entity {
   deadSprite = "";
   sizeOffsetX = 0;
   sizeOffsetY = 0;
-  // footprint controls how many tiles the entity visually occupies (width x height)
-  footprintWidth = 1;
-  footprintHeight = 1;
+  sizeX = 1;
+  sizeY = 1;
+  rotation=0;
   posX = 0;
   posY = 0;
   zIndex = 5;
-  spriteTopCap = "";
-  spriteBottomCap = "";
-  spriteLeftCap = "";
-  spriteRightCap = "";
-  spriteTopLeftCorner = "";
-  spriteTopRightCorner = "";
-  spriteBottomLeftCorner = "";
-  spriteBottomRightCorner = "";
+  spriteCap= "";
+  spriteCorner = "";
   connectsWith: string | null = null
   tags: string[] | null = null;
   interactable = false;
@@ -43,6 +35,7 @@ export abstract class Entity {
   maxHealth = this.health;
   destroyed = false;
   removeOnDestroy = true;
+  initialised = false;
   fireValue = 0;
   ai = false;
   itemPool: Item[] = [];
@@ -174,4 +167,5 @@ export abstract class Entity {
   onHeal(amountHealed: number) {}
 
   onSpawn() {}
+  
 }

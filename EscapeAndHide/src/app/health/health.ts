@@ -16,6 +16,7 @@ import {
 } from './afflictions';
 
 import { Genetics } from './genetics';
+import { GameController } from '../game.controller';
 import { 
   Internals,
   Heart,
@@ -35,8 +36,8 @@ export type affliction = [string, number];
 export class Health {
   genetics = new Genetics();
   genes = this.genetics.genes;
-  maxBlood: number = 5000;
-  currentBlood: number = 5000;
+  maxHealth: number = 5000;
+  currentHealth: number = 5000;
   regeneration: number = 1;
   isUnconscious: boolean = false;
 
@@ -125,7 +126,7 @@ export class Health {
       this.genetics.triggerGeneEffects(gene, this.liver);
     });
     
-    this.maxBlood = 5000 + this.liver.additionalBlood;
+    this.maxHealth = 5000 + this.liver.additionalBlood;
 
 
     this.bloodLoss.severity = 0;

@@ -4,7 +4,7 @@ import { Text, Assets } from 'pixi.js';
 import { GameGrid } from './grid';
 import { World } from './world';
 import { Player } from './player';
-import { Item, SmallGun} from './items/items';
+import { Item} from './items/items';
 import { WorldMapRenderer } from './worldMapRenderer';
 import { Inventory } from './inventory/inventory';
 import { Entity } from './entity';
@@ -83,18 +83,8 @@ export class GameController {
     await Assets.load('leftleg.png');
     await Assets.load('rightleg.png');
     await Assets.load('/sprites/entities/wall_placeholder_base.png');
-    await Assets.load('/sprites/entities/wall_placeholder_topcap.png');
-    await Assets.load('/sprites/entities/wall_placeholder_bottomcap.png');
-    await Assets.load('/sprites/entities/wall_placeholder_leftcap.png');
-    await Assets.load('/sprites/entities/wall_placeholder_rightcap.png');
-    await Assets.load('/sprites/entities/wall_placeholder_toprightcorner.png');
-    await Assets.load(
-      '/sprites/entities/wall_placeholder_bottomleftcorner.png',
-    );
-    await Assets.load('/sprites/entities/wall_placeholder_topleftcorner.png');
-    await Assets.load(
-      '/sprites/entities/wall_placeholder_bottomrightcorner.png',
-    );
+    await Assets.load('/sprites/entities/wall_cap.png');
+    await Assets.load('/sprites/entities/wall_corner.png');
     await Assets.load('/sprites/entities/door1.png');
     await Assets.load('/sprites/entities/glass_shards.png');
     await Assets.load('/sprites/entities/explosiveBarrel.png');
@@ -151,7 +141,8 @@ export class GameController {
       width: window.innerWidth * 0.7,
       height: window.innerHeight * 1,
       backgroundColor: 0x222222,
-      antialias: true,
+      antialias: false,
+      roundPixels: true,
     });
     container.style.width = "100%";
     container.style.height = "100%";
@@ -212,7 +203,7 @@ export class GameController {
       height: equippedRect.height || window.innerHeight * 0.2,
       antialias: true,
       backgroundColor: 0x333333,
-      resolution: window.devicePixelRatio,
+      resolution: 2
     });
     this.equippedApp.view.style.display = 'block' ;
     equippedColumn.appendChild(this.equippedApp.view as HTMLCanvasElement);
@@ -224,7 +215,7 @@ export class GameController {
       height: inventoryRect.height || window.innerHeight * 0.3,
       antialias: true,
       backgroundColor: 0x252525,
-      resolution: window.devicePixelRatio,
+      resolution: 2
     });
     this.inventoryApp.view.style.display = 'block';
     inventoryColumn.appendChild(this.inventoryApp.view as HTMLCanvasElement);
@@ -302,7 +293,7 @@ export class GameController {
       height: healthRect.height || window.innerHeight * 0.3,
       backgroundColor: 0x222222,
       antialias: true,
-      resolution: window.devicePixelRatio,
+      resolution: 2
     });
     this.healthUIApp.view.style.display = 'block';
 
@@ -312,7 +303,7 @@ export class GameController {
       height: healthRect.height || window.innerHeight * 0.3,
       backgroundColor: 0x222222,
       antialias: true,
-      resolution: window.devicePixelRatio,
+      resolution: 2
     });
     this.afflictionsApp.view.style.display = 'block';
 
@@ -343,7 +334,7 @@ export class GameController {
       height: logRect.height || window.innerHeight * 0.2,
       backgroundColor: 0x222222,
       antialias: true,
-      resolution: window.devicePixelRatio,
+      resolution: 2,
     });
     this.logUIApp.view.style.display = 'block';
 
@@ -353,7 +344,7 @@ export class GameController {
       height: logRect.height || window.innerHeight * 0.2,
       backgroundColor: 0x222222,
       antialias: true,
-      resolution: window.devicePixelRatio,
+      resolution: 2
     });
     this.mapUIApp.view.style.display = 'block';
 
@@ -754,6 +745,35 @@ export class GameController {
       }
     }
     return hitTiles;
+  }
+
+  getTilesInCone(centerX: number,centerY: number,range: number,angle: number,coneAngle: number,): [number, number][] {
+    const tiles: [number, number][] = [];
+    const controller = GameController.current;
+    for (let x = centerX - range; x <= centerX + range; x++) {
+      for (let y = centerY - range; y <= centerY + range; y++) {
+        const dx = Math.abs(x - centerX);
+        const dy = Math.abs(y - centerY);
+        const dist = Math.ceil(Math.max(dx, dy) + 0.5 * Math.min(dx, dy));
+        if (dist > range || dist === 0) continue; // exclude center
+
+        // skip tiles that are out of the current map bounds
+        if (controller && controller.map && !controller.map.isValidTile(x, y))
+          continue;
+
+        const angleToTile = Math.atan2(y - centerY, x - centerX);
+        let angleDiff = angleToTile - angle;
+        // Robust normalization to [-PI, PI]
+        while (angleDiff <= -Math.PI) angleDiff += 2 * Math.PI;
+        while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
+        // small epsilon to avoid cutting off exact-edge tiles due to fp errors
+        const eps = 1e-9;
+        if (Math.abs(angleDiff) <= coneAngle / 2 + eps) {
+          tiles.push([x, y]);
+        }
+      }
+    }
+    return tiles;
   }
 
   getRandomTileInRadius(target: Player, radius: number) {
@@ -1296,6 +1316,11 @@ export class GameController {
         }
 
         this.getAllEntitiesOnTile(x, y)?.forEach((entity: any) => {
+          // Only render multi-tile entities at their primary position (posX, posY) to avoid duplicates
+          if (entity.posX !== x || entity.posY !== y) {
+            return;
+          }
+          
           if (entity.sprite != '') {
             let entityTexture = Assets.get(entity.sprite.toString());
             let entitySprite = new PIXI.Sprite(entityTexture);
@@ -1303,13 +1328,13 @@ export class GameController {
               entity.texture = Assets.get(entity.deadSprite.toString());
               entitySprite.texture = entity.texture;
             }
-            const fw = (entity.footprintWidth ?? 1) as number;
-            const fh = (entity.footprintHeight ?? 1) as number;
-            entitySprite.x = x * this.tileSize + (entity.sizeOffsetX ?? 0);
-            entitySprite.y = y * this.tileSize + (entity.sizeOffsetY ?? 0);
-            entitySprite.width = this.tileSize * fw;
-            entitySprite.height = this.tileSize * fh;
+            entitySprite.x = x * this.tileSize + (entity.sizeOffsetX ?? 0) + this.tileSize / 2;
+            entitySprite.y = y * this.tileSize + (entity.sizeOffsetY ?? 0) + this.tileSize / 2;
+            entitySprite.width = (this.tileSize * (entity.sizeX ?? 1)) - (entity.sizeOffsetX ?? 0);
+            entitySprite.height = (this.tileSize * (entity.sizeY ?? 1)) - (entity.sizeOffsetY ?? 0);
             entitySprite._zIndex = entity.zIndex;
+            entitySprite.anchor = (0.5);
+            entitySprite.angle = entity.rotation;
             this.spriteContainer.addChild(entitySprite);
             // handle wall connections
             const shouldSpawnCap = (x: number, y: number) => {
@@ -1323,44 +1348,52 @@ export class GameController {
               }
               return true;
             };
-            if (shouldSpawnCap(x, y - 1) && entity.spriteTopCap != '') {
-              let capTexture = Assets.get(entity.spriteTopCap.toString());
+            if (shouldSpawnCap(x, y - 1) && entity.spriteCap != '') {
+              let capTexture = Assets.get(entity.spriteCap.toString());
               let capSprite = new PIXI.Sprite(capTexture);
-              capSprite.x = x * this.tileSize;
-              capSprite.y = y * this.tileSize;
+              capSprite.x = x * this.tileSize + this.tileSize / 2;
+              capSprite.y = y * this.tileSize + this.tileSize / 2;
               capSprite.width = this.tileSize;
               capSprite.height = this.tileSize;
               capSprite._zIndex = entity.zIndex + 0.1;
+              capSprite.anchor = (0.5);
+              capSprite.angle = 0;
               this.spriteContainer.addChild(capSprite);
             }
-            if (shouldSpawnCap(x, y + 1) && entity.spriteBottomCap != '') {
-              let capTexture = Assets.get(entity.spriteBottomCap.toString());
+            if (shouldSpawnCap(x, y + 1) && entity.spriteCap != '') {
+              let capTexture = Assets.get(entity.spriteCap.toString());
               let capSprite = new PIXI.Sprite(capTexture);
-              capSprite.x = x * this.tileSize;
-              capSprite.y = y * this.tileSize;
+              capSprite.x = x * this.tileSize + this.tileSize / 2;
+              capSprite.y = y * this.tileSize + this.tileSize / 2;
               capSprite.width = this.tileSize;
               capSprite.height = this.tileSize;
               capSprite._zIndex = entity.zIndex + 0.1;
+              capSprite.anchor = (0.5);
+              capSprite.angle = 180;
               this.spriteContainer.addChild(capSprite);
             }
-            if (shouldSpawnCap(x - 1, y) && entity.spriteLeftCap != '') {
-              let capTexture = Assets.get(entity.spriteLeftCap.toString());
+            if (shouldSpawnCap(x - 1, y) && entity.spriteCap != '') {
+              let capTexture = Assets.get(entity.spriteCap.toString());
               let capSprite = new PIXI.Sprite(capTexture);
-              capSprite.x = x * this.tileSize;
-              capSprite.y = y * this.tileSize;
+              capSprite.x = x * this.tileSize + this.tileSize / 2;
+              capSprite.y = y * this.tileSize + this.tileSize / 2;
               capSprite.width = this.tileSize;
               capSprite.height = this.tileSize;
               capSprite._zIndex = entity.zIndex + 0.1;
+              capSprite.anchor = (0.5);
+              capSprite.angle = 270;
               this.spriteContainer.addChild(capSprite);
             }
-            if (shouldSpawnCap(x + 1, y) && entity.spriteRightCap != '') {
-              let capTexture = Assets.get(entity.spriteRightCap.toString());
+            if (shouldSpawnCap(x + 1, y) && entity.spriteCap != '') {
+              let capTexture = Assets.get(entity.spriteCap.toString());
               let capSprite = new PIXI.Sprite(capTexture);
-              capSprite.x = x * this.tileSize;
-              capSprite.y = y * this.tileSize;
+              capSprite.x = x * this.tileSize + this.tileSize / 2;
+              capSprite.y = y * this.tileSize + this.tileSize / 2;
               capSprite.width = this.tileSize;
               capSprite.height = this.tileSize;
               capSprite._zIndex = entity.zIndex + 0.1;
+              capSprite.anchor = (0.5);
+              capSprite.angle = 90;
               this.spriteContainer.addChild(capSprite);
             }
             //corners
@@ -1369,72 +1402,80 @@ export class GameController {
               shouldSpawnCap(x - 1, y) == false &&
               shouldSpawnCap(x, y - 1) == false &&
               shouldSpawnCap(x - 1, y - 1) &&
-              entity.spriteTopLeftCorner != ''
+              entity.spriteCorner != ''
             ) {
               let capTexture = Assets.get(
-                entity.spriteTopLeftCorner.toString(),
+                entity.spriteCorner.toString(),
               );
-              let capSprite = new PIXI.Sprite(capTexture);
-              capSprite.x = x * this.tileSize;
-              capSprite.y = y * this.tileSize;
-              capSprite.width = this.tileSize;
-              capSprite.height = this.tileSize;
-              capSprite._zIndex = entity.zIndex + 0.2;
-              this.spriteContainer.addChild(capSprite);
+              let cornerSprite = new PIXI.Sprite(capTexture);
+              cornerSprite.x = x * this.tileSize + this.tileSize / 2;
+              cornerSprite.y = y * this.tileSize + this.tileSize / 2;
+              cornerSprite.width = this.tileSize;
+              cornerSprite.height = this.tileSize;
+              cornerSprite._zIndex = entity.zIndex + 0.2;
+              cornerSprite.anchor = (0.5);
+              cornerSprite.angle = 0;
+              this.spriteContainer.addChild(cornerSprite);
             }
             //top right
             if (
               shouldSpawnCap(x + 1, y) == false &&
               shouldSpawnCap(x, y - 1) == false &&
               shouldSpawnCap(x + 1, y - 1) &&
-              entity.spriteTopRightCorner != ''
+              entity.spriteCorner != ''
             ) {
               let capTexture = Assets.get(
-                entity.spriteTopRightCorner.toString(),
+                entity.spriteCorner.toString(),
               );
-              let capSprite = new PIXI.Sprite(capTexture);
-              capSprite.x = x * this.tileSize;
-              capSprite.y = y * this.tileSize;
-              capSprite.width = this.tileSize;
-              capSprite.height = this.tileSize;
-              capSprite._zIndex = entity.zIndex + 0.2;
-              this.spriteContainer.addChild(capSprite);
+              let cornerSprite = new PIXI.Sprite(capTexture);
+              cornerSprite.x = x * this.tileSize + this.tileSize / 2;
+              cornerSprite.y = y * this.tileSize + this.tileSize / 2;
+              cornerSprite.width = this.tileSize;
+              cornerSprite.height = this.tileSize;
+              cornerSprite._zIndex = entity.zIndex + 0.2;
+              cornerSprite.anchor = (0.5);
+              cornerSprite.angle = 90;
+              this.spriteContainer.addChild(cornerSprite);
             }
             //bottom left
             if (
               shouldSpawnCap(x - 1, y) == false &&
               shouldSpawnCap(x, y + 1) == false &&
               shouldSpawnCap(x - 1, y + 1) &&
-              entity.spriteBottomLeftCorner != ''
+              entity.spriteCorner != ''
             ) {
               let capTexture = Assets.get(
-                entity.spriteBottomLeftCorner.toString(),
+                entity.spriteCorner.toString(),
               );
-              let capSprite = new PIXI.Sprite(capTexture);
-              capSprite.x = x * this.tileSize;
-              capSprite.y = y * this.tileSize;
-              capSprite.width = this.tileSize;
-              capSprite.height = this.tileSize;
-              capSprite._zIndex = entity.zIndex + 0.2;
-              this.spriteContainer.addChild(capSprite);
+              let cornerSprite = new PIXI.Sprite(capTexture);
+              cornerSprite.x = x * this.tileSize + this.tileSize / 2;
+              cornerSprite.y = y * this.tileSize + this.tileSize / 2;
+              cornerSprite.width = this.tileSize;
+              cornerSprite.height = this.tileSize;
+              cornerSprite._zIndex = entity.zIndex + 0.2;
+              cornerSprite.anchor = (0.5);
+              cornerSprite.angle = 270;
+              this.spriteContainer.addChild(cornerSprite);
             }
             //bottom right
             if (
               shouldSpawnCap(x + 1, y) == false &&
               shouldSpawnCap(x, y + 1) == false &&
               shouldSpawnCap(x + 1, y + 1) &&
-              entity.spriteBottomRightCorner != ''
+              entity.spriteCorner != ''
             ) {
               let capTexture = Assets.get(
-                entity.spriteBottomRightCorner.toString(),
+                entity.spriteCorner.toString(),
               );
-              let capSprite = new PIXI.Sprite(capTexture);
-              capSprite.x = x * this.tileSize;
-              capSprite.y = y * this.tileSize;
-              capSprite.width = this.tileSize;
-              capSprite.height = this.tileSize;
-              capSprite._zIndex = entity.zIndex + 0.2;
-              this.spriteContainer.addChild(capSprite);
+              let cornerSprite = new PIXI.Sprite(capTexture);
+              cornerSprite.x = x * this.tileSize + this.tileSize / 2;
+              cornerSprite.y = y * this.tileSize + this.tileSize / 2;
+              cornerSprite.width = this.tileSize;
+              cornerSprite.height = this.tileSize;
+              cornerSprite._zIndex = entity.zIndex + 0.2;
+              cornerSprite.anchor = (0.5);
+              cornerSprite.angle = 180;
+              this.spriteContainer.addChild(cornerSprite);
             }
             if (entity.hiddenOutsideLOS) {
               if (
@@ -1829,16 +1870,16 @@ export class GameController {
     // Redraw player at new position
     // update minimap if present (set player pos first)
     if (this.mapRenderer) {
-     // this.mapRenderer.setPlayer(this.playerWorldX, this.playerWorldY);
-     // this.mapRenderer.update();
+      this.mapRenderer.setPlayer(this.playerWorldX, this.playerWorldY);
+      this.mapRenderer.update();
     }
     this.drawGrid();
-    //this.drawPlayer();
-    //this.drawHealthBar();
-   // this.drawEnergyBar();
-    //this.drawReticle();
-    //this.drawAfflictions();
-    //this.centerMap();
+    this.drawPlayer();
+    this.drawHealthBar();
+    this.drawEnergyBar();
+    this.drawReticle();
+    this.drawAfflictions();
+    this.centerMap();
     requestAnimationFrame(() => this.gameLoop());
   }
 
@@ -2160,7 +2201,6 @@ export class GameController {
             sprite.height = this.tileSize;
             sprite._zIndex = 0;
             this.effectContainer.addChild(sprite);
-            this.damageEntities(tile[0], tile[1], strength / size, 'explosion');
             if (this.player1.posX == tile[0] && this.player1.posY == tile[1]) {
               // this.player1.Health.Damage(strength / size / 10);
             }
@@ -2203,43 +2243,50 @@ export class GameController {
   }
 
   loadEntity(x: number, y: number, entity: any, map: GameGrid) {
-    // keep entity coordinates in sync with map placement
     if (entity != null) {
-      map.tiles[x][y].entity!.push(entity);
+      const sizeX = entity.sizeX || 1;
+      const sizeY = entity.sizeY || 1;
+      for (let ix = 0; ix < sizeX; ix++) {
+        for (let iy = 0; iy < sizeY; iy++) {
+          const tx = x + ix;
+          const ty = y + iy;
+          if (!map.isValidTile(tx, ty)) continue;
+          if (!map.tiles[tx][ty].entity) map.tiles[tx][ty].entity = [] as any;
+          map.tiles[tx][ty].entity!.push(entity);
+        }
+      }
       entity.posX = x;
       entity.posY = y;
       entity.id = this.lastUsedId;
       this.lastUsedId += 1;
-      entity.onSpawn();
+      if(entity.initialised == false){
+        entity.onSpawn();
+        entity.initialised = true
+      }
     }
   }
 
   moveEntity(x: number, y: number, entity: any, map: GameGrid) {
     console.log(`Moving entity ${entity.name} (id: ${entity.id}) from (${entity.posX}, ${entity.posY}) to (${x}, ${y})`);
     
-    // Only move if entity is not already on the target tile
     if (entity.posX === x && entity.posY === y) {
       console.log(`Entity already at target position, skipping.`);
       return;
     }
     
-    // Remove entity from ALL tiles (safety check)
     let foundCount = 0;
     for (let tx = 0; tx < map.width; tx++) {
       for (let ty = 0; ty < map.height; ty++) {
         if (map.tiles[tx][ty] && map.tiles[tx][ty].entity) {
           const idx = map.tiles[tx][ty].entity.findIndex((e: any) => e === entity);
           if (idx > -1) {
-            console.log(`Found entity on tile (${tx}, ${ty}), removing it.`);
             map.tiles[tx][ty].entity.splice(idx, 1);
             foundCount++;
           }
         }
       }
     }
-    console.log(`Removed entity from ${foundCount} tile(s).`);
     
-    // Add entity to new position
     if (map.tiles[x][y].entity) {
       map.tiles[x][y].entity.push(entity);
     } else {
@@ -2247,16 +2294,20 @@ export class GameController {
     }
     entity.posX = x;
     entity.posY = y;
-    console.log(`Entity now at (${x}, ${y}).`);
   }
 
   removeEntities(x: number, y: number, id: number | null = null) {
-    const ents = this.map.tiles[x][y].entity;
-
     if (id === null) {
       this.map.tiles[x][y].entity = [];
     } else {
-      this.map.tiles[x][y].entity = ents.filter((e: any) => e.id !== id);
+      for (let tx = 0; tx < this.map.tiles.length; tx++) {
+        for (let ty = 0; ty < this.map.tiles[tx].length; ty++) {
+          const ents = this.map.tiles[tx][ty].entity;
+          if (ents) {
+            this.map.tiles[tx][ty].entity = ents.filter((e: any) => e.id !== id);
+          }
+        }
+      }
     }
   }
 

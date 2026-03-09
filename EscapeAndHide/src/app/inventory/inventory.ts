@@ -99,6 +99,7 @@ export class Inventory {
         GameController.current.spawnItem(x, y, item);
       }
     }
+    this.shiftItems()
   }
 
   getItems(): Item[] {
