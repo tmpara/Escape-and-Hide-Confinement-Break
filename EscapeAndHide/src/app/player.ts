@@ -21,7 +21,6 @@ export class Player extends Entity {
   factionID = 1;
 
   playerAction(energyCost: number) {
-    this.Health.updateAfflictions();
     this.Energy.loseEnergy(energyCost);
     this.Health.bleedingRegen();
   }

@@ -182,6 +182,7 @@ export class RoomsData {
         this.startingRoom.layout[11][3] = new DoorVertical();
         this.startingRoom.layout[12][1] = new CryoChamber();
         this.startingRoom.layout[12][3] = new Wall1();
+        this.startingRoom.layout[11][5] = new LightInterferanceUnit();
         this.startingRoom.layout[12][6] = new ExplosiveBarrel();
         this.startingRoom.layout[12][7] = new ExplosiveBarrel();
         this.startingRoom.layout[13][3] = new Wall1();

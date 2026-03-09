@@ -55,9 +55,6 @@ export class Inventory {
     GameController.current?.drawEquippedTab();
   }
 
-  use(item: Item) {
-  }
-
   pickUp(item: Item, source?: { floorX: number; floorY: number } | any) {
     const emptyIndex = this.inventorySlots.indexOf(null);
     if (emptyIndex !== -1) {
@@ -98,6 +95,7 @@ export class Inventory {
       if (GameController.current) {
         GameController.current.spawnItem(x, y, item);
       }
+      this.shiftItems();
     }
     this.shiftItems()
   }
@@ -108,6 +106,9 @@ export class Inventory {
 
   shiftItems() {
     const items = this.getItems();
-    this.inventorySlots = [...items, ...Array(this.inventorySlots.length - items.length).fill(null)];
+    this.inventorySlots = [
+      ...items,
+      ...Array(this.inventorySlots.length - items.length).fill(null),
+    ];
   }
 }

@@ -1,4 +1,6 @@
 import { Entity } from '../entity';
+import { GameController } from '../game.controller';
+import { affliction, LimbName } from '../health/health';
 
 export abstract class Item {
   name = '';
@@ -11,10 +13,29 @@ export abstract class Item {
   defense = 0;
   slot = '';
 
-  heal(target: Entity) {
-    target.heal(0);
+  use(target: Entity) {}
+
+  checkForMiss(target: Entity) {
+    const roll = Math.random();
+    if (roll > this.accuracy) return null;
+    
+    if (!target.Health) return 'isStructure';
+
+    const limbRoll = Math.random();
+    if (limbRoll > this.accuracy * 2) {
+      const limbs: LimbName[] = [
+        'head',
+        'leftArm',
+        'rightArm',
+        'leftLeg',
+        'rightLeg',
+      ];
+      const randomIndex = Math.floor(Math.random() * limbs.length);
+      return limbs[randomIndex];
+    }
+    return 'torso';
   }
-  
+
   getStats() {
     switch (this.category) {
       case 'weapon':
@@ -30,7 +51,7 @@ export abstract class Item {
           name: 'Name: ' + this.name,
           defense: 'Defense: ' + this.defense,
         };
-      
+
       case 'usable_heal':
         return {
           name: 'Name: ' + this.name,
@@ -48,11 +69,31 @@ export class SmallGun extends Item {
   override structureDamage = 50;
   override accuracy = 0.8;
   override afflictions = [
-    ['Gunshot', 15],
+    ['GunshotWound', 15],
     ['Bleeding', 30],
   ];
-  override range = 25;
+  override range = 7;
   override slot = 'weapon';
+
+  override use(target: Entity) {
+    const targetLimb = this.checkForMiss(target);
+    if (targetLimb == 'isStructure') {
+      target.takeStructureDamage(this.structureDamage);
+    } else if (targetLimb) {
+      let afflictions: affliction[] = [];
+      for (const affliction of this.afflictions) {
+        if (Array.isArray(affliction) && affliction.length >= 2) {
+          afflictions.push([affliction[0] as string, affliction[1] as number]);
+        }
+      }
+      if (target.Health) {
+        target.Health.damageLimb(targetLimb as LimbName, afflictions);
+        if(target.Health.currentHealth <= 0) {
+          target.destroy();
+        }
+      }
+    }
+  }
 }
 export class BigGun extends Item {
   override name = 'bigGun';
@@ -61,20 +102,88 @@ export class BigGun extends Item {
   override structureDamage = 100;
   override accuracy = 0.7;
   override afflictions = [
-    ['Gunshot', 30],
+    ['GunshotWound', 30],
     ['Bleeding', 50],
   ];
-  override range = 7;
+  override range = 12;
   override slot = 'weapon';
+  burst = 3;
+
+  override use(target: Entity) {
+    for (let i = 0; i < this.burst; i++) {
+      const targetLimb = this.checkForMiss(target);
+      if (targetLimb == 'isStructure') {
+        target.takeStructureDamage(this.structureDamage);
+      } else if (targetLimb) {
+        let afflictions: affliction[] = [];
+        for (const affliction of this.afflictions) {
+          if (Array.isArray(affliction) && affliction.length >= 2) {
+            afflictions.push([affliction[0] as string, affliction[1] as number]);
+          }
+        }
+        if (target.Health) {
+          target.Health.damageLimb(targetLimb as LimbName, afflictions);
+          if(target.Health.currentHealth <= 0) {
+            target.destroy();
+          }
+        }
+      }
+    }
+  }
 }
 export class Flamethrower extends Item {
   override name = 'flamethrower';
   override category = 'weapon';
   override sprite = '/sprites/items/flamethrower.png';
   override structureDamage = 10;
-  override range = 5;
+  override range = 7;
   override slot = 'weapon';
   override afflictions = [['Burn', 10]];
+
+  override use(target: Entity) {
+    const controller = GameController.current;
+    if (!controller) return;
+    
+    const player = controller.player1;
+    if (!player) return;
+
+    const firingAngle = Math.atan2(target.posY - player.posY, target.posX - player.posX);
+    
+    const coneTiles = controller.getConeTiles(
+      player.posX,
+      player.posY,
+      this.range,
+      firingAngle,
+      Math.PI / 3,
+    );
+
+    for (const [x, y] of coneTiles) {
+      const entities = controller.getAllEntitiesOnTile(x, y);
+      let tileRange = Math.max(
+        Math.abs(x - player.posX),
+        Math.abs(y - player.posY),
+      );
+      let fireChance = controller.generateRandomNumber(1, tileRange);
+      
+      if (fireChance <= 2) {
+        controller.ignite(x, y, this.structureDamage - tileRange * 2, true, true);
+      }
+
+      for (const entity of entities) {
+        if (entity !== player) {
+          if (entity.Health) {
+            let afflictions: affliction[] = [];
+            for (const affliction of this.afflictions) {
+              if (Array.isArray(affliction) && affliction.length >= 2) {
+                afflictions.push([affliction[0] as string, affliction[1] as number]);
+              }
+            }
+            entity.Health.damageLimb('torso', afflictions);
+          }
+        }
+      }
+    }
+  }
 }
 export class StunGun extends Item {
   override name = 'stunGun';
@@ -89,6 +198,26 @@ export class StunGun extends Item {
     ['Lacerations', 2],
     ['Bleeding', 2],
   ];
+
+  override use(target: Entity) {
+    const targetLimb = this.checkForMiss(target);
+    if (targetLimb == 'isStructure') {
+      target.takeStructureDamage(this.structureDamage);
+    } else if (targetLimb) {
+      let afflictions: affliction[] = [];
+      for (const affliction of this.afflictions) {
+        if (Array.isArray(affliction) && affliction.length >= 2) {
+          afflictions.push([affliction[0] as string, affliction[1] as number]);
+        }
+      }
+      if (target.Health) {
+        target.Health.damageLimb(targetLimb as LimbName, afflictions);
+        if(target.Health.currentHealth <= 0) {
+          target.destroy();
+        }
+      }
+    }
+  }
 }
 export class Bandage extends Item {
   override name = 'bandage';
@@ -99,17 +228,17 @@ export class Bandage extends Item {
     ['Bleeding', 20],
   ];
 
-  override heal(target: Entity) {
+  override use(target: Entity) {
     if (target.Health) {
+      let afflictions: affliction[] = [];
       for (let affliction of this.afflictions) {
-        if (affliction[0] === 'Lacerations') {
-          target.Health.healLimb([[affliction[0], affliction[1] as number]]);
-        }
-        if (affliction[0] === 'Bleeding') {
-          target.Health.healLimb([[affliction[0], affliction[1] as number]]);
+        if (Array.isArray(affliction) && affliction.length >= 2) {
+          afflictions.push([affliction[0] as string, affliction[1] as number]);
         }
       }
+      target.Health.healLimb(afflictions);
     }
+    GameController.current?.removeItemFromInventory(this);
   }
 }
 export class Medkit extends Item {
@@ -121,17 +250,17 @@ export class Medkit extends Item {
     ['Bleeding', 50],
   ];
 
-  override heal(target: Entity) {
+  override use(target: Entity) {
     if (target.Health) {
+      let afflictions: affliction[] = [];
       for (let affliction of this.afflictions) {
-        if (affliction[0] === 'Lacerations') {
-          target.Health.healLimb([affliction[0], affliction[1]]);
-        }
-        if (affliction[0] === 'Bleeding') {
-          target.Health.healLimb([affliction[0], affliction[1]]);
+        if (Array.isArray(affliction) && affliction.length >= 2) {
+          afflictions.push([affliction[0] as string, affliction[1] as number]);
         }
       }
+      target.Health.healLimb(afflictions);
     }
+    GameController.current?.removeItemFromInventory(this);
   }
 }
 export class Helmet extends Item {
