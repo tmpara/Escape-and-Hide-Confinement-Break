@@ -24,6 +24,11 @@ export class GameController {
   statcardOverlayApp!: PIXI.Application;
   lootOverlayApp!: PIXI.Application;
 
+  reticleSpriteDefault?: PIXI.Sprite;
+  reticleSpriteInvalid?: PIXI.Sprite;
+  reticleSpriteAim?: PIXI.Sprite;
+  reticleSpriteAimInvalid?: PIXI.Sprite;
+
   player1 = new Player();
   world = new World();
 
@@ -66,12 +71,25 @@ export class GameController {
   enemyTurn = false;
   
 
+  //flags for render
+
+  MiniMapFlag = true;
+  GridFlag = true;
+  PlayerFlag = true;
+  HealthBarFlag = true;
+  EnergyBarFlag = true;
+  ReticleFlag = true;
+  AfflictionsFlag = true;
+
+  ReticleInitialized = false;
+
   constructor() {}
 
   async init(container: HTMLDivElement): Promise<void> {
     GameController.current = this;
     await document.fonts.ready;
 
+    await Assets.load('/sprites/entities/player.png');
     await Assets.load('crosshair_aimmode_invalid.png');
     await Assets.load('crosshair_aimmode.png');
     await Assets.load('crosshair_default.png');
@@ -754,7 +772,7 @@ export class GameController {
     return hitTiles;
   }
 
-  getConeTiles(
+  getTilesInCone(
     centerX: number,
     centerY: number,
     range: number,
@@ -1379,6 +1397,7 @@ export class GameController {
   drawGrid() {
     this.spriteContainer.removeChildren();
     this.tile.clear();
+    this.ReticleInitialized = false;
 
     for (let x = 0; x < this.map.width; x++) {
       for (let y = 0; y < this.map.height; y++) {
@@ -1673,27 +1692,21 @@ export class GameController {
         this.spriteContainer.addChild(this.tile);
       }
     }
+    //this.drawReticle();
   }
 
   drawPlayer() {
-    this.playerSprite.removeChildren();
-    this.playerSprite.clear();
-    this.playerSprite.beginFill(0x00ff00);
-    this.playerSprite.drawCircle(
-      this.player1.renderX * this.tileSize + this.tileSize / 2,
-      this.player1.renderY * this.tileSize + this.tileSize / 2,
-      this.tileSize / 3,
-    );
-    this.playerSprite.endFill();
-    this.playerSprite._zIndex = 8;
+    
+   
   }
 
   drawReticle() {
     let sprite = Assets.get('crosshair_default.png') as PIXI.Texture;
-    const tileX = this.mouseTileX;
-    const tileY = this.mouseTileY;
-    const centerX = tileX * this.tileSize + this.tileSize / 2;
-    const centerY = tileY * this.tileSize + this.tileSize / 2;
+    let tileX = this.mouseTileX;
+    let tileY = this.mouseTileY;
+    let centerX = tileX * this.tileSize + this.tileSize / 2;
+    let centerY = tileY * this.tileSize + this.tileSize / 2;
+
     if (this.map.isValidTile(tileX, tileY)) {
       if (!this.aimMode) {
         if (
@@ -1712,9 +1725,11 @@ export class GameController {
             true,
           )
         ) {
-          sprite = Assets.get('crosshair_default.png') as PIXI.Texture;
+          if (this.reticleSpriteDefault) this.reticleSpriteDefault.alpha = 1;
+          if (this.reticleSpriteInvalid) this.reticleSpriteInvalid.alpha = 0;
         } else {
-          sprite = Assets.get('crosshair_default_invalid.png') as PIXI.Texture;
+          if (this.reticleSpriteInvalid) this.reticleSpriteInvalid.alpha = 1;
+          if (this.reticleSpriteDefault) this.reticleSpriteDefault.alpha = 0;
         }
       } else {
         if (
@@ -1727,30 +1742,67 @@ export class GameController {
             true,
           )
         ) {
-          if (
-            this.getDistance(
-              this.player1.posX,
-              this.player1.posY,
-              tileX,
-              tileY,
-            ) && this.inWeaponRange(tileX, tileY)
-          ) {
-            sprite = Assets.get('crosshair_aimmode.png') as PIXI.Texture;
-          } else {
-            sprite = Assets.get('crosshair_aimmode_invalid.png') as PIXI.Texture;
-          }
+          if(this.reticleSpriteAim)this.reticleSpriteAim.alpha = 1;
+          if(this.reticleSpriteAimInvalid)this.reticleSpriteAimInvalid.alpha = 0;
         } else {
-          sprite = Assets.get('crosshair_aimmode_invalid.png') as PIXI.Texture;
+          if(this.reticleSpriteAimInvalid)this.reticleSpriteAimInvalid.alpha = 1;
+          if(this.reticleSpriteAim)this.reticleSpriteAim.alpha = 0;
         }
       }
-      let reticleSprite = new PIXI.Sprite(sprite);
-      reticleSprite.alpha = 1;
-      reticleSprite.width = this.tileSize;
-      reticleSprite.height = this.tileSize;
-      reticleSprite.anchor.set(0.5);
-      reticleSprite._zIndex = 50;
-      reticleSprite.position.set(centerX, centerY);
-      this.spriteContainer.addChild(reticleSprite);
+
+
+      if(this.ReticleInitialized){
+        this.spriteContainer.getChildByName('reticle')?.position.set(centerX, centerY); 
+        this.spriteContainer.getChildByName('reticleInvalid')?.position.set(centerX, centerY);
+        this.spriteContainer.getChildByName('reticleAim')?.position.set(centerX, centerY);
+        this.spriteContainer.getChildByName('reticleAimInvalid')?.position.set(centerX, centerY);
+      }
+      if(this.ReticleInitialized == false){
+
+        this.reticleSpriteDefault = new PIXI.Sprite(Assets.get('crosshair_default.png') as PIXI.Texture);
+        this.reticleSpriteDefault.label = 'reticle';
+        this.reticleSpriteDefault.alpha = 0;
+        this.reticleSpriteDefault.width = this.tileSize;
+        this.reticleSpriteDefault.height = this.tileSize;
+        this.reticleSpriteDefault.anchor.set(0.5);
+        this.reticleSpriteDefault._zIndex = 50;
+        this.reticleSpriteDefault.position.set(centerX, centerY);
+
+        this.reticleSpriteInvalid = new PIXI.Sprite(Assets.get('crosshair_default_invalid.png') as PIXI.Texture);
+        this.reticleSpriteInvalid.label = 'reticleInvalid';
+        this.reticleSpriteInvalid.alpha = 0;
+        this.reticleSpriteInvalid.width = this.tileSize;
+        this.reticleSpriteInvalid.height = this.tileSize;
+        this.reticleSpriteInvalid.anchor.set(0.5);
+        this.reticleSpriteInvalid._zIndex = 50;
+        this.reticleSpriteInvalid.position.set(centerX, centerY);
+
+        this.reticleSpriteAim = new PIXI.Sprite(Assets.get('crosshair_aimmode.png') as PIXI.Texture);
+        this.reticleSpriteAim.label = 'reticleAim';
+        this.reticleSpriteAim.alpha = 0;
+        this.reticleSpriteAim.width = this.tileSize;
+        this.reticleSpriteAim.height = this.tileSize;
+        this.reticleSpriteAim.anchor.set(0.5);
+        this.reticleSpriteAim._zIndex = 50;
+        this.reticleSpriteAim.position.set(centerX, centerY);
+
+        this.reticleSpriteAimInvalid = new PIXI.Sprite(Assets.get('crosshair_aimmode_invalid.png') as PIXI.Texture);
+        this.reticleSpriteAimInvalid.label = 'reticleAimInvalid';
+        this.reticleSpriteAimInvalid.alpha = 0;
+        this.reticleSpriteAimInvalid.width = this.tileSize;
+        this.reticleSpriteAimInvalid.height = this.tileSize;
+        this.reticleSpriteAimInvalid.anchor.set(0.5);
+        this.reticleSpriteAimInvalid._zIndex = 50;
+        this.reticleSpriteAimInvalid.position.set(centerX, centerY);
+
+
+        this.spriteContainer.addChild(this.reticleSpriteDefault);
+        this.spriteContainer.addChild(this.reticleSpriteInvalid);
+        this.spriteContainer.addChild(this.reticleSpriteAim);
+        this.spriteContainer.addChild(this.reticleSpriteAimInvalid);
+        this.ReticleInitialized = true;
+      }
+      
     }
   }
 
@@ -1833,6 +1885,7 @@ export class GameController {
       this.selectedLimb = limbName;
       this.drawHealthUI();
       console.log(limbName);
+      this.setAfflictionsFlag(true);
     });
     this.healthLimbContainer.addChild(sprite);
   }
@@ -1950,11 +2003,12 @@ export class GameController {
   }
 
   // Generic entity animation helper (works for Player and non-player entities)
-  animateEntityMove(
+  async animateEntityMove(
     entity: any,
     targetX: number,
     targetY: number,
     duration: number = 150,
+    isPlayer: boolean = false
   ) {
     // Ensure entity has render positions; if not, initialize
     if (entity.renderX === undefined) entity.renderX = entity.posX;
@@ -1966,7 +2020,7 @@ export class GameController {
     const deltaY = targetY - startY;
     const startTime = performance.now();
 
-    const animate = (now: number) => {
+     const animate = async (now: number) => {
       const elapsed = now - startTime;
       const t = Math.min(elapsed / duration, 1);
       entity.renderX = startX + deltaX * t;
@@ -1976,9 +2030,13 @@ export class GameController {
       } else {
         entity.renderX = targetX;
         entity.renderY = targetY;
+        if(isPlayer){
+        await this.delay(50);
+        }
       }
     };
     requestAnimationFrame(animate);
+    
   }
 
   // Backwards-compatible wrapper for player-specific calls
@@ -1988,23 +2046,52 @@ export class GameController {
     targetY: number,
     duration: number = 150
   ) {
-    this.animateEntityMove(player, targetX, targetY, duration);
+    this.animateEntityMove(player, targetX, targetY, duration, true);
+    
+    
   }
 
   gameLoop() {
     // Redraw player at new position
     // update minimap if present (set player pos first)
     if (this.mapRenderer) {
+      if(this.MiniMapFlag){
       this.mapRenderer.setPlayer(this.playerWorldX, this.playerWorldY);
       this.mapRenderer.update();
+      this.setMinimapFlag(false);
+      
+      }
     }
-    this.drawGrid();
-    this.drawPlayer();
-    this.drawHealthBar();
-    this.drawEnergyBar();
-    this.drawReticle();
-    this.drawAfflictions();
+
+    if(this.GridFlag){
+      this.drawGrid();
+      this.setGridFlag(false);
+     
+    }
+
+    if(this.HealthBarFlag){
+      this.drawHealthBar();
+      this.setHealthBarFlag(false);
+      
+    }
+    if(this.EnergyBarFlag){
+      this.drawEnergyBar();
+      this.setEnergyBarFlag(false);
+      
+    }
+    if(this.ReticleFlag){
+        this.drawReticle();
+        this.setReticleFlag(false);
+    }
+
+    if(this.AfflictionsFlag){
+      this.drawAfflictions();
+      this.setAfflictionsFlag(false);
+      
+    }
     this.centerMap();
+
+    
     requestAnimationFrame(() => this.gameLoop());
   }
 
@@ -2049,13 +2136,16 @@ export class GameController {
       this.removePlayer(playerPosX, playerPosY);
       player.posX = targetX;
       player.posY = targetY;
+      
       this.animatePlayerMove(player, targetX, targetY);
-      this.player1.playerAction(0);
+      this.player1.playerAction(10);
       let entities = this.getAllEntitiesOnTile(targetX, targetY);
       for (let i = 0; i < entities.length; i++) {
         entities[i].onSteppedOn(player);
       }
     }
+
+    this.setGridFlag(true);
   }
 
   findRoom(player: Player, transition: RoomTransition) {
@@ -2126,6 +2216,7 @@ export class GameController {
         );
       }
     }
+    this.setMinimapFlag(true);
   }
 
   findEntrance(side: string) {
@@ -2525,6 +2616,7 @@ export class GameController {
     window.addEventListener('keydown', (event) => {
       let targetX = player.posX;
       let targetY = player.posY;
+     
 
       if(this.enemyTurn){
         return;
@@ -2550,18 +2642,17 @@ export class GameController {
         default:
           return;
       }
-
+     
       this.tryToMovePlayer(player, targetX, targetY);
     });
   }
 
   listenForInput(player: Player) {
     window.addEventListener('keydown', (event) => {
-
       if(this.enemyTurn){
         return;
       }
-
+      this.setGridFlag(true);
       switch (event.key.toLowerCase()) {
         case 'x':
           this.addLog("Player ended their turn.");
@@ -2592,8 +2683,12 @@ export class GameController {
         default:
           return;
       }
-    });
+     
+    }
+    
+  );
     window.addEventListener('mousemove', (event) => {
+      this.setReticleFlag(true);
       if (!this.app || !this.app.view) return;
       const rect = this.app.view.getBoundingClientRect();
 
@@ -2623,6 +2718,7 @@ export class GameController {
     });
 
     window.addEventListener('click', (event) => {
+      this.setGridFlag(true);
 
       if(this.enemyTurn){
         return;
@@ -2775,5 +2871,58 @@ export class GameController {
 
     // run tile checks for the new room
     // this.checkTileForItem(this.player1);
+  }
+
+  async onTileClick(x: number, y: number, tileInfo: any) {
+    const item = this.map.tiles[x][y].item;
+    if (item != null) {
+      if (!this.statcardOverlayVisible) {
+        this.toggleStatcardOverlay();
+      }
+      this.currentItemSource = { floorX: x, floorY: y };
+      this.drawStatcardOverlay(item);
+    }
+  }
+
+  // Getters and setters for flags
+  getGridFlag() {
+    return this.GridFlag;
+  } 
+  setGridFlag(value: boolean) {
+    this.GridFlag = value;
+  }
+
+  getMinimapFlag() {
+    return this.MiniMapFlag;
+  }
+  setMinimapFlag(value: boolean) {
+    this.MiniMapFlag = value;
+  }
+
+  getHealthBarFlag() {
+    return this.HealthBarFlag;
+  }
+  setHealthBarFlag(value: boolean) {
+    this.HealthBarFlag = value;
+  }
+
+  getEnergyBarFlag() {
+    return this.EnergyBarFlag;
+  }
+  setEnergyBarFlag(value: boolean) {
+    this.EnergyBarFlag = value;
+  }
+
+  getReticleFlag() {
+    return this.ReticleFlag;
+  }
+  setReticleFlag(value: boolean) {
+    this.ReticleFlag = value;
+  }
+  getAfflictionsFlag() {
+    return this.AfflictionsFlag;
+  }
+  setAfflictionsFlag(value: boolean) {
+    this.AfflictionsFlag = value;
   }
 }

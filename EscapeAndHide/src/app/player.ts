@@ -5,8 +5,9 @@ import { GameController } from './game.controller';
 import { Genetics } from './health/genetics';
 
 export class Player extends Entity {
-  override name = '';
-  override sprite = '';
+  gameController = GameController;
+  override name = 'Player';
+  override sprite = '/sprites/entities/player.png';
   override collidable = false;
   override damageable = false;
   override hiddenOutsideLOS = false;
@@ -23,5 +24,6 @@ export class Player extends Entity {
   playerAction(energyCost: number) {
     this.Energy.loseEnergy(energyCost);
     this.Health.bleedingRegen();
+    this.Health.updateAfflictions();
   }
 }
