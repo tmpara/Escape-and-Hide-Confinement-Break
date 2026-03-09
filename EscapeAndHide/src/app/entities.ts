@@ -1,20 +1,14 @@
 import { Entity } from './entity';
 import { Player } from './player';
 import { GameController } from './game.controller';
-import { SmallGun, Medkit, BigGun, Bandage } from './items/items';
+import { SmallGun, Medkit, BigGun, Bandage, Flamethrower } from './items/items';
 
 export class Wall1 extends Entity {
   override name = 'Wall';
   override sprite = '/sprites/entities/wall_placeholder_base.png';
   override zIndex = 4;
-  override spriteTopCap = '/sprites/entities/wall_placeholder_topcap.png';
-  override spriteBottomCap = '/sprites/entities/wall_placeholder_bottomcap.png';
-  override spriteLeftCap = '/sprites/entities/wall_placeholder_leftcap.png';
-  override spriteRightCap = '/sprites/entities/wall_placeholder_rightcap.png';
-  override spriteTopLeftCorner = '/sprites/entities/wall_placeholder_topleftcorner.png';
-  override spriteTopRightCorner = '/sprites/entities/wall_placeholder_toprightcorner.png';
-  override spriteBottomLeftCorner = '/sprites/entities/wall_placeholder_bottomleftcorner.png';
-  override spriteBottomRightCorner = '/sprites/entities/wall_placeholder_bottomrightcorner.png';
+  override spriteCap = '/sprites/entities/wall_cap.png';
+  override spriteCorner = '/sprites/entities/wall_corner.png';
   override connectsWith = 'Wall';
   override tags = ['Wall'];
   override collidable = true;
@@ -29,14 +23,8 @@ export class WallCorner1 extends Entity {
   override name = 'Wall';
   override sprite = '/sprites/entities/wall_placeholder_base.png';
   override zIndex = 4;
-  override spriteTopCap = '/sprites/entities/wall_placeholder_topcap.png';
-  override spriteBottomCap = '/sprites/entities/wall_placeholder_bottomcap.png';
-  override spriteLeftCap = '/sprites/entities/wall_placeholder_leftcap.png';
-  override spriteRightCap = '/sprites/entities/wall_placeholder_rightcap.png';
-  override spriteTopLeftCorner = '/sprites/entities/wall_placeholder_topleftcorner.png';
-  override spriteTopRightCorner = '/sprites/entities/wall_placeholder_toprightcorner.png';
-  override spriteBottomLeftCorner = '/sprites/entities/wall_placeholder_bottomleftcorner.png';
-  override spriteBottomRightCorner = '/sprites/entities/wall_placeholder_bottomrightcorner.png';
+  override spriteCap = '/sprites/entities/wall_cap.png';
+  override spriteCorner = '/sprites/entities/wall_corner.png';
   override connectsWith = 'Wall';
   override tags = ['Wall'];
   override collidable = true;
@@ -186,7 +174,7 @@ export class WeaponCrate extends Entity {
   override blockLOS = false;
   override flammable = true;
   override inventorySize = 2;
-  override itemPool = [new SmallGun(), new BigGun()];
+  override itemPool = [new SmallGun(), new BigGun(), new Flamethrower()];
 
   constructor() {
     super();
@@ -226,20 +214,19 @@ export class CryoChamber extends Entity {
   override hiddenOutsideLOS = true;
   override blockLOS = false;
   override flammable = true;
+
+  override onDestroyed(damage: number) {
+      GameController.current?.loadEntity(this.posX, this.posY, new GlassShards, GameController.current.map);
+  }
+
 }
 
 export class WallSign1 extends Entity {
   override name = 'Wall';
   override sprite = '/sprites/entities/elevatorsignwall.png';
   override zIndex = 4;
-  override spriteTopCap = '/sprites/entities/wall_placeholder_topcap.png';
-  override spriteBottomCap = '/sprites/entities/wall_placeholder_bottomcap.png';
-  override spriteLeftCap = '/sprites/entities/wall_placeholder_leftcap.png';
-  override spriteRightCap = '/sprites/entities/wall_placeholder_rightcap.png';
-  override spriteTopLeftCorner = '/sprites/entities/wall_placeholder_topleftcorner.png';
-  override spriteTopRightCorner = '/sprites/entities/wall_placeholder_toprightcorner.png';
-  override spriteBottomLeftCorner = '/sprites/entities/wall_placeholder_bottomleftcorner.png';
-  override spriteBottomRightCorner = '/sprites/entities/wall_placeholder_bottomrightcorner.png';
+  override spriteCap = '/sprites/entities/wall_cap.png';
+  override spriteCorner = '/sprites/entities/wall_corner.png';
   override connectsWith = 'Wall';
   override tags = ['Wall'];
   override collidable = true;

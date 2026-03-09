@@ -120,7 +120,7 @@ export class Health {
         this[limb].burn.decreaseSeverity(affliction[1]);
       }
       if (affliction[0] == 'Fracture') {
-        this[limb].addFracture();
+        this[limb].removeFracture();
       }
     }
     this.updateAfflictions();
@@ -142,7 +142,6 @@ export class Health {
     for (let limb of this.limbs) {
       this.bloodLoss.increaseSeverity(limb.bleeding.severity);
     }
-    //console.log('bloodloss: ' + this.bloodLoss.severity);
     this.currentHealth -= this.bloodLoss.severity;
     if (this.currentHealth < 0) {
       this.currentHealth = 0;
@@ -158,7 +157,6 @@ export class Health {
       this.hypoxemia.severity < 100
     ) {
       this.hypoxemia.increaseSeverity(this.bloodLoss.severity / 20);
-      //console.log('hypoxemia: ' + this.hypoxemia.severity);
       if (this.hypoxemia.severity >= 100) {
         this.isUnconscious = true;
       }

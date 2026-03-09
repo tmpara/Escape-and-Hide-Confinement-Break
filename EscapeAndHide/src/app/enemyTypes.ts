@@ -3,7 +3,6 @@ import {
   HeavyInterferanceUnitAI,
   LightInterferanceUnitAI,
   MediumInterferanceUnitAI,
-  TrapperUnitAI,
   OppressorUnitAI,
   ScorcherUnitAI,
 } from './enemyAI';
@@ -49,14 +48,13 @@ export class Dummy extends Entity {
     this.generateLoot();
   }
 
-  override destroy(damage: number): void {
+  override destroy() {
     if (this.destroyed == false) {
       this.destroyed = true;
-      this.onDestroyed(damage);
       this.sprite = this.deadSprite;
     }
   }
-  override onDestroyed(damage: number): void {
+  override onDestroyed(damage: number) {
     this.lootable = true;
   }
 }
@@ -90,14 +88,13 @@ export class HeavyDummy extends Entity {
     this.generateLoot();
   }
 
-  override destroy(damage: number): void {
+  override destroy() {
     if (this.destroyed == false) {
       this.destroyed = true;
-      this.onDestroyed(damage);
       this.sprite = this.deadSprite;
     }
   }
-  override onDestroyed(damage: number): void {
+  override onDestroyed(damage: number) {
     this.lootable = true;
   }
 }
@@ -118,13 +115,19 @@ export class LightInterferanceUnit extends LightInterferanceUnitAI {
   override parentEntity = this;
   override ai = true;
   isDead = false;
-  private weaponInitialized = false
+
   constructor() {
     super();
     this.inventory.weaponSlot = new StunGun();
   }
 
-  override onDestroyed(damage: number): void {
+  override destroy(){
+    if (this.destroyed == false) {
+      this.destroyed = true;
+      this.sprite = this.deadSprite;
+    }
+  }
+  override onDestroyed(damage: number) {
     this.lootable = true;
   }
 }
@@ -201,25 +204,10 @@ export class ScorcherUnit extends ScorcherUnitAI {
   override parentEntity = this;
   override ai = true;
   isDead = false;
-  private weaponInitialized = false;
 
   constructor() {
     super();
+    this.inventory.weaponSlot = new Flamethrower();
   }
+  
 }
-
-export class TrapperUnit extends TrapperUnitAI {
-  override name = "Trapper Unit";
-  override description = "A small robotic unit that deploys traps to hinder your movement."
-  override sprite = "/sprites/npc/heavyDummy.png"
-  override collidable = true
-  override health = 200;
-  override hiddenOutsideLOS = true;
-  override blockLOS = false;
-  override flammable = false;
-  override parentEntity = this;
-  override ai = true;
-  isDead = false;
-  lootTable = [new SmallGun(), new Bandage()];
-}
-

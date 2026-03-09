@@ -4,7 +4,7 @@ import { Text, Assets } from 'pixi.js';
 import { GameGrid } from './grid';
 import { World } from './world';
 import { Player } from './player';
-import { Item, SmallGun} from './items/items';
+import { Item} from './items/items';
 import { WorldMapRenderer } from './worldMapRenderer';
 import { Inventory } from './inventory/inventory';
 import { Entity } from './entity';
@@ -43,6 +43,8 @@ export class GameController {
   healthBar = new Graphics();
   energyBar = new Graphics();
   tile = new Graphics();
+
+  mapRenderer?: WorldMapRenderer;
   
   statcardOverlayVisible: boolean = false;
   lootOverlayVisible: boolean = false;
@@ -50,13 +52,13 @@ export class GameController {
   mouseX: number = 0;
   mouseY: number = 0;
   mouseTileX: number = 0;
-  
+
   mouseTileY: number = 0;
   healthLimbContainer = new Container();
   limbSprites: Record<string, PIXI.Sprite> = {};
   selectedLimb: string = '';
   afflictions: any = {};
-  
+
   currentItemSource?: { floorX: number; floorY: number } | any;
   logs: String[] = [];
 
@@ -64,8 +66,10 @@ export class GameController {
   playerWorldY = this.world.startY;
   tileSize = 32; // Size of each tile in pixels
   lastUsedId = 0;
-  mapRenderer?: WorldMapRenderer;
+
   enemyTurnList: Entity[] = [];
+  enemyTurn = false;
+  
 
   //flags for render
 
@@ -91,24 +95,14 @@ export class GameController {
     await Assets.load('crosshair_default.png');
     await Assets.load('crosshair_default_invalid.png');
     await Assets.load('head.png');
-    await Assets.load('torso.png'); 
+    await Assets.load('torso.png');
     await Assets.load('leftarm.png');
     await Assets.load('rightarm.png');
     await Assets.load('leftleg.png');
     await Assets.load('rightleg.png');
     await Assets.load('/sprites/entities/wall_placeholder_base.png');
-    await Assets.load('/sprites/entities/wall_placeholder_topcap.png');
-    await Assets.load('/sprites/entities/wall_placeholder_bottomcap.png');
-    await Assets.load('/sprites/entities/wall_placeholder_leftcap.png');
-    await Assets.load('/sprites/entities/wall_placeholder_rightcap.png');
-    await Assets.load('/sprites/entities/wall_placeholder_toprightcorner.png');
-    await Assets.load(
-      '/sprites/entities/wall_placeholder_bottomleftcorner.png',
-    );
-    await Assets.load('/sprites/entities/wall_placeholder_topleftcorner.png');
-    await Assets.load(
-      '/sprites/entities/wall_placeholder_bottomrightcorner.png',
-    );
+    await Assets.load('/sprites/entities/wall_cap.png');
+    await Assets.load('/sprites/entities/wall_corner.png');
     await Assets.load('/sprites/entities/door1.png');
     await Assets.load('/sprites/entities/glass_shards.png');
     await Assets.load('/sprites/entities/explosiveBarrel.png');
@@ -157,7 +151,7 @@ export class GameController {
     // Create map and player
     this.map = this.world.rooms[this.playerWorldX][this.playerWorldY];
     console.log(this.map.width + ' ' + this.map.height);
-    this.loadPlayer(1, 1, this.player1,1);
+    this.loadPlayer(1, 1, this.player1, 1);
 
     // Create PIXI app
     this.app = new Application();
@@ -165,12 +159,13 @@ export class GameController {
       width: window.innerWidth * 0.7,
       height: window.innerHeight * 1,
       backgroundColor: 0x222222,
-      antialias: true,
+      antialias: false,
+      roundPixels: true,
     });
-    container.style.width = "100%";
-    container.style.height = "100%";
-    container.style.overflow = "hidden";
-    container.style.position = "fixed";
+    container.style.width = '100%';
+    container.style.height = '100%';
+    container.style.overflow = 'hidden';
+    container.style.position = 'fixed';
     container.appendChild(this.app.canvas as HTMLCanvasElement);
 
     // Create map and player
@@ -219,16 +214,16 @@ export class GameController {
     // blur prevention
     const equippedRect = equippedColumn.getBoundingClientRect();
     const inventoryRect = inventoryColumn.getBoundingClientRect();
-    
+
     this.equippedApp = new PIXI.Application();
     await this.equippedApp.init({
       width: equippedRect.width || window.innerWidth * 0.3,
       height: equippedRect.height || window.innerHeight * 0.2,
       antialias: true,
       backgroundColor: 0x333333,
-      resolution: window.devicePixelRatio,
+      resolution: 2
     });
-    this.equippedApp.view.style.display = 'block' ;
+    this.equippedApp.view.style.display = 'block';
     equippedColumn.appendChild(this.equippedApp.view as HTMLCanvasElement);
     this.equippedContainer = this.equippedApp.stage;
 
@@ -238,7 +233,7 @@ export class GameController {
       height: inventoryRect.height || window.innerHeight * 0.3,
       antialias: true,
       backgroundColor: 0x252525,
-      resolution: window.devicePixelRatio,
+      resolution: 2
     });
     this.inventoryApp.view.style.display = 'block';
     inventoryColumn.appendChild(this.inventoryApp.view as HTMLCanvasElement);
@@ -251,10 +246,11 @@ export class GameController {
     this.statcardOverlayApp = new PIXI.Application();
     await this.statcardOverlayApp.init({
       width: equippedRect.width / 2 || window.innerWidth * 0.15,
-      height: equippedRect.height + inventoryRect.height || window.innerHeight * 0.5,
+      height:
+        equippedRect.height + inventoryRect.height || window.innerHeight * 0.5,
       antialias: true,
       backgroundColor: 0x444444,
-      resolution: window.devicePixelRatio,
+      roundPixels: true,
     });
     this.statcardOverlayApp.view.style.display = 'none';
     this.statcardOverlayApp.view.style.position = 'absolute';
@@ -309,14 +305,14 @@ export class GameController {
     container.appendChild(healthStatusRow);
 
     const healthRect = healthStatusRow.getBoundingClientRect();
-    
+
     this.healthUIApp = new PIXI.Application();
     await this.healthUIApp.init({
       width: (healthRect.width || window.innerWidth * 0.3) / 2,
       height: healthRect.height || window.innerHeight * 0.3,
       backgroundColor: 0x222222,
       antialias: true,
-      resolution: window.devicePixelRatio,
+      resolution: 2,
     });
     this.healthUIApp.view.style.display = 'block';
 
@@ -326,7 +322,7 @@ export class GameController {
       height: healthRect.height || window.innerHeight * 0.3,
       backgroundColor: 0x222222,
       antialias: true,
-      resolution: window.devicePixelRatio,
+      resolution: 2,
     });
     this.afflictionsApp.view.style.display = 'block';
 
@@ -350,14 +346,14 @@ export class GameController {
     container.appendChild(logRow);
 
     const logRect = logRow.getBoundingClientRect();
-    
+
     this.logUIApp = new PIXI.Application();
     await this.logUIApp.init({
       width: (window.innerWidth * 0.3) / 2,
       height: logRect.height || window.innerHeight * 0.2,
       backgroundColor: 0x222222,
       antialias: true,
-      resolution: window.devicePixelRatio,
+      resolution: 2,
     });
     this.logUIApp.view.style.display = 'block';
 
@@ -367,7 +363,7 @@ export class GameController {
       height: logRect.height || window.innerHeight * 0.2,
       backgroundColor: 0x222222,
       antialias: true,
-      resolution: window.devicePixelRatio,
+      resolution: 2,
     });
     this.mapUIApp.view.style.display = 'block';
 
@@ -442,15 +438,21 @@ export class GameController {
     this.loadPlayer(1, 1, this.player1, 1);
   }
 
-  centerMap(){
-    this.spriteContainer.x = this.spriteContainer!.x = (this.app.screen.width - this.spriteContainer.width) / 2;
-    this.spriteContainer.y = this.spriteContainer!.y = (this.app.screen.height - this.spriteContainer.height) / 2;
+  centerMap() {
+    this.spriteContainer.x = this.spriteContainer!.x =
+      (this.app.screen.width - this.spriteContainer.width) / 2;
+    this.spriteContainer.y = this.spriteContainer!.y =
+      (this.app.screen.height - this.spriteContainer.height) / 2;
 
-    this.effectContainer.x = this.effectContainer!.x = (this.app.screen.width - this.spriteContainer.width) / 2;
-    this.effectContainer.y = this.effectContainer!.y = (this.app.screen.height - this.spriteContainer.height) / 2;
+    this.effectContainer.x = this.effectContainer!.x =
+      (this.app.screen.width - this.spriteContainer.width) / 2;
+    this.effectContainer.y = this.effectContainer!.y =
+      (this.app.screen.height - this.spriteContainer.height) / 2;
 
-    this.playerSprite.x = this.playerSprite!.x = (this.app.screen.width - this.spriteContainer.width) / 2;
-    this.playerSprite.y = this.playerSprite!.y = (this.app.screen.height - this.spriteContainer.height) / 2;
+    this.playerSprite.x = this.playerSprite!.x =
+      (this.app.screen.width - this.spriteContainer.width) / 2;
+    this.playerSprite.y = this.playerSprite!.y =
+      (this.app.screen.height - this.spriteContainer.height) / 2;
   }
 
   generateRandomNumber(min: number, max: number) {
@@ -464,6 +466,12 @@ export class GameController {
       return max;
     }
     return number;
+  }
+
+  getDistanceTo(posX: number, posY: number, targetX: number, targetY: number){
+    const dx = Math.abs(posX - targetX);
+    const dy = Math.abs(posY - targetY);
+    return Math.ceil(Math.max(dx, dy) + 0.5 * Math.min(dx, dy),);
   }
 
   castRay(
@@ -764,12 +772,43 @@ export class GameController {
     return hitTiles;
   }
 
+  getConeTiles(
+    centerX: number,
+    centerY: number,
+    range: number,
+    angle: number,
+    coneAngle: number,
+  ): [number, number][] {
+    const tiles: [number, number][] = [];
+    const controller = GameController.current;
+    for (let x = centerX - range; x <= centerX + range; x++) {
+      for (let y = centerY - range; y <= centerY + range; y++) {
+        const dx = Math.abs(x - centerX);
+        const dy = Math.abs(y - centerY);
+        const dist = Math.ceil(Math.max(dx, dy) + 0.5 * Math.min(dx, dy));
+        if (dist > range || dist === 0) continue; // exclude center
+
+        // skip tiles that are out of the current map bounds
+        if (controller && controller.map && !controller.map.isValidTile(x, y))
+          continue;
+
+        const angleToTile = Math.atan2(y - centerY, x - centerX);
+        let angleDiff = angleToTile - angle;
+        // Robust normalization to [-PI, PI]
+        while (angleDiff <= -Math.PI) angleDiff += 2 * Math.PI;
+        while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
+        // small epsilon to avoid cutting off exact-edge tiles due to fp errors
+        const eps = 1e-9;
+        if (Math.abs(angleDiff) <= coneAngle / 2 + eps) {
+          tiles.push([x, y]);
+        }
+      }
+    }
+    return tiles;
+  }
+
   getRandomTileInRadius(target: Player, radius: number) {
-    const tiles = this.getTilesInSphere(
-      target.posX,
-      target.posY,
-      radius,
-    );
+    const tiles = this.getTilesInSphere(target.posX, target.posY, radius);
     if (tiles.length == 0) return null;
     const randomIndex = Math.floor(Math.random() * tiles.length);
     return tiles[randomIndex];
@@ -777,6 +816,18 @@ export class GameController {
 
   getDistance(posX: number, posY: number, targetX: number, targetY: number) {
     return Math.max(Math.abs(posX - targetX), Math.abs(posY - targetY));
+  }
+
+  removeItemFromInventory(item: Item) {
+    if (!this.player1.inventory) return;
+    const index = this.player1.inventory.inventorySlots.findIndex(
+      (i) => i === item,
+    );
+    if (index !== -1) {
+      this.player1.inventory.inventorySlots[index] = null;
+      this.drawInventoryTab();
+      this.drawEquippedTab();
+    }
   }
 
   drawInventoryTab() {
@@ -797,7 +848,7 @@ export class GameController {
           style: {
             fill: '#ffffff',
             fontFamily: 'Orbitron',
-            fontSize: fontSize, 
+            fontSize: fontSize,
           },
         });
         text.resolution = 2;
@@ -806,7 +857,7 @@ export class GameController {
         text.y = 0;
         text.eventMode = 'static';
         text.cursor = 'pointer';
-        text.onclick = () => {          
+        text.onclick = () => {
           if (!this.statcardOverlayVisible) {
             this.toggleStatcardOverlay();
           }
@@ -833,10 +884,10 @@ export class GameController {
   drawEquippedTab() {
     if (!this.player1.inventory) return;
     this.equippedApp.stage.removeChildren();
-    
+
     const fontSize = 15;
     const lineHeight = fontSize * 1.4;
-    
+
     const slots: { name: string; item: any | null }[] = [
       { name: 'Weapon', item: this.player1.inventory.weaponSlot },
       { name: 'Head', item: this.player1.inventory.headArmorSlot },
@@ -848,7 +899,7 @@ export class GameController {
     for (let i = 0; i < slots.length; i++) {
       const slot = slots[i];
       const itemName = slot.item ? slot.item.name : 'Empty';
-      
+
       const slotNameText = new Text({
         text: slot.name,
         style: {
@@ -861,13 +912,13 @@ export class GameController {
       });
       slotNameText.resolution = 2;
       this.equippedApp.stage.addChild(slotNameText);
-      
+
       const square = new PIXI.Graphics();
       slot.item ? square.beginFill(0xffffff) : square.beginFill(0x555555);
       square.drawRect(12, yOffset + fontSize + 3, 10, 12);
       square.endFill();
       this.equippedApp.stage.addChild(square);
-      
+
       const itemNameText = new Text(itemName, {
         fontFamily: 'Orbitron',
         fontSize: fontSize,
@@ -876,7 +927,7 @@ export class GameController {
       itemNameText.resolution = 2;
       itemNameText.x = 30;
       itemNameText.y = yOffset + fontSize;
-      
+
       if (slot.item) {
         itemNameText.eventMode = 'static';
         itemNameText.cursor = 'pointer';
@@ -888,7 +939,7 @@ export class GameController {
         });
       }
       this.equippedApp.stage.addChild(itemNameText);
-      
+
       yOffset += lineHeight * 2;
     }
   }
@@ -907,14 +958,20 @@ export class GameController {
   drawStatcardOverlay(entity: Entity | Item) {
     this.statcardOverlayApp.stage.removeChildren();
 
-    if(entity instanceof Item){
+    if (entity instanceof Item) {
       const closeButtonSize = 30;
-      const closeButtonX = this.statcardOverlayApp.screen.width - closeButtonSize - 5;
+      const closeButtonX =
+        this.statcardOverlayApp.screen.width - closeButtonSize - 5;
       const closeButtonY = 5;
-      
+
       const closeBtnBg = new PIXI.Graphics();
       closeBtnBg.beginFill(0x333333);
-      closeBtnBg.drawRect(closeButtonX, closeButtonY, closeButtonSize, closeButtonSize);
+      closeBtnBg.drawRect(
+        closeButtonX,
+        closeButtonY,
+        closeButtonSize,
+        closeButtonSize,
+      );
       closeBtnBg.endFill();
       closeBtnBg.interactive = true;
       closeBtnBg.cursor = 'pointer';
@@ -927,7 +984,7 @@ export class GameController {
           fontSize: 18,
           fill: '#ffffff',
           fontWeight: 'normal',
-        }
+        },
       });
       closeText.resolution = 2;
       closeText.x = closeButtonX + (closeButtonSize - closeText.width) / 2;
@@ -939,19 +996,20 @@ export class GameController {
       sprite.width = this.statcardOverlayApp.screen.width / 2 - 20;
       sprite.height = this.statcardOverlayApp.screen.width / 2 - 20;
       sprite.x = (this.statcardOverlayApp.screen.width / 2 - sprite.width) / 2;
-      sprite.y = (this.statcardOverlayApp.screen.height / 3 - sprite.height) / 2;
+      sprite.y =
+        (this.statcardOverlayApp.screen.height / 3 - sprite.height) / 2;
       this.statcardOverlayApp.stage.addChild(sprite);
 
       let statsText = '';
       const statsData = entity.getStats();
       if (statsData) {
         for (const [key, value] of Object.entries(statsData)) {
-          if (key === 'afflictions'){
+          if (key === 'afflictions') {
             const afflictions = value;
             if (afflictions.length > 0) {
-              if(entity.category === 'usable_heal'){
+              if (entity.category === 'usable_heal') {
                 statsText += `Heals:\n`;
-              } else if(entity.category === 'weapon'){
+              } else if (entity.category === 'weapon') {
                 statsText += `Deals:\n`;
               }
               afflictions.forEach((affliction: any) => {
@@ -971,7 +1029,7 @@ export class GameController {
           fill: '#ffffff',
           wordWrap: true,
           wordWrapWidth: this.statcardOverlayApp.screen.width - 20,
-        }
+        },
       });
       stats.resolution = 2;
       stats.x = 10;
@@ -983,34 +1041,57 @@ export class GameController {
       const buttonHeight = 30;
       const buttonSpacing = 10;
       const startX = 10;
-      const isEquipped = this.player1.inventory &&
+      const isEquipped =
+        this.player1.inventory &&
         (this.player1.inventory.weaponSlot === entity ||
-         this.player1.inventory.headArmorSlot === entity ||
-         this.player1.inventory.torsoArmorSlot === entity ||
-         this.player1.inventory.fullbodyArmorSlot === entity);
-      const isInInventory = this.player1.inventory?.inventorySlots.includes(entity) || isEquipped;
+          this.player1.inventory.headArmorSlot === entity ||
+          this.player1.inventory.torsoArmorSlot === entity ||
+          this.player1.inventory.fullbodyArmorSlot === entity);
+      const isInInventory =
+        this.player1.inventory?.inventorySlots.includes(entity) || isEquipped;
       const isUsable = entity.category === 'usable_heal';
 
       let buttons;
       if (isInInventory) {
         buttons = [
-          { label: isUsable ? '' : isEquipped ? 'Unequip' : 'Equip', x: startX, action: () => {
-            isEquipped ? this.player1.inventory.unequip(entity) : this.player1.inventory.equip(entity, this.player1.inventory.inventorySlots.indexOf(entity));
-          }},
-          { label: isUsable ? 'Use' : '', x: isUsable ? startX : startX + buttonWidth + buttonSpacing, action: () => {
-            this.player1.inventory.use(entity);
-          }},
-          { label: 'Drop', x: startX + buttonWidth + buttonSpacing, action: () => {
-            this.player1.inventory.drop(entity, isEquipped);
-          }}
+          {
+            label: isUsable ? '' : isEquipped ? 'Unequip' : 'Equip',
+            x: startX,
+            action: () => {
+              isEquipped
+                ? this.player1.inventory.unequip(entity)
+                : this.player1.inventory.equip(
+                    entity,
+                    this.player1.inventory.inventorySlots.indexOf(entity),
+                  );
+            },
+          },
+          {
+            label: isUsable ? 'Use' : '',
+            x: isUsable ? startX : startX + buttonWidth + buttonSpacing,
+            action: () => {
+              entity.use(this.player1);
+            },
+          },
+          {
+            label: 'Drop',
+            x: startX + buttonWidth + buttonSpacing,
+            action: () => {
+              this.player1.inventory.drop(entity, isEquipped);
+            },
+          },
         ];
       } else {
         buttons = [
-          { label: 'Pick Up', x: startX, action: () => {
-            this.player1.inventory.pickUp(entity, this.currentItemSource);
-            this.drawInventoryTab();
-            this.drawEquippedTab();
-          }}
+          {
+            label: 'Pick Up',
+            x: startX,
+            action: () => {
+              this.player1.inventory.pickUp(entity, this.currentItemSource);
+              this.drawInventoryTab();
+              this.drawEquippedTab();
+            },
+          },
         ];
       }
 
@@ -1035,7 +1116,7 @@ export class GameController {
             fontFamily: 'Orbitron',
             fontSize: 15,
             fill: '#ffffff',
-          }
+          },
         });
         btnText.resolution = 2;
         btnText.x = btnConfig.x + (buttonWidth - btnText.width) / 2;
@@ -1043,7 +1124,66 @@ export class GameController {
         this.statcardOverlayApp.stage.addChild(btnText);
       });
     } else if (entity instanceof Entity && !(entity instanceof Player)) {
+      const closeButtonSize = 30;
+      const closeButtonX =
+        this.statcardOverlayApp.screen.width - closeButtonSize - 5;
+      const closeButtonY = 5;
 
+      const closeBtnBg = new PIXI.Graphics();
+      closeBtnBg.beginFill(0x333333);
+      closeBtnBg.drawRect(
+        closeButtonX,
+        closeButtonY,
+        closeButtonSize,
+        closeButtonSize,
+      );
+      closeBtnBg.endFill();
+      closeBtnBg.interactive = true;
+      closeBtnBg.cursor = 'pointer';
+      closeBtnBg.on('pointerdown', () => this.toggleStatcardOverlay());
+      this.statcardOverlayApp.stage.addChild(closeBtnBg);
+      const closeText = new Text({
+        text: 'X',
+        style: {
+          fontFamily: 'Orbitron',
+          fontSize: 18,
+          fill: '#ffffff',
+          fontWeight: 'normal',
+        },
+      });
+      closeText.resolution = 2;
+      closeText.x = closeButtonX + (closeButtonSize - closeText.width) / 2;
+      closeText.y = closeButtonY + (closeButtonSize - closeText.height) / 2;
+      this.statcardOverlayApp.stage.addChild(closeText);
+
+      const texture = Assets.get(entity.sprite.toString());
+      const sprite = new PIXI.Sprite(texture);
+      sprite.width = this.statcardOverlayApp.screen.width / 2 - 20;
+      sprite.height = this.statcardOverlayApp.screen.width / 2 - 20;
+      sprite.x = (this.statcardOverlayApp.screen.width / 2 - sprite.width) / 2;
+      sprite.y =
+        (this.statcardOverlayApp.screen.height / 3 - sprite.height) / 2;
+      this.statcardOverlayApp.stage.addChild(sprite);
+
+      let statsText = '';
+      const statsData = entity.getInfo();
+      for (const [key, value] of Object.entries(statsData)) {
+        statsText += `${value}\n`;
+      }
+      const stats = new Text({
+        text: statsText,
+        style: {
+          fontFamily: 'Orbitron',
+          fontSize: 14,
+          fill: '#ffffff',
+          wordWrap: true,
+          wordWrapWidth: this.statcardOverlayApp.screen.width - 20,
+        },
+      });
+      stats.resolution = 2;
+      stats.x = 10;
+      stats.y = sprite.y + sprite.height + 10;
+      this.statcardOverlayApp.stage.addChild(stats);
     }
   }
 
@@ -1066,10 +1206,15 @@ export class GameController {
     const closeButtonSize = 30;
     const closeButtonX = this.lootOverlayApp.screen.width - closeButtonSize - 5;
     const closeButtonY = 5;
-    
+
     const closeBtnBg = new PIXI.Graphics();
     closeBtnBg.beginFill(0x333333);
-    closeBtnBg.drawRect(closeButtonX, closeButtonY, closeButtonSize, closeButtonSize);
+    closeBtnBg.drawRect(
+      closeButtonX,
+      closeButtonY,
+      closeButtonSize,
+      closeButtonSize,
+    );
     closeBtnBg.endFill();
     closeBtnBg.interactive = true;
     closeBtnBg.cursor = 'pointer';
@@ -1082,13 +1227,13 @@ export class GameController {
         fontSize: 18,
         fill: '#ffffff',
         fontWeight: 'normal',
-      }
+      },
     });
     closeText.resolution = 2;
     closeText.x = closeButtonX + (closeButtonSize - closeText.width) / 2;
     closeText.y = closeButtonY + (closeButtonSize - closeText.height) / 2;
     this.lootOverlayApp.stage.addChild(closeText);
-    
+
     const lineHeight = 15 + 10;
     const title = new Text({
       text: entity.name,
@@ -1097,7 +1242,7 @@ export class GameController {
         fontSize: 18,
         fill: '#ffffff',
         fontWeight: 'normal',
-      }
+      },
     });
     title.resolution = 2;
     title.x = 10;
@@ -1243,7 +1388,7 @@ export class GameController {
 
     // Energy
     const energyPercentage =
-    this.player1.Energy.currentEnergy / this.player1.Energy.maxEnergy;
+      this.player1.Energy.currentEnergy / this.player1.Energy.maxEnergy;
     this.energyBar.beginFill(0xffff00);
     this.energyBar.drawRect(x, y, barWidth * energyPercentage, barHeight);
     this.energyBar.endFill();
@@ -1305,6 +1450,11 @@ export class GameController {
         }
 
         this.getAllEntitiesOnTile(x, y)?.forEach((entity: any) => {
+          // Only render multi-tile entities at their primary position (posX, posY) to avoid duplicates
+          if (entity.posX !== x || entity.posY !== y) {
+            return;
+          }
+          
           if (entity.sprite != '') {
             let entityTexture = Assets.get(entity.sprite.toString());
             let entitySprite = new PIXI.Sprite(entityTexture);
@@ -1312,13 +1462,13 @@ export class GameController {
               entity.texture = Assets.get(entity.deadSprite.toString());
               entitySprite.texture = entity.texture;
             }
-            const fw = (entity.footprintWidth ?? 1) as number;
-            const fh = (entity.footprintHeight ?? 1) as number;
-            entitySprite.x = x * this.tileSize + (entity.sizeOffsetX ?? 0);
-            entitySprite.y = y * this.tileSize + (entity.sizeOffsetY ?? 0);
-            entitySprite.width = this.tileSize * fw;
-            entitySprite.height = this.tileSize * fh;
+            entitySprite.x = x * this.tileSize + (entity.sizeOffsetX ?? 0) + this.tileSize / 2;
+            entitySprite.y = y * this.tileSize + (entity.sizeOffsetY ?? 0) + this.tileSize / 2;
+            entitySprite.width = (this.tileSize * (entity.sizeX ?? 1)) - (entity.sizeOffsetX ?? 0);
+            entitySprite.height = (this.tileSize * (entity.sizeY ?? 1)) - (entity.sizeOffsetY ?? 0);
             entitySprite._zIndex = entity.zIndex;
+            entitySprite.anchor = (0.5);
+            entitySprite.angle = entity.rotation;
             this.spriteContainer.addChild(entitySprite);
             // handle wall connections
             const shouldSpawnCap = (x: number, y: number) => {
@@ -1332,44 +1482,52 @@ export class GameController {
               }
               return true;
             };
-            if (shouldSpawnCap(x, y - 1) && entity.spriteTopCap != '') {
-              let capTexture = Assets.get(entity.spriteTopCap.toString());
+            if (shouldSpawnCap(x, y - 1) && entity.spriteCap != '') {
+              let capTexture = Assets.get(entity.spriteCap.toString());
               let capSprite = new PIXI.Sprite(capTexture);
-              capSprite.x = x * this.tileSize;
-              capSprite.y = y * this.tileSize;
+              capSprite.x = x * this.tileSize + this.tileSize / 2;
+              capSprite.y = y * this.tileSize + this.tileSize / 2;
               capSprite.width = this.tileSize;
               capSprite.height = this.tileSize;
               capSprite._zIndex = entity.zIndex + 0.1;
+              capSprite.anchor = (0.5);
+              capSprite.angle = 0;
               this.spriteContainer.addChild(capSprite);
             }
-            if (shouldSpawnCap(x, y + 1) && entity.spriteBottomCap != '') {
-              let capTexture = Assets.get(entity.spriteBottomCap.toString());
+            if (shouldSpawnCap(x, y + 1) && entity.spriteCap != '') {
+              let capTexture = Assets.get(entity.spriteCap.toString());
               let capSprite = new PIXI.Sprite(capTexture);
-              capSprite.x = x * this.tileSize;
-              capSprite.y = y * this.tileSize;
+              capSprite.x = x * this.tileSize + this.tileSize / 2;
+              capSprite.y = y * this.tileSize + this.tileSize / 2;
               capSprite.width = this.tileSize;
               capSprite.height = this.tileSize;
               capSprite._zIndex = entity.zIndex + 0.1;
+              capSprite.anchor = (0.5);
+              capSprite.angle = 180;
               this.spriteContainer.addChild(capSprite);
             }
-            if (shouldSpawnCap(x - 1, y) && entity.spriteLeftCap != '') {
-              let capTexture = Assets.get(entity.spriteLeftCap.toString());
+            if (shouldSpawnCap(x - 1, y) && entity.spriteCap != '') {
+              let capTexture = Assets.get(entity.spriteCap.toString());
               let capSprite = new PIXI.Sprite(capTexture);
-              capSprite.x = x * this.tileSize;
-              capSprite.y = y * this.tileSize;
+              capSprite.x = x * this.tileSize + this.tileSize / 2;
+              capSprite.y = y * this.tileSize + this.tileSize / 2;
               capSprite.width = this.tileSize;
               capSprite.height = this.tileSize;
               capSprite._zIndex = entity.zIndex + 0.1;
+              capSprite.anchor = (0.5);
+              capSprite.angle = 270;
               this.spriteContainer.addChild(capSprite);
             }
-            if (shouldSpawnCap(x + 1, y) && entity.spriteRightCap != '') {
-              let capTexture = Assets.get(entity.spriteRightCap.toString());
+            if (shouldSpawnCap(x + 1, y) && entity.spriteCap != '') {
+              let capTexture = Assets.get(entity.spriteCap.toString());
               let capSprite = new PIXI.Sprite(capTexture);
-              capSprite.x = x * this.tileSize;
-              capSprite.y = y * this.tileSize;
+              capSprite.x = x * this.tileSize + this.tileSize / 2;
+              capSprite.y = y * this.tileSize + this.tileSize / 2;
               capSprite.width = this.tileSize;
               capSprite.height = this.tileSize;
               capSprite._zIndex = entity.zIndex + 0.1;
+              capSprite.anchor = (0.5);
+              capSprite.angle = 90;
               this.spriteContainer.addChild(capSprite);
             }
             //corners
@@ -1378,72 +1536,80 @@ export class GameController {
               shouldSpawnCap(x - 1, y) == false &&
               shouldSpawnCap(x, y - 1) == false &&
               shouldSpawnCap(x - 1, y - 1) &&
-              entity.spriteTopLeftCorner != ''
+              entity.spriteCorner != ''
             ) {
               let capTexture = Assets.get(
-                entity.spriteTopLeftCorner.toString(),
+                entity.spriteCorner.toString(),
               );
-              let capSprite = new PIXI.Sprite(capTexture);
-              capSprite.x = x * this.tileSize;
-              capSprite.y = y * this.tileSize;
-              capSprite.width = this.tileSize;
-              capSprite.height = this.tileSize;
-              capSprite._zIndex = entity.zIndex + 0.2;
-              this.spriteContainer.addChild(capSprite);
+              let cornerSprite = new PIXI.Sprite(capTexture);
+              cornerSprite.x = x * this.tileSize + this.tileSize / 2;
+              cornerSprite.y = y * this.tileSize + this.tileSize / 2;
+              cornerSprite.width = this.tileSize;
+              cornerSprite.height = this.tileSize;
+              cornerSprite._zIndex = entity.zIndex + 0.2;
+              cornerSprite.anchor = (0.5);
+              cornerSprite.angle = 0;
+              this.spriteContainer.addChild(cornerSprite);
             }
             //top right
             if (
               shouldSpawnCap(x + 1, y) == false &&
               shouldSpawnCap(x, y - 1) == false &&
               shouldSpawnCap(x + 1, y - 1) &&
-              entity.spriteTopRightCorner != ''
+              entity.spriteCorner != ''
             ) {
               let capTexture = Assets.get(
-                entity.spriteTopRightCorner.toString(),
+                entity.spriteCorner.toString(),
               );
-              let capSprite = new PIXI.Sprite(capTexture);
-              capSprite.x = x * this.tileSize;
-              capSprite.y = y * this.tileSize;
-              capSprite.width = this.tileSize;
-              capSprite.height = this.tileSize;
-              capSprite._zIndex = entity.zIndex + 0.2;
-              this.spriteContainer.addChild(capSprite);
+              let cornerSprite = new PIXI.Sprite(capTexture);
+              cornerSprite.x = x * this.tileSize + this.tileSize / 2;
+              cornerSprite.y = y * this.tileSize + this.tileSize / 2;
+              cornerSprite.width = this.tileSize;
+              cornerSprite.height = this.tileSize;
+              cornerSprite._zIndex = entity.zIndex + 0.2;
+              cornerSprite.anchor = (0.5);
+              cornerSprite.angle = 90;
+              this.spriteContainer.addChild(cornerSprite);
             }
             //bottom left
             if (
               shouldSpawnCap(x - 1, y) == false &&
               shouldSpawnCap(x, y + 1) == false &&
               shouldSpawnCap(x - 1, y + 1) &&
-              entity.spriteBottomLeftCorner != ''
+              entity.spriteCorner != ''
             ) {
               let capTexture = Assets.get(
-                entity.spriteBottomLeftCorner.toString(),
+                entity.spriteCorner.toString(),
               );
-              let capSprite = new PIXI.Sprite(capTexture);
-              capSprite.x = x * this.tileSize;
-              capSprite.y = y * this.tileSize;
-              capSprite.width = this.tileSize;
-              capSprite.height = this.tileSize;
-              capSprite._zIndex = entity.zIndex + 0.2;
-              this.spriteContainer.addChild(capSprite);
+              let cornerSprite = new PIXI.Sprite(capTexture);
+              cornerSprite.x = x * this.tileSize + this.tileSize / 2;
+              cornerSprite.y = y * this.tileSize + this.tileSize / 2;
+              cornerSprite.width = this.tileSize;
+              cornerSprite.height = this.tileSize;
+              cornerSprite._zIndex = entity.zIndex + 0.2;
+              cornerSprite.anchor = (0.5);
+              cornerSprite.angle = 270;
+              this.spriteContainer.addChild(cornerSprite);
             }
             //bottom right
             if (
               shouldSpawnCap(x + 1, y) == false &&
               shouldSpawnCap(x, y + 1) == false &&
               shouldSpawnCap(x + 1, y + 1) &&
-              entity.spriteBottomRightCorner != ''
+              entity.spriteCorner != ''
             ) {
               let capTexture = Assets.get(
-                entity.spriteBottomRightCorner.toString(),
+                entity.spriteCorner.toString(),
               );
-              let capSprite = new PIXI.Sprite(capTexture);
-              capSprite.x = x * this.tileSize;
-              capSprite.y = y * this.tileSize;
-              capSprite.width = this.tileSize;
-              capSprite.height = this.tileSize;
-              capSprite._zIndex = entity.zIndex + 0.2;
-              this.spriteContainer.addChild(capSprite);
+              let cornerSprite = new PIXI.Sprite(capTexture);
+              cornerSprite.x = x * this.tileSize + this.tileSize / 2;
+              cornerSprite.y = y * this.tileSize + this.tileSize / 2;
+              cornerSprite.width = this.tileSize;
+              cornerSprite.height = this.tileSize;
+              cornerSprite._zIndex = entity.zIndex + 0.2;
+              cornerSprite.anchor = (0.5);
+              cornerSprite.angle = 180;
+              this.spriteContainer.addChild(cornerSprite);
             }
             if (entity.hiddenOutsideLOS) {
               if (
@@ -1785,7 +1951,7 @@ export class GameController {
     }
   }
 
-  drawLogsUI(){
+  drawLogsUI() {
     // clear previous content and mask
     this.logUIApp.stage.removeChildren();
     this.logUIApp.stage.mask = null;
@@ -1793,7 +1959,6 @@ export class GameController {
     const padding = 10;
     const spacing = 5;
     const maxWidth = Math.max(0, this.logUIApp.screen.width - padding * 2);
-    const maxHeight = Math.max(0, this.logUIApp.screen.height - padding * 2);
 
     // Start from bottom and render newest logs at the bottom
     let yOffset = this.logUIApp.screen.height - padding;
@@ -2000,7 +2165,7 @@ export class GameController {
         let x = this.findEntrance('right')!.x;
         let y = this.findEntrance('right')!.y;
         this.teleportPlayer(this.player1, x, y);
-        this.activateSpawners()
+        this.activateSpawners();
         console.log('Moved to left room');
         console.log(
           'World coordinates: ' + this.playerWorldX + ', ' + this.playerWorldY,
@@ -2015,7 +2180,7 @@ export class GameController {
         let x = this.findEntrance('left')!.x;
         let y = this.findEntrance('left')!.y;
         this.teleportPlayer(this.player1, x, y);
-        this.activateSpawners()
+        this.activateSpawners();
         console.log('Moved to right room');
         console.log(
           'World coordinates: ' + this.playerWorldX + ', ' + this.playerWorldY,
@@ -2030,7 +2195,7 @@ export class GameController {
         let x = this.findEntrance('down')!.x;
         let y = this.findEntrance('down')!.y;
         this.teleportPlayer(this.player1, x, y);
-        this.activateSpawners()
+        this.activateSpawners();
         console.log('Moved to up room');
         console.log(
           'World coordinates: ' + this.playerWorldX + ', ' + this.playerWorldY,
@@ -2045,7 +2210,7 @@ export class GameController {
         let x = this.findEntrance('up')!.x;
         let y = this.findEntrance('up')!.y;
         this.teleportPlayer(this.player1, x, y);
-        this.activateSpawners()
+        this.activateSpawners();
         console.log('Moved to down room');
         console.log(
           'World coordinates: ' + this.playerWorldX + ', ' + this.playerWorldY,
@@ -2112,44 +2277,29 @@ export class GameController {
     return;
   }
 
-  activateSpawners(){
+  activateSpawners() {
     for (let x = 0; x < this.map.width; x++) {
       for (let y = 0; y < this.map.height; y++) {
         this.map.tiles[x][y].entity!.forEach((entity) => {
-        if (entity instanceof RandomSpawner){
-          entity.spawn()
-        }})
+          if (entity instanceof RandomSpawner) {
+            entity.spawn();
+          }
+        });
       }
     }
   }
 
-   updateAllTiles() {
+  updateAllTiles() {
     this.enemyTurnList = [];
     for (let x = 0; x < this.map.width; x++) {
       for (let y = 0; y < this.map.height; y++) {
         this.updateTile(x, y);
       }
-    }
-
-    for (const entity of this.enemyTurnList) {
-      try {
-        // Let the entity take its turn (may be synchronous)
-        if (entity instanceof BasicEnemyAI) {
-          entity.aiTurn();
-        }
-      } catch (err) {
-        console.warn('Error during entity turn', err);
-      }
-
-      // redraw so player sees the result immediately
-      this.drawGrid();
-      this.drawPlayer();
-    }
+    }    
   }
 
   updateTile(x: number, y: number) {
     if (this.map.tiles[x][y].fireValue > 0) {
-      this.damageEntities(x, y, this.map.tiles[x][y].fireValue / 2, 'burn');
       this.map.tiles[x][y].fireValue = this.clampNumber(
         this.map.tiles[x][y].fireValue - this.generateRandomNumber(10, 20),
         0,
@@ -2205,7 +2355,6 @@ export class GameController {
         if (entity.ai && !(entity as any).isSubEntity){
           this.enemyTurnList.push(entity);
         }
-        
     });
   }
 
@@ -2217,12 +2366,11 @@ export class GameController {
     }
   }
 
-  updateTarget(x: number, y: number) {
+  updateTarget(x: number, y: number){
     this.map.tiles[x][y].entity!.forEach((entity) => {
-      if (entity.ai) {
-        if (entity instanceof BasicEnemyAI) {
-          entity.findTargets();
-        } else {
+      if (entity.ai){
+        if (entity instanceof BasicEnemyAI){
+          entity.handleTargets();
         }
       }
     });
@@ -2253,7 +2401,7 @@ export class GameController {
     size: number,
     strength: number,
     startFires: boolean = false,
-    cause: string = ""
+    cause: string = '',
   ) {
     (async () => {
       for (let i = 0; i < size; i++) {
@@ -2270,7 +2418,6 @@ export class GameController {
             sprite.height = this.tileSize;
             sprite._zIndex = 0;
             this.effectContainer.addChild(sprite);
-            this.damageEntities(tile[0], tile[1], strength / size, 'explosion');
             if (this.player1.posX == tile[0] && this.player1.posY == tile[1]) {
               // this.player1.Health.Damage(strength / size / 10);
             }
@@ -2285,10 +2432,10 @@ export class GameController {
       this.effectContainer.removeChildren();
     })();
     // Log exlosions
-    if(cause!=""){
-      this.addLog(cause + " caused an explosion!");
-    }else{
-      this.addLog("Something exploded!");
+    if (cause != '') {
+      this.addLog(cause + ' caused an explosion!');
+    } else {
+      this.addLog('Something exploded!');
     }
   }
 
@@ -2313,43 +2460,50 @@ export class GameController {
   }
 
   loadEntity(x: number, y: number, entity: any, map: GameGrid) {
-    // keep entity coordinates in sync with map placement
     if (entity != null) {
-      map.tiles[x][y].entity!.push(entity);
+      const sizeX = entity.sizeX || 1;
+      const sizeY = entity.sizeY || 1;
+      for (let ix = 0; ix < sizeX; ix++) {
+        for (let iy = 0; iy < sizeY; iy++) {
+          const tx = x + ix;
+          const ty = y + iy;
+          if (!map.isValidTile(tx, ty)) continue;
+          if (!map.tiles[tx][ty].entity) map.tiles[tx][ty].entity = [] as any;
+          map.tiles[tx][ty].entity!.push(entity);
+        }
+      }
       entity.posX = x;
       entity.posY = y;
       entity.id = this.lastUsedId;
       this.lastUsedId += 1;
-      entity.onSpawn();
+      if(entity.initialised == false){
+        entity.onSpawn();
+        entity.initialised = true
+      }
     }
   }
 
   moveEntity(x: number, y: number, entity: any, map: GameGrid) {
     console.log(`Moving entity ${entity.name} (id: ${entity.id}) from (${entity.posX}, ${entity.posY}) to (${x}, ${y})`);
     
-    // Only move if entity is not already on the target tile
     if (entity.posX === x && entity.posY === y) {
       console.log(`Entity already at target position, skipping.`);
       return;
     }
     
-    // Remove entity from ALL tiles (safety check)
     let foundCount = 0;
     for (let tx = 0; tx < map.width; tx++) {
       for (let ty = 0; ty < map.height; ty++) {
         if (map.tiles[tx][ty] && map.tiles[tx][ty].entity) {
           const idx = map.tiles[tx][ty].entity.findIndex((e: any) => e === entity);
           if (idx > -1) {
-            console.log(`Found entity on tile (${tx}, ${ty}), removing it.`);
             map.tiles[tx][ty].entity.splice(idx, 1);
             foundCount++;
           }
         }
       }
     }
-    console.log(`Removed entity from ${foundCount} tile(s).`);
     
-    // Add entity to new position
     if (map.tiles[x][y].entity) {
       map.tiles[x][y].entity.push(entity);
     } else {
@@ -2357,16 +2511,20 @@ export class GameController {
     }
     entity.posX = x;
     entity.posY = y;
-    console.log(`Entity now at (${x}, ${y}).`);
   }
 
   removeEntities(x: number, y: number, id: number | null = null) {
-    const ents = this.map.tiles[x][y].entity;
-
     if (id === null) {
       this.map.tiles[x][y].entity = [];
     } else {
-      this.map.tiles[x][y].entity = ents.filter((e: any) => e.id !== id);
+      for (let tx = 0; tx < this.map.tiles.length; tx++) {
+        for (let ty = 0; ty < this.map.tiles[tx].length; ty++) {
+          const ents = this.map.tiles[tx][ty].entity;
+          if (ents) {
+            this.map.tiles[tx][ty].entity = ents.filter((e: any) => e.id !== id);
+          }
+        }
+      }
     }
   }
 
@@ -2397,23 +2555,6 @@ export class GameController {
     return false;
   }
 
-  damageEntities(
-    x: number,
-    y: number,
-    damage: number,
-    damageType: string,
-    ignoredId: number | null = null,
-  ) {
-    let entities = this.getAllEntitiesOnTile(x, y);
-    for (let i = 0; i < entities.length; i++) {
-      if (ignoredId != null && ignoredId != entities[i].id) {
-        entities[i].takeDamage(damage, damageType);
-      } else if (ignoredId == null) {
-        entities[i].takeDamage(damage, damageType);
-      }
-    }
-  }
-
   spawnItem(x: number, y: number, item: Item) {
     this.map.tiles[x][y].item = item;
   }
@@ -2422,19 +2563,54 @@ export class GameController {
     this.map.tiles[x][y].item = null;
   }
 
-  endTurn() {
+  inWeaponRange(targetX: number, targetY: number) {
+    if (this.player1.inventory && this.player1.inventory.weaponSlot) {
+      const weaponRange = this.player1.inventory.weaponSlot.range;
+      const distance = this.getDistance(
+        this.player1.posX,
+        this.player1.posY,
+        targetX,
+        targetY,
+      );
+      return distance <= weaponRange;
+    }
+    return false;
+  }
+
+  changeTurn(){
+    this.player1.playerAction(0);
     this.updateAllTiles();
+    if(this.enemyTurn){
+      this.startPlayerTurn();
+    }else{
+      this.startEnemyTurn();
+    }
+  }
+
+  startPlayerTurn() {
+    this.enemyTurn = false;
     this.player1.Energy.setEnergy(100);
-    if (this.player1.Health.torso.zapped.severity > 0) {
-      this.player1.Energy.loseEnergy(this.player1.Health.torso.zapped.severity);
-      if (this.player1.Health.torso.zapped.severity >= 5) {
-        this.player1.Health.torso.zapped.severity =
-          this.player1.Health.torso.zapped.severity - 5;
-      } else {
-        this.player1.Health.torso.zapped.severity = 0;
+    this.addLog("Player's turn started.");
+  }
+
+  async startEnemyTurn() {
+    this.addLog("Enemy's turn started.");
+    this.enemyTurn = true;
+    // Let all entities take their turn (may be synchronous)
+    for (const entity of this.enemyTurnList) {
+      try {
+        if (entity instanceof BasicEnemyAI){
+          await entity.aiTurn();
+        }
+      } catch (err) {
+        console.warn('Error during entity turn', err);
+        this.startPlayerTurn();
       }
     }
-    this.player1.playerAction(0);
+    this.startPlayerTurn();
+    // redraw so player sees the result immediately
+    this.drawGrid();
+    this.drawPlayer();
   }
 
   listenForMovement(player: Player) {
@@ -2442,6 +2618,10 @@ export class GameController {
       let targetX = player.posX;
       let targetY = player.posY;
      
+
+      if(this.enemyTurn){
+        return;
+      }
 
       switch (event.key.toLowerCase()) {
         case 'w':
@@ -2474,30 +2654,29 @@ export class GameController {
       switch (event.key.toLowerCase()) {
         case 'x':
           this.addLog("Player ended their turn.");
-          this.endTurn();
+          this.changeTurn();
           break;
         case 'f':
-          this.addLog("Aim mode: " + (this.aimMode ? "off" : "on") + ".");
+          this.addLog('Aim mode: ' + (this.aimMode ? 'off' : 'on') + '.');
           this.aimMode = !this.aimMode;
           break;
         case 'p':
-          this.addLog("(DEBUG) Explosion created at player position.");
+          this.addLog('(DEBUG) Explosion created at player position.');
           this.createExplosion(player.posX, player.posY, 3, 100, true);
-          this.endTurn();
+          this.changeTurn();
           break;
         case 'l':
-          this.addLog("(DEBUG) Healed bleeding.");
+          this.addLog('(DEBUG) Healed bleeding.');
           this.player1.Health.stopBleeding();
           break;
         case 'o':
-          this.addLog("(DEBUG) This is a very long message to test the logging system in the game. It should properly handle wrapping and display multiple lines if necessary.");
+          this.addLog(
+            '(DEBUG) This is a very long message to test the logging system in the game. It should properly handle wrapping and display multiple lines if necessary.',
+          );
           break;
         case 't':
-          this.addLog("(DEBUG) Enabled map teleportation.");
+          this.addLog('(DEBUG) Enabled map teleportation.');
           this.mapContainer!.interactive = true;
-          break;
-        case 'm':
-          this.toggleStatcardOverlay();
           break;
         default:
           return;
@@ -2510,7 +2689,7 @@ export class GameController {
       this.setReticleFlag(true);
       if (!this.app || !this.app.view) return;
       const rect = this.app.view.getBoundingClientRect();
-      
+
       const canvasX = event.clientX - rect.left;
       const canvasY = event.clientY - rect.top;
 
@@ -2522,7 +2701,11 @@ export class GameController {
       const mapLocalX = canvasX - containerX;
       const mapLocalY = canvasY - containerY;
 
-      const coords = this.map.getTileCoords(mapLocalX, mapLocalY, this.tileSize);
+      const coords = this.map.getTileCoords(
+        mapLocalX,
+        mapLocalY,
+        this.tileSize,
+      );
       if (coords) {
         this.mouseTileX = coords.x;
         this.mouseTileY = coords.y;
@@ -2535,11 +2718,15 @@ export class GameController {
     window.addEventListener('click', (event) => {
       this.setGridFlag(true);
 
+      if(this.enemyTurn){
+        return;
+      }
+
       const rect = this.app.view.getBoundingClientRect();
 
       const canvasX = event.clientX - rect.left;
       const canvasY = event.clientY - rect.top;
-      
+
       this.mouseX = canvasX;
       this.mouseY = canvasY;
 
@@ -2548,36 +2735,85 @@ export class GameController {
       const mapLocalX = canvasX - containerX;
       const mapLocalY = canvasY - containerY;
 
-      const coords = this.map.getTileCoords(mapLocalX, mapLocalY, this.tileSize);
+      const coords = this.map.getTileCoords(
+        mapLocalX,
+        mapLocalY,
+        this.tileSize,
+      );
 
       if (coords) {
         const tileInfo = this.map.tiles[coords.x][coords.y].getTileInfo();
         console.log(coords, tileInfo);
 
-        this.onTileClick(coords.x, coords.y, tileInfo);
-
         if (!this.aimMode) {
-          if (this.getDistance(this.player1.posX, this.player1.posY, coords.x, coords.y) <=1 && !this.isLineObstructed(this.player1.posX,this.player1.posY,coords.x, coords.y,true,true)){
+          if (
+            this.getDistance(
+              this.player1.posX,
+              this.player1.posY,
+              coords.x,
+              coords.y,
+            ) <= 1 &&
+            !this.isLineObstructed(
+              this.player1.posX,
+              this.player1.posY,
+              coords.x,
+              coords.y,
+              true,
+              true,
+            )
+          ) {
             this.getAllEntitiesOnTile(coords.x, coords.y)?.forEach(
               (entity: any) => {
                 entity.onUse(player);
-              }
+              },
             );
             const entities = this.map.tiles[coords.x][coords.y].entity;
+            const item = this.map.tiles[coords.x][coords.y].item;
+            if (item) {
+              if (!this.statcardOverlayVisible) {
+                this.toggleStatcardOverlay();
+              }
+              this.currentItemSource = { floorX: coords.x, floorY: coords.y };
+              this.drawStatcardOverlay(item);
+            }
+
             if (entities && entities.length > 0) {
-              const lootableEntity = entities.find((e: any) => e.lootable && e.inventory);
+              const lootableEntity = entities.find(
+                (e: any) => e.lootable && e.inventory,
+              );
               if (lootableEntity) {
                 if (!this.lootOverlayVisible) {
                   this.toggleLootOverlay();
                 }
                 this.drawLootOverlay(lootableEntity);
+              } else {
+                if (!this.statcardOverlayVisible) {
+                  this.toggleStatcardOverlay();
+                }
+                this.drawStatcardOverlay(entities[0]);
               }
             }
           }
-        }else{
+        } else {
           const entity = this.map.tiles[coords.x][coords.y].entity;
-          if (entity && entity.length > 0) { 
-
+          if (entity && entity.length > 0) {
+            if (
+              !this.isLineObstructed(
+                this.player1.posX,
+                this.player1.posY,
+                coords.x,
+                coords.y,
+                true,
+                true,
+              ) && this.inWeaponRange(coords.x, coords.y)
+            ) {
+              const weapon = this.player1.inventory.weaponSlot;
+              console.log(weapon);
+              console.log(entity[0].Health?.torso);
+              if (weapon) {
+                weapon.use(entity[0]);
+              }
+            }
           }
         }
       }
@@ -2589,6 +2825,11 @@ export class GameController {
   }
 
   teleportToRoom(worldX: number, worldY: number) {
+
+    if(this.enemyTurn){
+      return;
+    }
+
     // ensure target room exists
     if (!this.world.rooms[worldX] || !this.world.rooms[worldX][worldY]) return;
 
