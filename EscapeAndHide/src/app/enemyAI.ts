@@ -340,7 +340,7 @@ export class LightInterferanceUnitAI extends BasicEnemyAI {
   override accuracy = 0.1; //chance to miss
 
   override RangedAttack() {
-    this.inventory.weaponSlot?.use(this.TargetCoords[0]);
+    this.inventory.weaponSlot?.use(this.Targets[0]);
   }
 }
 

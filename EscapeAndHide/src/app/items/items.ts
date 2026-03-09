@@ -149,7 +149,7 @@ export class Flamethrower extends Item {
 
     const firingAngle = Math.atan2(target.posY - player.posY, target.posX - player.posX);
     
-    const coneTiles = controller.getConeTiles(
+    const coneTiles = controller.getTilesInCone(
       player.posX,
       player.posY,
       this.range,
@@ -200,15 +200,14 @@ export class StunGun extends Item {
   ];
 
   override use(target: Entity) {
+    debugger;
     const targetLimb = this.checkForMiss(target);
     if (targetLimb == 'isStructure') {
       target.takeStructureDamage(this.structureDamage);
     } else if (targetLimb) {
       let afflictions: affliction[] = [];
       for (const affliction of this.afflictions) {
-        if (Array.isArray(affliction) && affliction.length >= 2) {
           afflictions.push([affliction[0] as string, affliction[1] as number]);
-        }
       }
       if (target.Health) {
         target.Health.damageLimb(targetLimb as LimbName, afflictions);
