@@ -27,7 +27,9 @@ export class GameGrid {
     for (let i = 0; i < map.length; i++) {
       for (let j = 0; j < map[i].length; j++) {
         if (i == 0 || j == 0 || i == map.length - 1 || j == map[i].length - 1) {
-          GameController.current?.loadEntity(i, j, new WallCorner1(), this);
+          if (map[i][j] == null){
+            GameController.current?.loadEntity(i, j, new WallCorner1(), this);
+          }
         }
         if (map[i][j] != null) {
           GameController.current?.loadEntity(i, j, map[i][j], this);

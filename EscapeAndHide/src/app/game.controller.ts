@@ -4,7 +4,7 @@ import { Text, Assets } from 'pixi.js';
 import { GameGrid } from './grid';
 import { World } from './world';
 import { Player } from './player';
-import { Item, SmallGun } from './items/items';
+import { Item} from './items/items';
 import { WorldMapRenderer } from './worldMapRenderer';
 import { Inventory } from './inventory/inventory';
 import { Entity } from './entity';
@@ -39,6 +39,8 @@ export class GameController {
   energyBar = new Graphics();
   tile = new Graphics();
 
+  mapRenderer?: WorldMapRenderer;
+  
   statcardOverlayVisible: boolean = false;
   lootOverlayVisible: boolean = false;
   aimMode: boolean = false;
@@ -59,8 +61,10 @@ export class GameController {
   playerWorldY = this.world.startY;
   tileSize = 32; // Size of each tile in pixels
   lastUsedId = 0;
-  mapRenderer?: WorldMapRenderer;
+
   enemyTurnList: Entity[] = [];
+  enemyTurn = false;
+  
 
   constructor() {}
 
@@ -79,18 +83,8 @@ export class GameController {
     await Assets.load('leftleg.png');
     await Assets.load('rightleg.png');
     await Assets.load('/sprites/entities/wall_placeholder_base.png');
-    await Assets.load('/sprites/entities/wall_placeholder_topcap.png');
-    await Assets.load('/sprites/entities/wall_placeholder_bottomcap.png');
-    await Assets.load('/sprites/entities/wall_placeholder_leftcap.png');
-    await Assets.load('/sprites/entities/wall_placeholder_rightcap.png');
-    await Assets.load('/sprites/entities/wall_placeholder_toprightcorner.png');
-    await Assets.load(
-      '/sprites/entities/wall_placeholder_bottomleftcorner.png',
-    );
-    await Assets.load('/sprites/entities/wall_placeholder_topleftcorner.png');
-    await Assets.load(
-      '/sprites/entities/wall_placeholder_bottomrightcorner.png',
-    );
+    await Assets.load('/sprites/entities/wall_cap.png');
+    await Assets.load('/sprites/entities/wall_corner.png');
     await Assets.load('/sprites/entities/door1.png');
     await Assets.load('/sprites/entities/glass_shards.png');
     await Assets.load('/sprites/entities/explosiveBarrel.png');
@@ -147,7 +141,7 @@ export class GameController {
       width: window.innerWidth * 0.7,
       height: window.innerHeight * 1,
       backgroundColor: 0x222222,
-      antialias: true,
+      antialias: false,
       roundPixels: true,
     });
     container.style.width = '100%';
@@ -165,6 +159,9 @@ export class GameController {
     this.drawHealthUI();
 
     // Add containers to stage
+    // enable sorting by _zIndex so we can layer sprites correctly
+    this.spriteContainer.sortableChildren = true;
+    this.effectContainer.sortableChildren = true;
     this.app.stage.addChild(this.spriteContainer);
     this.app.stage.addChild(this.effectContainer);
     this.app.stage.addChild(this.playerSprite);
@@ -206,7 +203,7 @@ export class GameController {
       height: equippedRect.height || window.innerHeight * 0.2,
       antialias: true,
       backgroundColor: 0x333333,
-      resolution: window.devicePixelRatio,
+      resolution: 2
     });
     this.equippedApp.view.style.display = 'block';
     equippedColumn.appendChild(this.equippedApp.view as HTMLCanvasElement);
@@ -218,7 +215,7 @@ export class GameController {
       height: inventoryRect.height || window.innerHeight * 0.3,
       antialias: true,
       backgroundColor: 0x252525,
-      resolution: window.devicePixelRatio,
+      resolution: 2
     });
     this.inventoryApp.view.style.display = 'block';
     inventoryColumn.appendChild(this.inventoryApp.view as HTMLCanvasElement);
@@ -451,6 +448,12 @@ export class GameController {
       return max;
     }
     return number;
+  }
+
+  getDistanceTo(posX: number, posY: number, targetX: number, targetY: number){
+    const dx = Math.abs(posX - targetX);
+    const dy = Math.abs(posY - targetY);
+    return Math.ceil(Math.max(dx, dy) + 0.5 * Math.min(dx, dy),);
   }
 
   castRay(
@@ -1428,6 +1431,11 @@ export class GameController {
         }
 
         this.getAllEntitiesOnTile(x, y)?.forEach((entity: any) => {
+          // Only render multi-tile entities at their primary position (posX, posY) to avoid duplicates
+          if (entity.posX !== x || entity.posY !== y) {
+            return;
+          }
+          
           if (entity.sprite != '') {
             let entityTexture = Assets.get(entity.sprite.toString());
             let entitySprite = new PIXI.Sprite(entityTexture);
@@ -1435,11 +1443,13 @@ export class GameController {
               entity.texture = Assets.get(entity.deadSprite.toString());
               entitySprite.texture = entity.texture;
             }
-            entitySprite.x = x * this.tileSize + entity.sizeOffsetX;
-            entitySprite.y = y * this.tileSize + entity.sizeOffsetY;
-            entitySprite.width = this.tileSize + Math.abs(entity.sizeOffsetX);
-            entitySprite.height = this.tileSize + Math.abs(entity.sizeOffsetY);
+            entitySprite.x = x * this.tileSize + (entity.sizeOffsetX ?? 0) + this.tileSize / 2;
+            entitySprite.y = y * this.tileSize + (entity.sizeOffsetY ?? 0) + this.tileSize / 2;
+            entitySprite.width = (this.tileSize * (entity.sizeX ?? 1)) - (entity.sizeOffsetX ?? 0);
+            entitySprite.height = (this.tileSize * (entity.sizeY ?? 1)) - (entity.sizeOffsetY ?? 0);
             entitySprite._zIndex = entity.zIndex;
+            entitySprite.anchor = (0.5);
+            entitySprite.angle = entity.rotation;
             this.spriteContainer.addChild(entitySprite);
             // handle wall connections
             const shouldSpawnCap = (x: number, y: number) => {
@@ -1453,44 +1463,52 @@ export class GameController {
               }
               return true;
             };
-            if (shouldSpawnCap(x, y - 1) && entity.spriteTopCap != '') {
-              let capTexture = Assets.get(entity.spriteTopCap.toString());
+            if (shouldSpawnCap(x, y - 1) && entity.spriteCap != '') {
+              let capTexture = Assets.get(entity.spriteCap.toString());
               let capSprite = new PIXI.Sprite(capTexture);
-              capSprite.x = x * this.tileSize;
-              capSprite.y = y * this.tileSize;
+              capSprite.x = x * this.tileSize + this.tileSize / 2;
+              capSprite.y = y * this.tileSize + this.tileSize / 2;
               capSprite.width = this.tileSize;
               capSprite.height = this.tileSize;
               capSprite._zIndex = entity.zIndex + 0.1;
+              capSprite.anchor = (0.5);
+              capSprite.angle = 0;
               this.spriteContainer.addChild(capSprite);
             }
-            if (shouldSpawnCap(x, y + 1) && entity.spriteBottomCap != '') {
-              let capTexture = Assets.get(entity.spriteBottomCap.toString());
+            if (shouldSpawnCap(x, y + 1) && entity.spriteCap != '') {
+              let capTexture = Assets.get(entity.spriteCap.toString());
               let capSprite = new PIXI.Sprite(capTexture);
-              capSprite.x = x * this.tileSize;
-              capSprite.y = y * this.tileSize;
+              capSprite.x = x * this.tileSize + this.tileSize / 2;
+              capSprite.y = y * this.tileSize + this.tileSize / 2;
               capSprite.width = this.tileSize;
               capSprite.height = this.tileSize;
               capSprite._zIndex = entity.zIndex + 0.1;
+              capSprite.anchor = (0.5);
+              capSprite.angle = 180;
               this.spriteContainer.addChild(capSprite);
             }
-            if (shouldSpawnCap(x - 1, y) && entity.spriteLeftCap != '') {
-              let capTexture = Assets.get(entity.spriteLeftCap.toString());
+            if (shouldSpawnCap(x - 1, y) && entity.spriteCap != '') {
+              let capTexture = Assets.get(entity.spriteCap.toString());
               let capSprite = new PIXI.Sprite(capTexture);
-              capSprite.x = x * this.tileSize;
-              capSprite.y = y * this.tileSize;
+              capSprite.x = x * this.tileSize + this.tileSize / 2;
+              capSprite.y = y * this.tileSize + this.tileSize / 2;
               capSprite.width = this.tileSize;
               capSprite.height = this.tileSize;
               capSprite._zIndex = entity.zIndex + 0.1;
+              capSprite.anchor = (0.5);
+              capSprite.angle = 270;
               this.spriteContainer.addChild(capSprite);
             }
-            if (shouldSpawnCap(x + 1, y) && entity.spriteRightCap != '') {
-              let capTexture = Assets.get(entity.spriteRightCap.toString());
+            if (shouldSpawnCap(x + 1, y) && entity.spriteCap != '') {
+              let capTexture = Assets.get(entity.spriteCap.toString());
               let capSprite = new PIXI.Sprite(capTexture);
-              capSprite.x = x * this.tileSize;
-              capSprite.y = y * this.tileSize;
+              capSprite.x = x * this.tileSize + this.tileSize / 2;
+              capSprite.y = y * this.tileSize + this.tileSize / 2;
               capSprite.width = this.tileSize;
               capSprite.height = this.tileSize;
               capSprite._zIndex = entity.zIndex + 0.1;
+              capSprite.anchor = (0.5);
+              capSprite.angle = 90;
               this.spriteContainer.addChild(capSprite);
             }
             //corners
@@ -1499,72 +1517,80 @@ export class GameController {
               shouldSpawnCap(x - 1, y) == false &&
               shouldSpawnCap(x, y - 1) == false &&
               shouldSpawnCap(x - 1, y - 1) &&
-              entity.spriteTopLeftCorner != ''
+              entity.spriteCorner != ''
             ) {
               let capTexture = Assets.get(
-                entity.spriteTopLeftCorner.toString(),
+                entity.spriteCorner.toString(),
               );
-              let capSprite = new PIXI.Sprite(capTexture);
-              capSprite.x = x * this.tileSize;
-              capSprite.y = y * this.tileSize;
-              capSprite.width = this.tileSize;
-              capSprite.height = this.tileSize;
-              capSprite._zIndex = entity.zIndex + 0.2;
-              this.spriteContainer.addChild(capSprite);
+              let cornerSprite = new PIXI.Sprite(capTexture);
+              cornerSprite.x = x * this.tileSize + this.tileSize / 2;
+              cornerSprite.y = y * this.tileSize + this.tileSize / 2;
+              cornerSprite.width = this.tileSize;
+              cornerSprite.height = this.tileSize;
+              cornerSprite._zIndex = entity.zIndex + 0.2;
+              cornerSprite.anchor = (0.5);
+              cornerSprite.angle = 0;
+              this.spriteContainer.addChild(cornerSprite);
             }
             //top right
             if (
               shouldSpawnCap(x + 1, y) == false &&
               shouldSpawnCap(x, y - 1) == false &&
               shouldSpawnCap(x + 1, y - 1) &&
-              entity.spriteTopRightCorner != ''
+              entity.spriteCorner != ''
             ) {
               let capTexture = Assets.get(
-                entity.spriteTopRightCorner.toString(),
+                entity.spriteCorner.toString(),
               );
-              let capSprite = new PIXI.Sprite(capTexture);
-              capSprite.x = x * this.tileSize;
-              capSprite.y = y * this.tileSize;
-              capSprite.width = this.tileSize;
-              capSprite.height = this.tileSize;
-              capSprite._zIndex = entity.zIndex + 0.2;
-              this.spriteContainer.addChild(capSprite);
+              let cornerSprite = new PIXI.Sprite(capTexture);
+              cornerSprite.x = x * this.tileSize + this.tileSize / 2;
+              cornerSprite.y = y * this.tileSize + this.tileSize / 2;
+              cornerSprite.width = this.tileSize;
+              cornerSprite.height = this.tileSize;
+              cornerSprite._zIndex = entity.zIndex + 0.2;
+              cornerSprite.anchor = (0.5);
+              cornerSprite.angle = 90;
+              this.spriteContainer.addChild(cornerSprite);
             }
             //bottom left
             if (
               shouldSpawnCap(x - 1, y) == false &&
               shouldSpawnCap(x, y + 1) == false &&
               shouldSpawnCap(x - 1, y + 1) &&
-              entity.spriteBottomLeftCorner != ''
+              entity.spriteCorner != ''
             ) {
               let capTexture = Assets.get(
-                entity.spriteBottomLeftCorner.toString(),
+                entity.spriteCorner.toString(),
               );
-              let capSprite = new PIXI.Sprite(capTexture);
-              capSprite.x = x * this.tileSize;
-              capSprite.y = y * this.tileSize;
-              capSprite.width = this.tileSize;
-              capSprite.height = this.tileSize;
-              capSprite._zIndex = entity.zIndex + 0.2;
-              this.spriteContainer.addChild(capSprite);
+              let cornerSprite = new PIXI.Sprite(capTexture);
+              cornerSprite.x = x * this.tileSize + this.tileSize / 2;
+              cornerSprite.y = y * this.tileSize + this.tileSize / 2;
+              cornerSprite.width = this.tileSize;
+              cornerSprite.height = this.tileSize;
+              cornerSprite._zIndex = entity.zIndex + 0.2;
+              cornerSprite.anchor = (0.5);
+              cornerSprite.angle = 270;
+              this.spriteContainer.addChild(cornerSprite);
             }
             //bottom right
             if (
               shouldSpawnCap(x + 1, y) == false &&
               shouldSpawnCap(x, y + 1) == false &&
               shouldSpawnCap(x + 1, y + 1) &&
-              entity.spriteBottomRightCorner != ''
+              entity.spriteCorner != ''
             ) {
               let capTexture = Assets.get(
-                entity.spriteBottomRightCorner.toString(),
+                entity.spriteCorner.toString(),
               );
-              let capSprite = new PIXI.Sprite(capTexture);
-              capSprite.x = x * this.tileSize;
-              capSprite.y = y * this.tileSize;
-              capSprite.width = this.tileSize;
-              capSprite.height = this.tileSize;
-              capSprite._zIndex = entity.zIndex + 0.2;
-              this.spriteContainer.addChild(capSprite);
+              let cornerSprite = new PIXI.Sprite(capTexture);
+              cornerSprite.x = x * this.tileSize + this.tileSize / 2;
+              cornerSprite.y = y * this.tileSize + this.tileSize / 2;
+              cornerSprite.width = this.tileSize;
+              cornerSprite.height = this.tileSize;
+              cornerSprite._zIndex = entity.zIndex + 0.2;
+              cornerSprite.anchor = (0.5);
+              cornerSprite.angle = 180;
+              this.spriteContainer.addChild(cornerSprite);
             }
             if (entity.hiddenOutsideLOS) {
               if (
@@ -1923,14 +1949,19 @@ export class GameController {
     console.log(`${timestamp}` + ' - ' + message);
   }
 
-  animatePlayerMove(
-    player: Player,
+  // Generic entity animation helper (works for Player and non-player entities)
+  animateEntityMove(
+    entity: any,
     targetX: number,
     targetY: number,
     duration: number = 150,
   ) {
-    const startX = player.renderX;
-    const startY = player.renderY;
+    // Ensure entity has render positions; if not, initialize
+    if (entity.renderX === undefined) entity.renderX = entity.posX;
+    if (entity.renderY === undefined) entity.renderY = entity.posY;
+
+    const startX = entity.renderX;
+    const startY = entity.renderY;
     const deltaX = targetX - startX;
     const deltaY = targetY - startY;
     const startTime = performance.now();
@@ -1938,16 +1969,26 @@ export class GameController {
     const animate = (now: number) => {
       const elapsed = now - startTime;
       const t = Math.min(elapsed / duration, 1);
-      player.renderX = startX + deltaX * t;
-      player.renderY = startY + deltaY * t;
+      entity.renderX = startX + deltaX * t;
+      entity.renderY = startY + deltaY * t;
       if (t < 1) {
         requestAnimationFrame(animate);
       } else {
-        player.renderX = targetX;
-        player.renderY = targetY;
+        entity.renderX = targetX;
+        entity.renderY = targetY;
       }
     };
     requestAnimationFrame(animate);
+  }
+
+  // Backwards-compatible wrapper for player-specific calls
+  animatePlayerMove(
+    player: Player,
+    targetX: number,
+    targetY: number,
+    duration: number = 150
+  ) {
+    this.animateEntityMove(player, targetX, targetY, duration);
   }
 
   gameLoop() {
@@ -2162,22 +2203,7 @@ export class GameController {
       for (let y = 0; y < this.map.height; y++) {
         this.updateTile(x, y);
       }
-    }
-
-    for (const entity of this.enemyTurnList) {
-      try {
-        // Let the entity take its turn (may be synchronous)
-        if (entity instanceof BasicEnemyAI) {
-          entity.aiTurn();
-        }
-      } catch (err) {
-        console.warn('Error during entity turn', err);
-      }
-
-      // redraw so player sees the result immediately
-      this.drawGrid();
-      this.drawPlayer();
-    }
+    }    
   }
 
   updateTile(x: number, y: number) {
@@ -2231,11 +2257,12 @@ export class GameController {
         }
       }
     }
-    this.map.tiles[x][y].entity!.forEach((entity) => {
-      entity.onEndTurn();
-      if (entity.ai) {
-        this.enemyTurnList.push(entity);
-      }
+      this.map.tiles[x][y].entity!.forEach((entity) => {
+        entity.onEndTurn()
+        // Do not schedule sub-entities globally; their parent triggers their turns
+        if (entity.ai && !(entity as any).isSubEntity){
+          this.enemyTurnList.push(entity);
+        }
     });
   }
 
@@ -2247,12 +2274,11 @@ export class GameController {
     }
   }
 
-  updateTarget(x: number, y: number) {
+  updateTarget(x: number, y: number){
     this.map.tiles[x][y].entity!.forEach((entity) => {
-      if (entity.ai) {
-        if (entity instanceof BasicEnemyAI) {
-          entity.findTargets();
-        } else {
+      if (entity.ai){
+        if (entity instanceof BasicEnemyAI){
+          entity.handleTargets();
         }
       }
     });
@@ -2342,24 +2368,71 @@ export class GameController {
   }
 
   loadEntity(x: number, y: number, entity: any, map: GameGrid) {
-    // keep entity coordinates in sync with map placement
     if (entity != null) {
-      map.tiles[x][y].entity!.push(entity);
+      const sizeX = entity.sizeX || 1;
+      const sizeY = entity.sizeY || 1;
+      for (let ix = 0; ix < sizeX; ix++) {
+        for (let iy = 0; iy < sizeY; iy++) {
+          const tx = x + ix;
+          const ty = y + iy;
+          if (!map.isValidTile(tx, ty)) continue;
+          if (!map.tiles[tx][ty].entity) map.tiles[tx][ty].entity = [] as any;
+          map.tiles[tx][ty].entity!.push(entity);
+        }
+      }
       entity.posX = x;
       entity.posY = y;
       entity.id = this.lastUsedId;
       this.lastUsedId += 1;
-      entity.onSpawn();
+      if(entity.initialised == false){
+        entity.onSpawn();
+        entity.initialised = true
+      }
     }
   }
 
-  removeEntities(x: number, y: number, id: number | null = null) {
-    const ents = this.map.tiles[x][y].entity;
+  moveEntity(x: number, y: number, entity: any, map: GameGrid) {
+    console.log(`Moving entity ${entity.name} (id: ${entity.id}) from (${entity.posX}, ${entity.posY}) to (${x}, ${y})`);
+    
+    if (entity.posX === x && entity.posY === y) {
+      console.log(`Entity already at target position, skipping.`);
+      return;
+    }
+    
+    let foundCount = 0;
+    for (let tx = 0; tx < map.width; tx++) {
+      for (let ty = 0; ty < map.height; ty++) {
+        if (map.tiles[tx][ty] && map.tiles[tx][ty].entity) {
+          const idx = map.tiles[tx][ty].entity.findIndex((e: any) => e === entity);
+          if (idx > -1) {
+            map.tiles[tx][ty].entity.splice(idx, 1);
+            foundCount++;
+          }
+        }
+      }
+    }
+    
+    if (map.tiles[x][y].entity) {
+      map.tiles[x][y].entity.push(entity);
+    } else {
+      map.tiles[x][y].entity = [entity];
+    }
+    entity.posX = x;
+    entity.posY = y;
+  }
 
+  removeEntities(x: number, y: number, id: number | null = null) {
     if (id === null) {
       this.map.tiles[x][y].entity = [];
     } else {
-      this.map.tiles[x][y].entity = ents.filter((e: any) => e.id !== id);
+      for (let tx = 0; tx < this.map.tiles.length; tx++) {
+        for (let ty = 0; ty < this.map.tiles[tx].length; ty++) {
+          const ents = this.map.tiles[tx][ty].entity;
+          if (ents) {
+            this.map.tiles[tx][ty].entity = ents.filter((e: any) => e.id !== id);
+          }
+        }
+      }
     }
   }
 
@@ -2412,25 +2485,50 @@ export class GameController {
     return false;
   }
 
-  endTurn() {
+  changeTurn(){
+    this.player1.playerAction(0);
     this.updateAllTiles();
+    if(this.enemyTurn){
+      this.startPlayerTurn();
+    }else{
+      this.startEnemyTurn();
+    }
+  }
+
+  startPlayerTurn() {
+    this.enemyTurn = false;
     this.player1.Energy.setEnergy(100);
-    if (this.player1.Health.torso.zapped.severity > 0) {
-      this.player1.Energy.loseEnergy(this.player1.Health.torso.zapped.severity);
-      if (this.player1.Health.torso.zapped.severity >= 5) {
-        this.player1.Health.torso.zapped.severity =
-          this.player1.Health.torso.zapped.severity - 5;
-      } else {
-        this.player1.Health.torso.zapped.severity = 0;
+    this.addLog("Player's turn started.");
+  }
+
+  async startEnemyTurn() {
+    this.addLog("Enemy's turn started.");
+    this.enemyTurn = true;
+    // Let all entities take their turn (may be synchronous)
+    for (const entity of this.enemyTurnList) {
+      try {
+        if (entity instanceof BasicEnemyAI){
+          await entity.aiTurn();
+        }
+      } catch (err) {
+        console.warn('Error during entity turn', err);
+        this.startPlayerTurn();
       }
     }
-    this.player1.playerAction(0);
+    this.startPlayerTurn();
+    // redraw so player sees the result immediately
+    this.drawGrid();
+    this.drawPlayer();
   }
 
   listenForMovement(player: Player) {
     window.addEventListener('keydown', (event) => {
       let targetX = player.posX;
       let targetY = player.posY;
+
+      if(this.enemyTurn){
+        return;
+      }
 
       switch (event.key.toLowerCase()) {
         case 'w':
@@ -2459,10 +2557,15 @@ export class GameController {
 
   listenForInput(player: Player) {
     window.addEventListener('keydown', (event) => {
+
+      if(this.enemyTurn){
+        return;
+      }
+
       switch (event.key.toLowerCase()) {
         case 'x':
-          this.addLog('Player ended their turn.');
-          this.endTurn();
+          this.addLog("Player ended their turn.");
+          this.changeTurn();
           break;
         case 'f':
           this.addLog('Aim mode: ' + (this.aimMode ? 'off' : 'on') + '.');
@@ -2471,7 +2574,7 @@ export class GameController {
         case 'p':
           this.addLog('(DEBUG) Explosion created at player position.');
           this.createExplosion(player.posX, player.posY, 3, 100, true);
-          this.endTurn();
+          this.changeTurn();
           break;
         case 'l':
           this.addLog('(DEBUG) Healed bleeding.');
@@ -2520,6 +2623,11 @@ export class GameController {
     });
 
     window.addEventListener('click', (event) => {
+
+      if(this.enemyTurn){
+        return;
+      }
+
       const rect = this.app.view.getBoundingClientRect();
 
       const canvasX = event.clientX - rect.left;
@@ -2623,6 +2731,11 @@ export class GameController {
   }
 
   teleportToRoom(worldX: number, worldY: number) {
+
+    if(this.enemyTurn){
+      return;
+    }
+
     // ensure target room exists
     if (!this.world.rooms[worldX] || !this.world.rooms[worldX][worldY]) return;
 

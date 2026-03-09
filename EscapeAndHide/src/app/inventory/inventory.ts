@@ -97,6 +97,7 @@ export class Inventory {
       }
       this.shiftItems();
     }
+    this.shiftItems()
   }
 
   getItems(): Item[] {

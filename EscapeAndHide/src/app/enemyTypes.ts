@@ -3,7 +3,6 @@ import {
   HeavyInterferanceUnitAI,
   LightInterferanceUnitAI,
   MediumInterferanceUnitAI,
-  TrapperUnitAI,
   OppressorUnitAI,
   ScorcherUnitAI,
 } from './enemyAI';
@@ -210,18 +209,5 @@ export class ScorcherUnit extends ScorcherUnitAI {
     super();
     this.inventory.weaponSlot = new Flamethrower();
   }
-}
-
-export class TrapperUnit extends TrapperUnitAI {
-  override name = "Trapper Unit";
-  override description = "A small robotic unit that deploys traps to hinder your movement."
-  override sprite = "/sprites/npc/heavyDummy.png"
-  override collidable = true
-  override health = 200;
-  override hiddenOutsideLOS = true;
-  override blockLOS = false;
-  override flammable = false;
-  override parentEntity = this;
-  override ai = true;
-  isDead = false;
+  
 }

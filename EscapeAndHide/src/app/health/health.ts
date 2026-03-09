@@ -14,7 +14,16 @@ import {
   Fracture,
   Bloodloss,
 } from './afflictions';
+
+import { Genetics } from './genetics';
 import { GameController } from '../game.controller';
+import { 
+  Internals,
+  Heart,
+  Lungs,
+  Brain,
+  Liver,
+} from './internals';
 export type LimbName =
   | 'leftArm'
   | 'rightArm'
@@ -25,10 +34,18 @@ export type LimbName =
 export type affliction = [string, number];
 
 export class Health {
+  genetics = new Genetics();
+  genes = this.genetics.genes;
   maxHealth: number = 5000;
   currentHealth: number = 5000;
   regeneration: number = 1;
   isUnconscious: boolean = false;
+
+  heart: Heart = new Heart();
+  lungs: Lungs = new Lungs();
+  brain: Brain = new Brain();
+  liver: Liver = new Liver();
+
   leftArm: LeftArm = new LeftArm();
   rightArm: RightArm = new RightArm();
   leftLeg: LefLeg = new LefLeg();
@@ -102,6 +119,18 @@ export class Health {
     this.updateAfflictions();
   }
   updateAfflictions() {
+    //Genetic effects
+
+    this.genetics.genes.forEach((gene) => {
+      this.genetics.triggerGeneEffects(gene, this.heart);
+      this.genetics.triggerGeneEffects(gene, this.lungs);
+      this.genetics.triggerGeneEffects(gene, this.brain);
+      this.genetics.triggerGeneEffects(gene, this.liver);
+    });
+    
+    this.maxHealth = 5000 + this.liver.additionalBlood;
+
+
     this.bloodLoss.severity = 0;
     for (let limb of this.limbs) {
       this.bloodLoss.increaseSeverity(limb.bleeding.severity);

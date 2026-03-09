@@ -276,6 +276,37 @@ setRoomByEntrance(leftEntranceRequired: boolean, upEntranceRequired: boolean, ri
         return this.data[id] as any;
     }
 
+    private deepCloneEntity(entity: any, visited: WeakSet<any> = new WeakSet()): any {
+        if (entity === null || entity === undefined) return entity;
+        if (typeof entity !== 'object') return entity;
+        
+        // Prevent circular references
+        if (visited.has(entity)) return entity;
+        visited.add(entity);
+        
+        const cloned = Object.create(Object.getPrototypeOf(entity));
+        
+        for (const key in entity) {
+            if (entity.hasOwnProperty(key)) {
+                const value = entity[key];
+                
+                // Skip functions and problematic properties
+                if (typeof value === 'function') {
+                    cloned[key] = value;
+                } else if (Array.isArray(value)) {
+                    cloned[key] = value.map(item => 
+                        (item && typeof item === 'object' && !visited.has(item)) ? this.deepCloneEntity(item, visited) : item
+                    );
+                } else if (value && typeof value === 'object' && !visited.has(value)) {
+                    cloned[key] = this.deepCloneEntity(value, visited);
+                } else {
+                    cloned[key] = value;
+                }
+            }
+        }
+        return cloned;
+    }
+
     loadRoomWithId(worldX:number,worldY:number,id: keyof RoomsData){
         if(this.data[id]==undefined){
             debugger
@@ -284,7 +315,11 @@ setRoomByEntrance(leftEntranceRequired: boolean, upEntranceRequired: boolean, ri
         let y = (this.data[id] as any).height;
         this.rooms[worldX][worldY] = new GameGrid(x,y);
         this.rooms[worldX][worldY].createEmptyMap();
-        this.rooms[worldX][worldY].loadMap((this.data[id] as any).layout);
+        // Deep clone the layout and all entities to prevent shared state mutations
+        const layoutCopy = (this.data[id] as any).layout.map((row: any[]) => 
+            row.map(entity => this.deepCloneEntity(entity))
+        );
+        this.rooms[worldX][worldY].loadMap(layoutCopy);
     }
 
     getRoomEntrances(roomId: keyof RoomsData){
