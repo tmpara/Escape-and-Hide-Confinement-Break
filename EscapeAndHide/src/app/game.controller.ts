@@ -772,7 +772,7 @@ export class GameController {
     return hitTiles;
   }
 
-  getConeTiles(
+  getTilesInCone(
     centerX: number,
     centerY: number,
     range: number,
@@ -1727,9 +1727,7 @@ export class GameController {
         ) {
           if (this.reticleSpriteDefault) this.reticleSpriteDefault.alpha = 1;
           if (this.reticleSpriteInvalid) this.reticleSpriteInvalid.alpha = 0;
-
         } else {
-     
           if (this.reticleSpriteInvalid) this.reticleSpriteInvalid.alpha = 1;
           if (this.reticleSpriteDefault) this.reticleSpriteDefault.alpha = 0;
         }
@@ -1744,11 +1742,11 @@ export class GameController {
             true,
           )
         ) {
-    
           if(this.reticleSpriteAim)this.reticleSpriteAim.alpha = 1;
+          if(this.reticleSpriteAimInvalid)this.reticleSpriteAimInvalid.alpha = 0;
         } else {
-     
           if(this.reticleSpriteAimInvalid)this.reticleSpriteAimInvalid.alpha = 1;
+          if(this.reticleSpriteAim)this.reticleSpriteAim.alpha = 0;
         }
       }
 
@@ -1887,6 +1885,7 @@ export class GameController {
       this.selectedLimb = limbName;
       this.drawHealthUI();
       console.log(limbName);
+      this.setAfflictionsFlag(true);
     });
     this.healthLimbContainer.addChild(sprite);
   }
@@ -2650,6 +2649,9 @@ export class GameController {
 
   listenForInput(player: Player) {
     window.addEventListener('keydown', (event) => {
+      if(this.enemyTurn){
+        return;
+      }
       this.setGridFlag(true);
       switch (event.key.toLowerCase()) {
         case 'x':
