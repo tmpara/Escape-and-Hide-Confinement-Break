@@ -190,13 +190,13 @@ export class StunGun extends Item {
   override category = 'weapon';
   override sprite = '/sprites/items/placeholder.png';
   override structureDamage = 1;
-  override range = 8;
+  override range = 9;
   override accuracy = 1;
   override slot = 'weapon';
   override afflictions = [
     ['Zapped', 10],
-    ['Lacerations', 2],
-    ['Bleeding', 2],
+    ['Lacerations', 10],
+    ['Bleeding', 10],
   ];
 
   override use(target: Entity) {

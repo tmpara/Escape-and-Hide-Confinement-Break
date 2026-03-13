@@ -17,6 +17,7 @@ export abstract class Entity {
   posX = 0;
   posY = 0;
   zIndex = 5;
+  illumination=0;
   spriteCap= "";
   spriteCorner = "";
   connectsWith: string | null = null

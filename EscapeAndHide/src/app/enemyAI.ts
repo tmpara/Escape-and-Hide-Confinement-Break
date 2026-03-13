@@ -22,15 +22,11 @@ export class BasicEnemyAI extends Entity {
   stunned = 0;
   parentEntity: Entity | null = null;
   alerted = false;
-  energy = this.maxEnergy;
+  energy = 0
   Targets: Entity[] = [];
   LastKnownTargetCoords: [number, number] | null = null;
 
-  async aiTurn() {
-    await this.Main();
-  }
-
-  async Main(): Promise<void> {
+  async aiTurn(): Promise<void> {
 
     if (!GameController.current) return;
     const controller = GameController.current;
@@ -58,12 +54,15 @@ export class BasicEnemyAI extends Entity {
         movementBehavior = 3
       }else if (distanceToTarget > attackRange){
         movementBehavior = 1
-      }else if(distanceToTarget < attackRange*0.33){
+      }else if(distanceToTarget < attackRange*0.3){
         movementBehavior = 2
       }else{
         movementBehavior = 0
       }
+      
     }
+
+    this.energy = this.maxEnergy;
 
     // NPC turn behavior
     while (this.energy > 0) {
@@ -96,18 +95,27 @@ export class BasicEnemyAI extends Entity {
         }
         // approach behavior
         else if(movementBehavior == 1){
-          this.moveToPosition(target.posX,target.posY)
-          // try to move to around 2/3 range
-          distanceToTarget = controller.getDistance(this.posX,this.posY,target.posX,target.posY)
-          if(distanceToTarget < attackRange*0.66){
+          if(await this.moveToPosition(target.posX,target.posY)==true){
+            // try to move to around 2/3 range
+            distanceToTarget = controller.getDistance(this.posX,this.posY,target.posX,target.posY)
+            if(distanceToTarget < attackRange*0.7){
+              movementBehavior=0
+            }
+          }else{
+            // if we fail then stop
             movementBehavior=0
           }
         }
+        // back away behavior
         else if(movementBehavior == 2){
-          this.backAwayFrom(target.posX, target.posY);
-          // stop if it gets too far
-          distanceToTarget = controller.getDistance(this.posX,this.posY,target.posX,target.posY)
-          if(distanceToTarget >= attackRange*0.66){
+          if(await this.backAwayFrom(target.posX, target.posY)==true){
+            // stop if it gets too far
+            distanceToTarget = controller.getDistance(this.posX,this.posY,target.posX,target.posY)
+            if(distanceToTarget >= attackRange*0.7){
+              movementBehavior=0
+            }
+          }else{
+            // if we fail then stop
             movementBehavior=0
           }
         }
@@ -139,7 +147,6 @@ export class BasicEnemyAI extends Entity {
       this.energy -= 1;
     }
     this.onAiTurnEnd();
-    this.energy = this.maxEnergy;
   }
 
   removeEntity(x: number, y: number) {
@@ -237,12 +244,16 @@ export class BasicEnemyAI extends Entity {
     return null;
   }
 
-  backAwayFrom(posX: number, posY: number) {
+  async backAwayFrom(posX: number, posY: number) {
     const dx = this.posX - posX;
     const dy = this.posY - posY;
     const nx = this.posX + (dx > 0 ? 1 : dx < 0 ? -1 : 0);
     const ny = this.posY + (dy > 0 ? 1 : dy < 0 ? -1 : 0);
-    this.moveToPosition(nx, ny);
+    if(await this.moveToPosition(nx, ny)==true){
+      return true
+    }else{
+      return false
+    }
   }
 
   async moveToPosition(targetX: number, targetY: number) {
@@ -254,9 +265,9 @@ export class BasicEnemyAI extends Entity {
       targetY,
     );
     if (!path || path.length <= 1) {
-      return;
+      return false;
     }
-    if (!controller) return;
+    if (!controller) return false;
 
     // move up to `energy` steps along the path
     const steps = 1; //maybe will be changed later
@@ -264,7 +275,7 @@ export class BasicEnemyAI extends Entity {
       const [nx, ny] = path[step];
 
       // safety checks: bounds and walkability
-      if (!controller!.map || !controller!.map.isValidTile(nx, ny)) return;
+      if (!controller!.map || !controller!.map.isValidTile(nx, ny)) return false;
 
       // if there's a door on the next tile, try to open it
       const door = controller!.getDoorOnTile(nx, ny);
@@ -279,7 +290,7 @@ export class BasicEnemyAI extends Entity {
         controller!.drawPlayer?.();
       }
 
-      if (!controller!.isTileWalkable(nx, ny)) return;
+      if (!controller!.isTileWalkable(nx, ny)) return false;
 
       this.removeEntity(this.posX, this.posY);
       controller!.loadEntity(nx, ny, this, controller!.map);
@@ -289,10 +300,10 @@ export class BasicEnemyAI extends Entity {
       controller!.drawPlayer?.();
 
       if (nx === targetX && ny === targetY) {
-        return;
+        return true;
       }
     }
-    return;
+    return true;
   }
 
   RangedAttack(target: Entity) {

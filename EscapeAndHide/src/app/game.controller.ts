@@ -1,6 +1,6 @@
 import * as PIXI from 'pixi.js';
 import { Application, Graphics, Container } from 'pixi.js';
-import { Text, Assets } from 'pixi.js';
+import { Text, Assets, Color } from 'pixi.js';
 import { GameGrid } from './grid';
 import { World } from './world';
 import { Player } from './player';
@@ -100,6 +100,7 @@ export class GameController {
     await Assets.load('rightarm.png');
     await Assets.load('leftleg.png');
     await Assets.load('rightleg.png');
+    await Assets.load('/sprites/entities/floor_tile1.png');
     await Assets.load('/sprites/entities/wall_placeholder_base.png');
     await Assets.load('/sprites/entities/wall_cap.png');
     await Assets.load('/sprites/entities/wall_corner.png');
@@ -183,6 +184,7 @@ export class GameController {
     this.loadPlayer(1, 1, this.player1, 1);
 
     // Draw grid, player
+    this.updateLighting();
     this.drawGrid();
     this.drawPlayer();
     this.drawHealthUI();
@@ -1421,6 +1423,7 @@ export class GameController {
           tileSprite.width = this.tileSize;
           tileSprite.height = this.tileSize;
           tileSprite._zIndex = 2;
+          tileSprite.tint = new Color({ r: 255 * this.map.tiles[x][y].lighting, g: 255 * this.map.tiles[x][y].lighting, b: 255 * this.map.tiles[x][y].lighting, a: 1})
           this.spriteContainer.addChild(tileSprite);
         }
 
@@ -1434,6 +1437,7 @@ export class GameController {
           itemSprite.width = this.tileSize;
           itemSprite.height = this.tileSize;
           itemSprite._zIndex = 3;
+          itemSprite.tint = new Color({ r: 255 * this.map.tiles[x][y].lighting, g: 255 * this.map.tiles[x][y].lighting, b: 255 * this.map.tiles[x][y].lighting, a: 1})
           this.spriteContainer.addChild(itemSprite);
           if (
             this.isLOSObstructed(
@@ -1480,6 +1484,7 @@ export class GameController {
             entitySprite._zIndex = entity.zIndex;
             entitySprite.anchor = (0.5);
             entitySprite.angle = entity.rotation;
+            entitySprite.tint = new Color({ r: 255 * this.map.tiles[x][y].lighting, g: 255 * this.map.tiles[x][y].lighting, b: 255 * this.map.tiles[x][y].lighting, a: 1})
             this.spriteContainer.addChild(entitySprite);
             // handle wall connections
             const shouldSpawnCap = (x: number, y: number) => {
@@ -1690,17 +1695,15 @@ export class GameController {
           }
         }
 
-        this.tile.lineStyle(1, 0x888888);
-        this.tile.beginFill(0xcccccc);
-        this.tile.drawRect(
-          x * this.tileSize,
-          y * this.tileSize,
-          this.tileSize,
-          this.tileSize,
-        );
-        this.tile._zIndex = 1;
-        this.tile.endFill();
-        this.spriteContainer.addChild(this.tile);
+        let tileTexture = Assets.get("/sprites/entities/floor_tile1.png");
+        let tileSprite = new PIXI.Sprite(tileTexture);
+        tileSprite.x = x * this.tileSize;
+        tileSprite.y = y * this.tileSize;
+        tileSprite.width = this.tileSize;
+        tileSprite.height = this.tileSize;
+        tileSprite._zIndex = 1;
+        tileSprite.tint = new Color({ r: 255 * this.map.tiles[x][y].lighting, g: 255 * this.map.tiles[x][y].lighting, b: 255 * this.map.tiles[x][y].lighting, a: 1})
+        this.spriteContainer.addChild(tileSprite);
       }
     }
     //this.drawReticle();
@@ -2075,9 +2078,9 @@ export class GameController {
     }
 
     if(this.GridFlag){
+      this.updateLighting();
       this.drawGrid();
       this.setGridFlag(false);
-     
     }
 
     if(this.HealthBarFlag){
@@ -2386,6 +2389,25 @@ export class GameController {
     });
   }
 
+  updateLighting() {
+    for (let x = 0; x < this.map.width; x++) {
+      for (let y = 0; y < this.map.height; y++) {
+        this.map.tiles[x][y].lighting=0;
+        let entities = this.getAllEntitiesOnTile(x, y);
+        for (let i = 0; i < entities.length; i++) {
+          if (entities[i].illumination>0){
+            let tiles = this.getTilesInSphere(x, y, entities[i].illumination);
+            tiles.forEach((tile) => {
+              if (this.isLOSObstructed(x, y, tile[0], tile[1], true, true) == false) {
+                this.map.tiles[x][y].lighting=(entities[i].illumination-this.getDistanceTo(x,y,tile[0],tile[1]))
+              }
+            });
+          }
+        }
+      }
+    }    
+  }
+
   ignite(
     x: number,
     y: number,
@@ -2600,6 +2622,7 @@ export class GameController {
   startPlayerTurn() {
     this.enemyTurn = false;
     this.player1.Energy.setEnergy(100);
+    this.setEnergyBarFlag(true);
     this.addLog("Player's turn started.");
   }
 
@@ -2619,6 +2642,7 @@ export class GameController {
     }
     this.startPlayerTurn();
     // redraw so player sees the result immediately
+    this.updateLighting();
     this.drawGrid();
     this.drawPlayer();
   }

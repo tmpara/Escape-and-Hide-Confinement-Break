@@ -101,7 +101,7 @@ export class LightInterferanceUnit extends BasicEnemyAI {
   override deadSprite = '/sprites/npc/heavyDummyDead.png';
   override collidable = true;
   override damageable = true;
-  override Health = new Health(1000, 1000);
+  override Health = new Health(100, 100);
   override hiddenOutsideLOS = true;
   override blockLOS = false;
   override flammable = true;
@@ -112,7 +112,7 @@ export class LightInterferanceUnit extends BasicEnemyAI {
   override factionID = 4;
   override meleePreference = false;
   override maxEnergy = 4;
-  override sightRange = 8;
+  override sightRange = 9;
   isDead = false;
 
   constructor() {

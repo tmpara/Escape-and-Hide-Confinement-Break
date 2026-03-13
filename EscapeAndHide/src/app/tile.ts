@@ -6,6 +6,7 @@ export class tile {
   effect: string = '';
   flammable: boolean = false;
   fireValue: number = 0;
+  lighting: number = 0;
   item: Item | null = null;
   entity: Entity[];
 
@@ -15,6 +16,7 @@ export class tile {
     effect: string,
     flammable: boolean,
     fireValue: number,
+    lighting: number,
     item: Item | null,
     entity: Entity[]
   ) {
@@ -23,6 +25,7 @@ export class tile {
     this.effect = effect;
     this.flammable = flammable;
     this.fireValue = fireValue;
+    this.lighting = lighting;
     this.item = item;
     this.entity = entity;
   }
@@ -34,6 +37,7 @@ export class tile {
       effect: this.effect,
       flammable: this.flammable,
       fireValue: this.fireValue,
+      lighting: 0,
       item: this.item,
       entityCount: this.entity.length,
       entities: this.entity.map((e) => e.name),
