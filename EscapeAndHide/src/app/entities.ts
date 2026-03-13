@@ -1,21 +1,14 @@
 import { Entity } from './entity';
 import { Player } from './player';
 import { GameController } from './game.controller';
-import { Item } from './items/items';
-import { gun,bandage } from './items/items';
+import { SmallGun, Medkit, BigGun, Bandage, Flamethrower } from './items/items';
 
 export class Wall1 extends Entity {
   override name = 'Wall';
   override sprite = '/sprites/entities/wall_placeholder_base.png';
   override zIndex = 4;
-  override spriteTopCap = '/sprites/entities/wall_placeholder_topcap.png';
-  override spriteBottomCap = '/sprites/entities/wall_placeholder_bottomcap.png';
-  override spriteLeftCap = '/sprites/entities/wall_placeholder_leftcap.png';
-  override spriteRightCap = '/sprites/entities/wall_placeholder_rightcap.png';
-  override spriteTopLeftCorner = '/sprites/entities/wall_placeholder_topleftcorner.png';
-  override spriteTopRightCorner = '/sprites/entities/wall_placeholder_toprightcorner.png';
-  override spriteBottomLeftCorner = '/sprites/entities/wall_placeholder_bottomleftcorner.png';
-  override spriteBottomRightCorner = '/sprites/entities/wall_placeholder_bottomrightcorner.png';
+  override spriteCap = '/sprites/entities/wall_cap.png';
+  override spriteCorner = '/sprites/entities/wall_corner.png';
   override connectsWith = 'Wall';
   override tags = ['Wall'];
   override collidable = true;
@@ -30,14 +23,8 @@ export class WallCorner1 extends Entity {
   override name = 'Wall';
   override sprite = '/sprites/entities/wall_placeholder_base.png';
   override zIndex = 4;
-  override spriteTopCap = '/sprites/entities/wall_placeholder_topcap.png';
-  override spriteBottomCap = '/sprites/entities/wall_placeholder_bottomcap.png';
-  override spriteLeftCap = '/sprites/entities/wall_placeholder_leftcap.png';
-  override spriteRightCap = '/sprites/entities/wall_placeholder_rightcap.png';
-  override spriteTopLeftCorner = '/sprites/entities/wall_placeholder_topleftcorner.png';
-  override spriteTopRightCorner = '/sprites/entities/wall_placeholder_toprightcorner.png';
-  override spriteBottomLeftCorner = '/sprites/entities/wall_placeholder_bottomleftcorner.png';
-  override spriteBottomRightCorner = '/sprites/entities/wall_placeholder_bottomrightcorner.png';
+  override spriteCap = '/sprites/entities/wall_cap.png';
+  override spriteCorner = '/sprites/entities/wall_corner.png';
   override connectsWith = 'Wall';
   override tags = ['Wall'];
   override collidable = true;
@@ -76,7 +63,7 @@ export class Door extends Entity {
       this.blocked = false;
       let entities = GameController.current?.getAllEntitiesOnTile(
         this.posX,
-        this.posY
+        this.posY,
       )!;
       for (let i = 0; i < entities.length!; i++) {
         if (entities[i].name != 'Door') {
@@ -183,7 +170,8 @@ export class Crate extends Entity {
   override hiddenOutsideLOS = true;
   override blockLOS = false;
   override flammable = true;
-  lootTable = [];
+  override inventorySize = 3;
+  override itemPool: any[] = [];
 
   override onSpawn() {
     const skin = GameController.current?.generateRandomNumber(1,6)
@@ -208,7 +196,10 @@ export class Crate extends Entity {
         break;
     }
   }
-
+  constructor() {
+    super();
+    this.generateLoot();
+  }
 }
 
 export class WeaponCrate extends Entity {
@@ -223,7 +214,8 @@ export class WeaponCrate extends Entity {
   override hiddenOutsideLOS = true;
   override blockLOS = false;
   override flammable = true;
-  lootTable = [new gun()];
+  override inventorySize = 2;
+  override itemPool = [new SmallGun(), new BigGun(), new Flamethrower()];
 
   override onSpawn() {
     const skin = GameController.current?.generateRandomNumber(1,3)
@@ -240,6 +232,10 @@ export class WeaponCrate extends Entity {
     }
   }
 
+  constructor() {
+    super();
+    this.generateLoot();
+  }
 }
 
 export class MedicalCrate extends Entity {
@@ -248,13 +244,18 @@ export class MedicalCrate extends Entity {
   override lootable = true;
   override interactable = true;
   override collidable = true;
-  override pushable = true;
+  override inventorySize = 2;
   override damageable = true;
   override health = 25;
   override hiddenOutsideLOS = true;
   override blockLOS = false;
   override flammable = true;
-  lootTable = [new bandage()];
+  override itemPool = [new Bandage(), new Medkit()];
+  
+  constructor() {
+    super();
+    this.generateLoot();
+  }
 }
 
 export class CryoChamber extends Entity {
@@ -269,20 +270,19 @@ export class CryoChamber extends Entity {
   override hiddenOutsideLOS = true;
   override blockLOS = false;
   override flammable = true;
+
+  override onDestroyed(damage: number) {
+      GameController.current?.loadEntity(this.posX, this.posY, new GlassShards, GameController.current.map);
+  }
+
 }
 
 export class WallSign1 extends Entity {
   override name = 'Wall';
   override sprite = '/sprites/entities/elevatorsignwall.png';
   override zIndex = 4;
-  override spriteTopCap = '/sprites/entities/wall_placeholder_topcap.png';
-  override spriteBottomCap = '/sprites/entities/wall_placeholder_bottomcap.png';
-  override spriteLeftCap = '/sprites/entities/wall_placeholder_leftcap.png';
-  override spriteRightCap = '/sprites/entities/wall_placeholder_rightcap.png';
-  override spriteTopLeftCorner = '/sprites/entities/wall_placeholder_topleftcorner.png';
-  override spriteTopRightCorner = '/sprites/entities/wall_placeholder_toprightcorner.png';
-  override spriteBottomLeftCorner = '/sprites/entities/wall_placeholder_bottomleftcorner.png';
-  override spriteBottomRightCorner = '/sprites/entities/wall_placeholder_bottomrightcorner.png';
+  override spriteCap = '/sprites/entities/wall_cap.png';
+  override spriteCorner = '/sprites/entities/wall_corner.png';
   override connectsWith = 'Wall';
   override tags = ['Wall'];
   override collidable = true;
@@ -315,10 +315,9 @@ export class Mine extends Entity {
     GameController.current?.createExplosion(this.posX, this.posY, 3, 200, false, msg);
   }
 
-  override onEndTurn(){
-    this.sprite = "/sprites/effects/hidden.png";
+  override onEndTurn() {
+    this.sprite = '/sprites/effects/hidden.png';
   }
-
 }
 
 export class RandomSpawner extends Entity {
@@ -369,5 +368,4 @@ export class GlassShards extends Entity {
       ]);
     }
   }
-  
 }

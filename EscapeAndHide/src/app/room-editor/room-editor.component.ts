@@ -3,8 +3,28 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RoomsData } from '../rooms';
 import { Room } from '../room';
-import * as EntitiesModule from '../entities';
-import * as EnemiesModule from '../enemyTypes';
+import {
+  Wall1,
+  WallCorner1,
+  ExplosiveBarrel,
+  DoorHorizontal,
+  DoorVertical,
+  RoomTransition,
+  Crate,
+  WeaponCrate,
+  MedicalCrate,
+  Mine,
+  GlassShards,
+} from '../entities';
+import {
+  Dummy,
+  HeavyDummy,
+  LightInterferanceUnit,
+  MediumInterferanceUnit,
+  HeavyInterferanceUnit,
+  OppressorUnit,
+  ScorcherUnit,
+} from '../enemyTypes';
 
 type EntityFactory = { name: string; create: () => any };
 
@@ -45,47 +65,31 @@ export class RoomEditorComponent {
       this.selectRoom(this.roomKeys[0]);
     }
 
-    // Build entity palette dynamically from exports in entities and enemyTypes
-    const palette: EntityFactory[] = [];
-    palette.push({ name: 'Empty', create: () => null });
-
-    const addFromModule = (mod: any) => {
-      for (const key of Object.keys(mod)) {
-        // skip non-constructors
-        const val = (mod as any)[key];
-        if (typeof val !== 'function') continue;
-
-        // avoid adding duplicate names
-        if (palette.find((p) => p.name === key)) continue;
-
-        // create a factory that tries to instantiate the constructor
-        const factoryCreate = () => {
-          try {
-            // if constructor expects arguments, provide sensible defaults
-            if (val.length && val.length > 0) {
-              // special-case known constructors that require a string argument
-              if (key.toLowerCase().includes('transition')) {
-                return new val('up');
-              }
-              // fallback: try without args and catch if it fails
-              return new val();
-            }
-            return new val();
-          } catch (e) {
-            // If instantiation fails, return null so callers can handle it
-            console.warn('Failed to instantiate', key, e);
-            return null;
-          }
-        };
-
-        palette.push({ name: key, create: factoryCreate });
-      }
-    };
-
-    addFromModule(EntitiesModule as any);
-    addFromModule(EnemiesModule as any);
-
-    this.entityPalette = palette;
+    // Build entity palette (entities + enemies)
+    this.entityPalette = [
+      { name: 'Empty', create: () => null },
+      { name: 'Wall1', create: () => new Wall1() },
+      { name: 'WallCorner1', create: () => new WallCorner1() },
+      { name: 'DoorHorizontal', create: () => new DoorHorizontal() },
+      { name: 'DoorVertical', create: () => new DoorVertical() },
+      { name: 'RoomTransition(up)', create: () => new RoomTransition('up') },
+      { name: 'RoomTransition(down)', create: () => new RoomTransition('down') },
+      { name: 'RoomTransition(left)', create: () => new RoomTransition('left') },
+      { name: 'RoomTransition(right)', create: () => new RoomTransition('right') },
+      { name: 'ExplosiveBarrel', create: () => new ExplosiveBarrel() },
+      { name: 'Crate', create: () => new Crate() },
+      { name: 'WeaponCrate', create: () => new WeaponCrate() },
+      { name: 'MedicalCrate', create: () => new MedicalCrate() },
+      { name: 'Mine', create: () => new Mine() },
+      { name: 'GlassShards', create: () => new GlassShards() },
+      { name: 'Dummy', create: () => new Dummy() },
+      { name: 'HeavyDummy', create: () => new HeavyDummy() },
+      { name: 'LightInterferanceUnit', create: () => new LightInterferanceUnit() },
+      { name: 'MediumInterferanceUnit', create: () => new MediumInterferanceUnit() },
+      { name: 'HeavyInterferanceUnit', create: () => new HeavyInterferanceUnit() },
+      { name: 'OppressorUnit', create: () => new OppressorUnit() },
+      { name: 'ScorcherUnit', create: () => new ScorcherUnit() },
+    ];
   }
 
   selectRoom(key: string) {

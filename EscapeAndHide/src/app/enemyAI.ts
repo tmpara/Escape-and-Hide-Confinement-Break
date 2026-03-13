@@ -1,13 +1,18 @@
+import { range } from 'rxjs';
 import { Entity } from './entity';
+import { Mine } from './entities';
 import { GameController } from './game.controller';
 import { Player } from './player';
-import { LimbName } from './health/health';
-import { setPositions } from 'pixi.js';
+import { Health, LimbName } from './health/health';
+import { tile } from './tile';
+import { Item, StunGun } from './items/items';
+import { Inventory } from './inventory/inventory';
 
 export class BasicEnemyAI extends Entity {
   meleePreference = false;
   rangedOnly = false;
   patrolWhenIdle = true;
+  triggersTraps = true;
   maxEnergy = 5;
   sightRange = 8;
   attackRange = 4;
@@ -23,14 +28,12 @@ export class BasicEnemyAI extends Entity {
   damage = 1;
   accuracy = 0.1; //chance to miss
   //these values shouldn't be changed
-	stunned = 0;
+  stunned = 0;
   parentEntity: Entity | null = null;
   alerted = false;
   energy = this.maxEnergy;
   Targets: Entity[] = [];
   LastKnownTargetCoords: [number, number] | null = null;
-
-  //TO DO: FIX ENEMY TURN GETTING STUCK AFTER ATTACKING
 
   async aiTurn() {
     await this.Main();
@@ -112,6 +115,7 @@ export class BasicEnemyAI extends Entity {
       controller.drawPlayer?.();
       this.energy -= 1;
     }
+    this.onAiTurnEnd();
     this.energy = this.maxEnergy;
   }
 
@@ -231,6 +235,7 @@ export class BasicEnemyAI extends Entity {
     if (!path || path.length <= 1) {
       return;
     }
+    if (!controller) return;
 
     // move up to `energy` steps along the path
     const steps = 1; //maybe will be changed later
@@ -317,11 +322,16 @@ export class BasicEnemyAI extends Entity {
     let damageDealt = this.damage * 2;
     target.Health.damageLimb(targetLimb, [['Lacerations', damageDealt]]);
   }
+  
+  onAiTurnEnd(){
+    
+  }
+
 }
 
 export class LightInterferanceUnitAI extends BasicEnemyAI {
   override hostile = true;
-	override factionID = 4;
+  override factionID = 4;
   override meleePreference = false;
   override maxEnergy = 4;
   override sightRange = 8;
@@ -330,59 +340,7 @@ export class LightInterferanceUnitAI extends BasicEnemyAI {
   override accuracy = 0.1; //chance to miss
 
   override RangedAttack() {
-    let targetLimb: LimbName = 'torso';
-    let miss = Math.random(); //chance to miss or hit random limb
-    if (miss < this.accuracy) {
-      return; //missed attack
-    } else if (miss < this.accuracy * 2) {
-      const limbs: LimbName[] = [
-        'head',
-        'leftArm',
-        'rightArm',
-        'leftLeg',
-        'rightLeg',
-      ];
-      const randomIndex = Math.floor(Math.random() * limbs.length);
-      targetLimb = limbs[randomIndex];
-    }
-    const controller = GameController.current;
-    if (!controller) return;
-    if (this.Targets.length == 0) return;
-    const target = this.Targets[0] as Player;
-    let damageDealt = this.damage;
-    target.Health.damageLimb(targetLimb, [
-      ['Lacerations', damageDealt * 2],
-      ['Bleeding', damageDealt * 2],
-    ]);
-    target.Health.torso.zapped.increaseSeverity(damageDealt * 5);
-  }
-
-  override MeleeAttack() {
-    let targetLimb: LimbName = 'torso';
-    let miss = Math.random(); //chance to miss or hit random limb
-    if (miss < this.accuracy) {
-      return; //missed attack
-    } else if (miss < this.accuracy * 2) {
-      const limbs: LimbName[] = [
-        'head',
-        'leftArm',
-        'rightArm',
-        'leftLeg',
-        'rightLeg',
-      ];
-      const randomIndex = Math.floor(Math.random() * limbs.length);
-      targetLimb = limbs[randomIndex];
-    }
-    const controller = GameController.current;
-    if (!controller) return;
-    if (this.Targets.length == 0) return;
-    const target = this.Targets[0] as Player;
-    let damageDealt = this.damage * 2;
-    target.Health.damageLimb(targetLimb, [
-      ['Lacerations', damageDealt * 2],
-      ['Bleeding', damageDealt * 2],
-    ]);
-    target.Health.torso.zapped.increaseSeverity(damageDealt * 5);
+    this.inventory.weaponSlot?.use(this.Targets[0]);
   }
 }
 
@@ -565,61 +523,15 @@ export class OppressorUnitAI extends BasicEnemyAI {
   }
 }
 
-export class TrapperUnitAI extends BasicEnemyAI {
-  override hostile = false;
-	override factionID = 4;
-  override meleePreference = false;
-  override maxEnergy = 5;
-  override sightRange = 3;
-  override attackRange = 2;
-  override damage = 1;
-  override accuracy = 0.1; //chance to miss
-}
-
 export class ScorcherUnitAI extends BasicEnemyAI {
   override hostile = true;
-	override factionID = 4;
+  override factionID = 4;
   override meleePreference = false;
   override rangedOnly = true;
   override maxEnergy = 5;
   override sightRange = 5;
   override attackRange = 3;
   override damage = 5;
-
-  getConeTiles(
-    centerX: number,
-    centerY: number,
-    range: number,
-    angle: number,
-    coneAngle: number,
-  ): [number, number][] {
-    const tiles: [number, number][] = [];
-    const controller = GameController.current;
-    for (let x = centerX - range; x <= centerX + range; x++) {
-      for (let y = centerY - range; y <= centerY + range; y++) {
-        const dx = Math.abs(x - centerX);
-        const dy = Math.abs(y - centerY);
-        const dist = Math.ceil(Math.max(dx, dy) + 0.5 * Math.min(dx, dy));
-        if (dist > range || dist === 0) continue; // exclude center
-
-        // skip tiles that are out of the current map bounds
-        if (controller && controller.map && !controller.map.isValidTile(x, y))
-          continue;
-
-        const angleToTile = Math.atan2(y - centerY, x - centerX);
-        let angleDiff = angleToTile - angle;
-        // Robust normalization to [-PI, PI]
-        while (angleDiff <= -Math.PI) angleDiff += 2 * Math.PI;
-        while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
-        // small epsilon to avoid cutting off exact-edge tiles due to fp errors
-        const eps = 1e-9;
-        if (Math.abs(angleDiff) <= coneAngle / 2 + eps) {
-          tiles.push([x, y]);
-        }
-      }
-    }
-    return tiles;
-  }
 
   override RangedAttack() {
     const controller = GameController.current;
@@ -628,7 +540,7 @@ export class ScorcherUnitAI extends BasicEnemyAI {
     const dx = target.posX - this.posX;
     const dy = target.posY - this.posY;
     const angleToTarget = Math.atan2(dy, dx);
-    const coneTiles = this.getConeTiles(
+    const coneTiles = controller.getTilesInCone(
       this.posX,
       this.posY,
       this.attackRange + 2,
