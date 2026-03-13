@@ -1,10 +1,5 @@
 import {
   BasicEnemyAI,
-  HeavyInterferanceUnitAI,
-  LightInterferanceUnitAI,
-  MediumInterferanceUnitAI,
-  OppressorUnitAI,
-  ScorcherUnitAI,
 } from './enemyAI';
 import { Entity } from './entity';
 import { Health } from './health/health';
@@ -99,10 +94,9 @@ export class HeavyDummy extends Entity {
   }
 }
 
-export class LightInterferanceUnit extends LightInterferanceUnitAI {
+export class LightInterferanceUnit extends BasicEnemyAI {
   override name = 'Light Interferance Unit';
-  override description =
-    'A small robotic unit made to stop you in your tracks. Nonlethal.';
+  override description ='A small robotic unit made to stop you in your tracks. Nonlethal.';
   override sprite = '/sprites/npc/heavyDummy.png';
   override deadSprite = '/sprites/npc/heavyDummyDead.png';
   override collidable = true;
@@ -112,8 +106,13 @@ export class LightInterferanceUnit extends LightInterferanceUnitAI {
   override blockLOS = false;
   override flammable = true;
   override removeOnDestroy = false;
-  override parentEntity = this;
+
   override ai = true;
+  override hostile = true;
+  override factionID = 4;
+  override meleePreference = false;
+  override maxEnergy = 4;
+  override sightRange = 8;
   isDead = false;
 
   constructor() {
@@ -121,17 +120,12 @@ export class LightInterferanceUnit extends LightInterferanceUnitAI {
     this.inventory.weaponSlot = new StunGun();
   }
 
-  override destroy(){
-    if (this.destroyed == false) {
-      this.destroyed = true;
-      this.sprite = this.deadSprite;
-    }
-  }
   override onDestroyed(damage: number) {
     this.lootable = true;
   }
+
 }
-export class MediumInterferanceUnit extends MediumInterferanceUnitAI {
+export class MediumInterferanceUnit extends BasicEnemyAI {
   override name = 'Medium Interferance Unit';
   override description =
     'A 4-legged robot with two double-cannons on mounted at its sides, lethal.';
@@ -152,7 +146,7 @@ export class MediumInterferanceUnit extends MediumInterferanceUnitAI {
   }
 
 }
-export class HeavyInterferanceUnit extends HeavyInterferanceUnitAI {
+export class HeavyInterferanceUnit extends BasicEnemyAI {
   override name = 'Heavy Interferance Unit';
   override description =
     'A large 4-legged robotic unit with extreme destruction capabilities, extremely lethal.';
@@ -172,7 +166,7 @@ export class HeavyInterferanceUnit extends HeavyInterferanceUnitAI {
   }
 }
 
-export class OppressorUnit extends OppressorUnitAI {
+export class OppressorUnit extends BasicEnemyAI {
   override name = 'Oppressor Unit';
   override description =
     'A large robotic unit built to crush anything in its path, extremely lethal.';
@@ -191,7 +185,7 @@ export class OppressorUnit extends OppressorUnitAI {
   }
 
 }
-export class ScorcherUnit extends ScorcherUnitAI {
+export class ScorcherUnit extends BasicEnemyAI {
   override name = 'Scorcher Unit';
   override description =
     'A heavy robotic unit equipped with a flamethrower, lethal.';

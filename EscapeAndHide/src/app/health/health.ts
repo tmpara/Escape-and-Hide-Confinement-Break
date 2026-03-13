@@ -37,8 +37,8 @@ export class Health {
   gameController = GameController;
   genetics = new Genetics();
   genes = this.genetics.genes;
-  maxHealth: number = 5000;
-  currentHealth: number = 5000;
+  maxHealth: number = 100;
+  currentHealth: number = 100;
   regeneration: number = 1;
   isUnconscious: boolean = false;
 
