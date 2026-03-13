@@ -120,7 +120,7 @@ export class Health {
         this[limb].burn.decreaseSeverity(affliction[1]);
       }
       if (affliction[0] == 'Fracture') {
-        this[limb].removeFracture();
+        this[limb].addFracture();
       }
     }
     this.updateAfflictions();
@@ -129,10 +129,14 @@ export class Health {
     //Genetic effects
 
     this.genetics.genes.forEach((gene) => {
-      this.genetics.triggerGeneEffects(gene, this.heart);
-      this.genetics.triggerGeneEffects(gene, this.lungs);
-      this.genetics.triggerGeneEffects(gene, this.brain);
-      this.genetics.triggerGeneEffects(gene, this.liver);
+      if(gene.targetInternal == "Heart"){
+      this.genetics.triggerGeneEffects(gene, this.heart);}
+      if(gene.targetInternal == "Lungs"){
+      this.genetics.triggerGeneEffects(gene, this.lungs);}
+      if(gene.targetInternal == "Brain"){
+      this.genetics.triggerGeneEffects(gene, this.brain);}
+      if(gene.targetInternal == "Liver"){
+      this.genetics.triggerGeneEffects(gene, this.liver);}
     });
     
     this.maxHealth = 5000 + this.liver.additionalBlood;
@@ -142,6 +146,7 @@ export class Health {
     for (let limb of this.limbs) {
       this.bloodLoss.increaseSeverity(limb.bleeding.severity);
     }
+    //console.log('bloodloss: ' + this.bloodLoss.severity);
     this.currentHealth -= this.bloodLoss.severity;
     if (this.currentHealth < 0) {
       this.currentHealth = 0;
@@ -157,6 +162,7 @@ export class Health {
       this.hypoxemia.severity < 100
     ) {
       this.hypoxemia.increaseSeverity(this.bloodLoss.severity / 20);
+      //console.log('hypoxemia: ' + this.hypoxemia.severity);
       if (this.hypoxemia.severity >= 100) {
         this.isUnconscious = true;
       }

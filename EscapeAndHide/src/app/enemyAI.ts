@@ -15,7 +15,7 @@ export class BasicEnemyAI extends Entity {
   triggersTraps = true;
   maxEnergy = 5;
   sightRange = 8;
-  attackRange = 4;
+  attackRange = 4
   optimalRange = this.attackRange;
   hostile = false;
   // 0 - No faction (ignores all, ignored by all)
@@ -85,7 +85,7 @@ export class BasicEnemyAI extends Entity {
           } else {
             this.MeleeAttack();
           }
-        } else if (distanceToTarget <= this.attackRange) {
+        } else if (distanceToTarget <= this.inventory.weaponSlot?.range!) {
           this.RangedAttack();
         }
       } else if (this.LastKnownTargetCoords) {

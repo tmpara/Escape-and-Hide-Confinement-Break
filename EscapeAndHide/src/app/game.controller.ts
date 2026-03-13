@@ -599,7 +599,7 @@ export class GameController {
       [cx, cy - 1],
       [cx, cy + 1],
     ];
-
+    
     const openSet: Set<string> = new Set([key(startX, startY)]);
     const gScore: Map<string, number> = new Map([[key(startX, startY), 0]]);
     const fScore: Map<string, number> = new Map([

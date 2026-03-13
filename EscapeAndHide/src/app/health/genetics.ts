@@ -4,12 +4,12 @@ import { Limbs } from "./limbs";
 
 export class Genetics {
     maxSlots = 16;
-    
+    Internals = new Internals;
 
-    //testGene: Gene = new Gene("Test Gene", "This is a test gene that increases blood amount in liver.", "Liver", ["additionalBlood +200"]);
+    testGene: Gene = new Gene("Test Gene", "This is a test gene that increases blood amount in liver.", "Liver", ["additionalBlood +200"]);
     //testAdvancedGene: AdvancedGene = new AdvancedGene("Test Advanced Gene", "This is a test advanced gene that increases blood regeneration in liver. and gives player 50% burn resistance", "Liver", ["bloodRegen +0.5"], ["burnResistance +0.5"]);
 
-    genes: Gene[] = [];
+    genes: Gene[] = [this.testGene];
     geneStorage: Gene[] = []; // This could be used to store genes that the player has collected but not yet activated.
 
     triggerGeneEffects(gene: Gene, internals: Internals) {
@@ -38,8 +38,42 @@ export class Genetics {
             }
         }
 
+    
+
         // Mark as applied so the effect isn't added repeatedly on each update.
         gene.applied = true;
+    }
+    
+    generateRandomNumber(min: number, max: number) {
+        return Math.floor(Math.random() * (max - min + 1) + min);
+    }
+
+    generateRandomGene(){
+
+        let selectedInternal = this.Internals.elements[this.generateRandomNumber(0,this.Internals.elements.length-1)]
+
+        let possibleStat:[[String],[Number]];
+
+        switch (selectedInternal){
+            case "Heart":
+               // possibleStat =
+            break;
+            case "Lungs":
+              //  possibleStat = ["hypoxemiaTolerance","additionalEnergy"]
+            break;
+            case "Brain":
+              //  possibleStat = ["additionalEnergy","additionalSanity","additionalAccuracy"]
+            break;
+            case "Liver":
+              //  possibleStat = ["additionalBlood","bloodRegen"]
+            break;
+        }
+
+        let selectedStat 
+
+        let description
+
+        let value
     }
 
 }

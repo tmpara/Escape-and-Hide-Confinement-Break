@@ -6,7 +6,9 @@ export class Internals{
     hypoxemiaTolerance: number = 0; // % of resistance to hypoxemia, which is caused by low blood levels. If this reaches 100%, the character becomes immune to hypoxemia and its effects.
     additionalSanity: number = 0;
     additionalAccuracy: number = 0;
+    elements:string[] = ["Heart","Lungs","Brain","Liver"]
 }
+
 //Each internal has a list of stats that it modifies, and a durability that can be damaged by certain afflictions.
 export class Heart extends Internals {
     override bloodRegen = 0;
