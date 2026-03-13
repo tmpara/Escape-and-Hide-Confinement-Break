@@ -134,7 +134,7 @@ export class RoomTransition extends Entity {
 
 export class ExplosiveBarrel extends Entity {
   override name = 'Explosive Barrel';
-  override sprite = '/sprites/entities/explosiveBarrel.png';
+  override sprite = '/sprites/entities/barrel_explosive1.png';
   override interactable = true;
   override collidable = true;
   override pushable = true;
@@ -143,6 +143,24 @@ export class ExplosiveBarrel extends Entity {
   override hiddenOutsideLOS = true;
   override blockLOS = false;
   override flammable = false;
+
+  override onSpawn() {
+    const skin = GameController.current?.generateRandomNumber(1,4)
+    switch(skin){
+      case 1:
+        this.sprite = '/sprites/entities/barrel_explosive1.png';
+        break;
+      case 2:
+        this.sprite = '/sprites/entities/barrel_explosive2.png';
+        break;
+      case 3:
+        this.sprite = '/sprites/entities/barrel_explosive3.png';
+        break;
+      case 4:
+        this.sprite = '/sprites/entities/barrel_explosive4.png';
+        break;
+    }
+  }
 
   override onTakeDamage() {
     GameController.current?.ignite(this.posX, this.posY, 100, true, true);
@@ -155,7 +173,7 @@ export class ExplosiveBarrel extends Entity {
 
 export class Crate extends Entity {
   override name = 'Crate';
-  override sprite = '/sprites/entities/crate.png';
+  override sprite = '/sprites/entities/crate1.png';
   override lootable = true;
   override interactable = true;
   override collidable = true;
@@ -166,11 +184,36 @@ export class Crate extends Entity {
   override blockLOS = false;
   override flammable = true;
   lootTable = [];
+
+  override onSpawn() {
+    const skin = GameController.current?.generateRandomNumber(1,6)
+    switch(skin){
+      case 1:
+        this.sprite = '/sprites/entities/crate1.png';
+        break;
+      case 2:
+        this.sprite = '/sprites/entities/crate2.png';
+        break;
+      case 3:
+        this.sprite = '/sprites/entities/crate3.png';
+        break;
+      case 4:
+        this.sprite = '/sprites/entities/crate4.png';
+        break;
+      case 5:
+        this.sprite = '/sprites/entities/crate5.png';
+        break;
+      case 6:
+        this.sprite = '/sprites/entities/crate6.png';
+        break;
+    }
+  }
+
 }
 
 export class WeaponCrate extends Entity {
   override name = 'Weapon Crate';
-  override sprite = '/sprites/entities/crate_weapon.png';
+  override sprite = '/sprites/entities/crate_military1.png';
   override lootable = true;
   override interactable = true;
   override collidable = true;
@@ -181,6 +224,22 @@ export class WeaponCrate extends Entity {
   override blockLOS = false;
   override flammable = true;
   lootTable = [new gun()];
+
+  override onSpawn() {
+    const skin = GameController.current?.generateRandomNumber(1,3)
+    switch(skin){
+      case 1:
+        this.sprite = '/sprites/entities/crate_military1.png';
+        break;
+      case 2:
+        this.sprite = '/sprites/entities/crate_military2.png';
+        break;
+      case 3:
+        this.sprite = '/sprites/entities/crate_military3.png';
+        break;
+    }
+  }
+
 }
 
 export class MedicalCrate extends Entity {
