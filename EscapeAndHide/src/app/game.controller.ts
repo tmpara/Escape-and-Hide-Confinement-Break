@@ -4,7 +4,7 @@ import { Text, Assets } from 'pixi.js';
 import { GameGrid } from './grid';
 import { World } from './world';
 import { Player } from './player';
-import { Item} from './items/items';
+import { Flamethrower, Item} from './items/items';
 import { WorldMapRenderer } from './worldMapRenderer';
 import { Inventory } from './inventory/inventory';
 import { Entity } from './entity';
@@ -105,9 +105,19 @@ export class GameController {
     await Assets.load('/sprites/entities/wall_corner.png');
     await Assets.load('/sprites/entities/door1.png');
     await Assets.load('/sprites/entities/glass_shards.png');
-    await Assets.load('/sprites/entities/explosiveBarrel.png');
-    await Assets.load('/sprites/entities/crate.png');
-    await Assets.load('/sprites/entities/crate_weapon.png');
+    await Assets.load('/sprites/entities/barrel_explosive1.png');
+    await Assets.load('/sprites/entities/barrel_explosive2.png');
+    await Assets.load('/sprites/entities/barrel_explosive3.png');
+    await Assets.load('/sprites/entities/barrel_explosive4.png');
+    await Assets.load('/sprites/entities/crate1.png');
+    await Assets.load('/sprites/entities/crate2.png');
+    await Assets.load('/sprites/entities/crate3.png');
+    await Assets.load('/sprites/entities/crate4.png');
+    await Assets.load('/sprites/entities/crate5.png');
+    await Assets.load('/sprites/entities/crate6.png');
+    await Assets.load('/sprites/entities/crate_military1.png');
+    await Assets.load('/sprites/entities/crate_military2.png');
+    await Assets.load('/sprites/entities/crate_military3.png');
     await Assets.load('/sprites/entities/crate_medical.png');
     await Assets.load('/sprites/entities/cryochamber.png');
     await Assets.load('/sprites/entities/elevatorsignwall.png');
@@ -161,6 +171,7 @@ export class GameController {
       backgroundColor: 0x222222,
       antialias: false,
       roundPixels: true,
+      resolution: window.devicePixelRatio,
     });
     container.style.width = '100%';
     container.style.height = '100%';
