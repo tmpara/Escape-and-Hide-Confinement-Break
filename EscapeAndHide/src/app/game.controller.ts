@@ -4,7 +4,7 @@ import { Text, Assets } from 'pixi.js';
 import { GameGrid } from './grid';
 import { World } from './world';
 import { Player } from './player';
-import { Item} from './items/items';
+import { Item, SmallGun} from './items/items';
 import { WorldMapRenderer } from './worldMapRenderer';
 import { Inventory } from './inventory/inventory';
 import { Entity } from './entity';
@@ -133,6 +133,8 @@ export class GameController {
     await Assets.load('/sprites/effects/fire_large.png');
     await Assets.load('/sprites/effects/fire_medium.png');
     await Assets.load('/sprites/effects/fire_small.png');
+
+  
 
     this.world.CreateWorld();
     while (
@@ -1381,6 +1383,19 @@ export class GameController {
     const x = 10;
     const y = 230;
 
+    const energyText = new Text({
+      text: Math.round(this.player1.Energy.currentEnergy) + ' / ' + Math.round(this.player1.Energy.maxEnergy) + ' kJ',
+      style: {
+        fontSize: 20,
+        fontFamily: 'Orbitron',
+        fill: '#ffffff',
+      },
+      anchor: 0.5,
+      y: y + barHeight / 2,
+      x: 100,
+    });
+    energyText.resolution = 2;
+
     // Background
     this.energyBar.beginFill(0x555555);
     this.energyBar.drawRect(x, y, barWidth, barHeight);
@@ -1391,6 +1406,7 @@ export class GameController {
       this.player1.Energy.currentEnergy / this.player1.Energy.maxEnergy;
     this.energyBar.beginFill(0xffff00);
     this.energyBar.drawRect(x, y, barWidth * energyPercentage, barHeight);
+    this.energyBar.addChild(energyText);
     this.energyBar.endFill();
   }
 
@@ -2812,6 +2828,7 @@ export class GameController {
               const weapon = this.player1.inventory.weaponSlot;
               console.log(weapon);
               console.log(entity[0].Health?.torso);
+              console.log(entity[0].Health?.currentHealth);
               if (weapon) {
                 weapon.use(entity[0]);
               }

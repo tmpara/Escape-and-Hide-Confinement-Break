@@ -9,10 +9,11 @@ export class Genetics {
     testGene: Gene = new Gene("Test Gene", "This is a test gene that increases blood amount in liver.", "Liver", ["additionalBlood +200"]);
     //testAdvancedGene: AdvancedGene = new AdvancedGene("Test Advanced Gene", "This is a test advanced gene that increases blood regeneration in liver. and gives player 50% burn resistance", "Liver", ["bloodRegen +0.5"], ["burnResistance +0.5"]);
 
-    genes: Gene[] = [this.testGene];
+    genes: Gene[] = [];
     geneStorage: Gene[] = []; // This could be used to store genes that the player has collected but not yet activated.
 
     triggerGeneEffects(gene: Gene, internals: Internals) {
+        //console.log(this.genes)
         // Only apply a gene once.
         if (gene.applied) return;
 
@@ -52,28 +53,34 @@ export class Genetics {
 
         let selectedInternal = this.Internals.elements[this.generateRandomNumber(0,this.Internals.elements.length-1)]
 
-        let possibleStat:[[String],[Number]];
+        let selectedStat: [string, number][] = [];
+
+        let quality = this.generateRandomNumber(-100,100)/100;
 
         switch (selectedInternal){
             case "Heart":
-               // possibleStat =
+                selectedStat.push(["bloodRegen", 5], ["additionalEnergy", 10]);
             break;
             case "Lungs":
-              //  possibleStat = ["hypoxemiaTolerance","additionalEnergy"]
+                selectedStat.push(["hypoxemiaTolerance", 15], ["additionalEnergy", 10]);
             break;
             case "Brain":
-              //  possibleStat = ["additionalEnergy","additionalSanity","additionalAccuracy"]
+                selectedStat.push(["additionalEnergy", 10], ["additionalSanity", 5], ["additionalAccuracy", 5]);
             break;
             case "Liver":
-              //  possibleStat = ["additionalBlood","bloodRegen"]
+                selectedStat.push(["additionalBlood", 500], ["bloodRegen", 5]);
             break;
+
+
+        }
+        for (let stat of selectedStat){
+            quality = this.generateRandomNumber(-100,100)/100;
+            stat[1] = Math.round(stat[1] * (quality));
         }
 
-        let selectedStat 
+        let description = `This gene enhances the ${selectedInternal} by providing the following bonuses: ${selectedStat.map(stat => `${stat[0]} ${stat[1]}`).join(", ")}.`;
 
-        let description
-
-        let value
+        return new Gene(`Random ${selectedInternal} Gene`, description, selectedInternal, selectedStat.map(stat => `${stat[0]} ${stat[1]}`));
     }
 
 }

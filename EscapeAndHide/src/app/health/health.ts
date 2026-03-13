@@ -139,7 +139,10 @@ export class Health {
       this.genetics.triggerGeneEffects(gene, this.liver);}
     });
     
-    this.maxHealth = 5000 + this.liver.additionalBlood;
+    // Apply genetic effects
+    //this.maxHealth = 5000 + this.liver.additionalBlood;
+    //this.regeneration = 1 + this.heart.bloodRegen + this.liver.bloodRegen;
+
 
 
     this.bloodLoss.severity = 0;

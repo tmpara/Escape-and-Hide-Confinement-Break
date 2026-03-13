@@ -42,6 +42,7 @@ export abstract class Entity {
   inventorySize = 0;
   inventory = new Inventory();
 
+
   takeDamage(user: any) {
     let targetLimb: LimbName = 'torso';
     if (!this.Health) return;
