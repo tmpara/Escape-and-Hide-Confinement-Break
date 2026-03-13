@@ -85,7 +85,7 @@ export class BasicEnemyAI extends Entity {
           } else {
             this.MeleeAttack();
           }
-        } else if (distanceToTarget <= this.attackRange) {
+        } else if (distanceToTarget <= this.inventory.weaponSlot?.range!) {
           this.RangedAttack();
         }
       } else if (this.LastKnownTargetCoords) {
@@ -110,7 +110,7 @@ export class BasicEnemyAI extends Entity {
         }
       }
       await (controller.delay?.(500) ??
-      new Promise((res) => setTimeout(res, 250)));
+        new Promise((res) => setTimeout(res, 250)));
       controller.drawGrid?.();
       controller.drawPlayer?.();
       this.energy -= 1;
@@ -146,11 +146,11 @@ export class BasicEnemyAI extends Entity {
   }
 
   handleTargets() {
-		this.Targets = []
-		let detectionRange = this.sightRange
-		if (this.alerted == true){
-			detectionRange = this.sightRange * 2
-		}
+    this.Targets = [];
+    let detectionRange = this.sightRange;
+    if (this.alerted == true) {
+      detectionRange = this.sightRange * 2;
+    }
     let entities: any[] = [];
     let tiles = GameController.current?.getTilesInSphere(
       this.posX,
@@ -174,22 +174,28 @@ export class BasicEnemyAI extends Entity {
           tile[1],
         );
         for (let i = 0; i < entities!.length; i++) {
-          if (entities![i] instanceof BasicEnemyAI || entities![i] instanceof Player) {
+          if (
+            entities![i] instanceof BasicEnemyAI ||
+            entities![i] instanceof Player
+          ) {
             if (
               (this.factionID == 4 && entities![i].factionID < 3) ||
               (this.factionID == 3 && entities![i].factionID < 3) ||
               (this.factionID == 2 && entities![i].factionID != 2) ||
               (this.factionID == 1 && entities![i].factionID != 1)
-            ){
+            ) {
               this.alerted = true;
-							this.Targets.push(entities![i]);
-						}
+              this.Targets.push(entities![i]);
+            }
           }
         }
-				//this.Targets.sort((a: Entity, b: Entity) => a.health - b.health)
-				if (this.Targets.length > 0){
-					this.LastKnownTargetCoords = [this.Targets![0].posX, this.Targets![0].posY];
-				}
+        //this.Targets.sort((a: Entity, b: Entity) => a.health - b.health)
+        if (this.Targets.length > 0) {
+          this.LastKnownTargetCoords = [
+            this.Targets![0].posX,
+            this.Targets![0].posY,
+          ];
+        }
       }
     });
   }
@@ -322,11 +328,8 @@ export class BasicEnemyAI extends Entity {
     let damageDealt = this.damage * 2;
     target.Health.damageLimb(targetLimb, [['Lacerations', damageDealt]]);
   }
-  
-  onAiTurnEnd(){
-    
-  }
 
+  onAiTurnEnd() {}
 }
 
 export class LightInterferanceUnitAI extends BasicEnemyAI {
@@ -346,7 +349,7 @@ export class LightInterferanceUnitAI extends BasicEnemyAI {
 
 export class MediumInterferanceUnitAI extends BasicEnemyAI {
   override hostile = true;
-	override factionID = 4;
+  override factionID = 4;
   override meleePreference = false;
   override maxEnergy = 3;
   override sightRange = 7;
@@ -417,7 +420,7 @@ export class MediumInterferanceUnitAI extends BasicEnemyAI {
 
 export class HeavyInterferanceUnitAI extends BasicEnemyAI {
   override hostile = true;
-	override factionID = 4;
+  override factionID = 4;
   override meleePreference = false;
   override maxEnergy = 2;
   override sightRange = 6;
@@ -485,7 +488,7 @@ export class HeavyInterferanceUnitAI extends BasicEnemyAI {
 
 export class OppressorUnitAI extends BasicEnemyAI {
   override hostile = true;
-	override factionID = 4;
+  override factionID = 4;
   override meleePreference = true;
   override maxEnergy = 7;
   override sightRange = 6;

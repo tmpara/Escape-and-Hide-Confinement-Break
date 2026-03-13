@@ -3,6 +3,7 @@ import { Health } from './health/health';
 import { Energy } from './energy/energy';
 import { GameController } from './game.controller';
 import { Genetics } from './health/genetics';
+import { SmallGun } from './items/items';
 
 export class Player extends Entity {
   gameController = GameController;
@@ -13,17 +14,22 @@ export class Player extends Entity {
   override hiddenOutsideLOS = false;
   override blockLOS = false;
   override flammable = true;
+  override Health = new Health(100, 100);
+  Energy = new Energy(100, 100);
   enableAnimating = true;
   playerId = 0;
-  override Health = new Health(5000, 5000);
-  Energy = new Energy(100, 100);
+
   renderX = this.posX;
   renderY = this.posY;
   factionID = 1;
 
+  constructor(){
+    super();
+    this.Health.setPlayerReference(this);
+  }
+
   playerAction(energyCost: number) {
     this.Energy.loseEnergy(energyCost);
-    this.Health.bleedingRegen();
     this.Health.updateAfflictions();
   }
 }

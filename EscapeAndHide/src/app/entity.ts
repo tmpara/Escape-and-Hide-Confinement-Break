@@ -13,13 +13,13 @@ export abstract class Entity {
   sizeOffsetY = 0;
   sizeX = 1;
   sizeY = 1;
-  rotation=0;
+  rotation = 0;
   posX = 0;
   posY = 0;
   zIndex = 5;
-  spriteCap= "";
-  spriteCorner = "";
-  connectsWith: string | null = null
+  spriteCap = '';
+  spriteCorner = '';
+  connectsWith: string | null = null;
   tags: string[] | null = null;
   interactable = false;
   collidable = false;
@@ -42,37 +42,7 @@ export abstract class Entity {
   inventorySize = 0;
   inventory = new Inventory();
 
-  takeDamage(user: any) {
-    let targetLimb: LimbName = 'torso';
-    if (!this.Health) return;
-    let miss = Math.random();
-    if (miss > user.accuracy) {
-      return; //missed attack
-    } else if (miss > user.accuracy * 2) {
-      const limbs: LimbName[] = [
-        'head',
-        'leftArm',
-        'rightArm',
-        'leftLeg',
-        'rightLeg',
-      ];
-      const randomIndex = Math.floor(Math.random() * limbs.length);
-      targetLimb = limbs[randomIndex];
-    }
-    let afflictions: affliction[] = [];
-    if (
-      user &&
-      user.inventory.weaponSlot &&
-      Array.isArray(user.inventory.weaponSlot.afflictions)
-    ) {
-      for (const a of user.inventory.weaponSlot.afflictions) {
-        if (Array.isArray(a) && a.length >= 2) {
-          afflictions.push([a[0], a[1]]);
-        }
-      }
-    }
-    this.Health.damageLimb(targetLimb, afflictions);
-  }
+  takeDamage(user: any) {}
 
   takeStructureDamage(damage: number) {
     this.onTakeDamage(damage);
@@ -82,23 +52,6 @@ export abstract class Entity {
     );
     if (this.health <= 0) {
       this.destroy();
-    }
-  }
-
-  heal(amount: number) {
-    this.onHeal(amount);
-    if (this.damageable == true && this.destroyed == false) {
-      if (this.Health) {
-        this.Health.currentHealth += amount;
-        if (this.Health.currentHealth > this.Health.maxHealth) {
-          this.Health.currentHealth = this.Health.maxHealth;
-        }
-      } else {
-        this.health += amount;
-        if (this.health > this.maxHealth) {
-          this.health = this.maxHealth;
-        }
-      }
     }
   }
 

@@ -18,11 +18,11 @@ export abstract class Item {
   checkForMiss(target: Entity) {
     const roll = Math.random();
     if (roll > this.accuracy) return null;
-    
+
     if (!target.Health) return 'isStructure';
 
     const limbRoll = Math.random();
-    if (limbRoll > this.accuracy * 2) {
+    if (limbRoll > this.accuracy * 1.5) {
       const limbs: LimbName[] = [
         'head',
         'leftArm',
@@ -82,13 +82,12 @@ export class SmallGun extends Item {
     } else if (targetLimb) {
       let afflictions: affliction[] = [];
       for (const affliction of this.afflictions) {
-        if (Array.isArray(affliction) && affliction.length >= 2) {
-          afflictions.push([affliction[0] as string, affliction[1] as number]);
-        }
+        afflictions.push([affliction[0] as string, affliction[1] as number]);
       }
       if (target.Health) {
         target.Health.damageLimb(targetLimb as LimbName, afflictions);
-        if(target.Health.currentHealth <= 0) {
+        target.Health.torso.gunshotWound.severity;
+        if (target.Health.currentHealth <= 0) {
           target.destroy();
         }
       }
@@ -117,13 +116,11 @@ export class BigGun extends Item {
       } else if (targetLimb) {
         let afflictions: affliction[] = [];
         for (const affliction of this.afflictions) {
-          if (Array.isArray(affliction) && affliction.length >= 2) {
-            afflictions.push([affliction[0] as string, affliction[1] as number]);
-          }
+          afflictions.push([affliction[0] as string, affliction[1] as number]);
         }
         if (target.Health) {
           target.Health.damageLimb(targetLimb as LimbName, afflictions);
-          if(target.Health.currentHealth <= 0) {
+          if (target.Health.currentHealth <= 0) {
             target.destroy();
           }
         }
@@ -143,12 +140,15 @@ export class Flamethrower extends Item {
   override use(target: Entity) {
     const controller = GameController.current;
     if (!controller) return;
-    
+
     const player = controller.player1;
     if (!player) return;
 
-    const firingAngle = Math.atan2(target.posY - player.posY, target.posX - player.posX);
-    
+    const firingAngle = Math.atan2(
+      target.posY - player.posY,
+      target.posX - player.posX,
+    );
+
     const coneTiles = controller.getTilesInCone(
       player.posX,
       player.posY,
@@ -164,9 +164,15 @@ export class Flamethrower extends Item {
         Math.abs(y - player.posY),
       );
       let fireChance = controller.generateRandomNumber(1, tileRange);
-      
+
       if (fireChance <= 2) {
-        controller.ignite(x, y, this.structureDamage - tileRange * 2, true, true);
+        controller.ignite(
+          x,
+          y,
+          this.structureDamage - tileRange * 2,
+          true,
+          true,
+        );
       }
 
       for (const entity of entities) {
@@ -174,9 +180,10 @@ export class Flamethrower extends Item {
           if (entity.Health) {
             let afflictions: affliction[] = [];
             for (const affliction of this.afflictions) {
-              if (Array.isArray(affliction) && affliction.length >= 2) {
-                afflictions.push([affliction[0] as string, affliction[1] as number]);
-              }
+              afflictions.push([
+                affliction[0] as string,
+                affliction[1] as number,
+              ]);
             }
             entity.Health.damageLimb('torso', afflictions);
           }
@@ -195,23 +202,22 @@ export class StunGun extends Item {
   override slot = 'weapon';
   override afflictions = [
     ['Zapped', 10],
-    ['Lacerations', 2],
+    ['Lacerations', 10],
     ['Bleeding', 2],
   ];
 
   override use(target: Entity) {
-    debugger;
     const targetLimb = this.checkForMiss(target);
     if (targetLimb == 'isStructure') {
       target.takeStructureDamage(this.structureDamage);
     } else if (targetLimb) {
       let afflictions: affliction[] = [];
       for (const affliction of this.afflictions) {
-          afflictions.push([affliction[0] as string, affliction[1] as number]);
+        afflictions.push([affliction[0] as string, affliction[1] as number]);
       }
       if (target.Health) {
         target.Health.damageLimb(targetLimb as LimbName, afflictions);
-        if(target.Health.currentHealth <= 0) {
+        if (target.Health.currentHealth <= 0) {
           target.destroy();
         }
       }

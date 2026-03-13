@@ -309,7 +309,6 @@ setRoomByEntrance(leftEntranceRequired: boolean, upEntranceRequired: boolean, ri
 
     loadRoomWithId(worldX:number,worldY:number,id: keyof RoomsData){
         if(this.data[id]==undefined){
-            debugger
         }
         let x = (this.data[id] as any).width;
         let y = (this.data[id] as any).height;

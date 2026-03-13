@@ -7,12 +7,15 @@ import {
   GunshotWound,
 } from './afflictions';
 export class Limbs {
+  currentHealth = 100;
+  maxHealth = this.currentHealth;
   bleeding: Bleeding = new Bleeding();
   lacerations: Lacerations = new Lacerations();
   fracture: Fracture = new Fracture();
   zapped: Zapped = new Zapped();
   burn: Burn = new Burn();
   gunshotWound: GunshotWound = new GunshotWound();
+  damagingAfflictions = [Lacerations, Burn, GunshotWound];
   constructor() {}
 
   addBleeding(amount: number) {
@@ -46,6 +49,7 @@ export class Limbs {
         ', GunshotWound: \n' +
         this.gunshotWound.severity,
     );
+    console.log(this.currentHealth);
     return [
       this.bleeding,
       this.lacerations,
@@ -58,35 +62,47 @@ export class Limbs {
 }
 
 export class LeftArm extends Limbs {
+  override currentHealth = 50;
+  override maxHealth = this.currentHealth;
   constructor() {
     super();
   }
 }
 export class RightArm extends Limbs {
+  override currentHealth = 50;
+  override maxHealth = this.currentHealth;
   constructor() {
     super();
   }
 }
 
 export class LefLeg extends Limbs {
+  override currentHealth = 50;
+  override maxHealth = this.currentHealth;
   constructor() {
     super();
   }
 }
 
 export class RightLeg extends Limbs {
+  override currentHealth = 50;
+  override maxHealth = this.currentHealth;
   constructor() {
     super();
   }
 }
 
 export class Head extends Limbs {
+  override currentHealth = 40;
+  override maxHealth = this.currentHealth;
   constructor() {
     super();
   }
 }
 
 export class Torso extends Limbs {
+  override currentHealth = 100;
+  override maxHealth = this.currentHealth;
   constructor() {
     super();
   }

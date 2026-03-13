@@ -1,6 +1,7 @@
 export class Afflcition {
-  maxSeverity: number = 100;
-  severity: number = 0;
+  name = ' ';
+  maxSeverity = 100;
+  severity = 0;
   constructor() {}
   increaseSeverity(amount: number) {
     if (this.severity + amount > this.maxSeverity) {
@@ -26,7 +27,7 @@ export class Hypoxemia extends Afflcition {
 }
 
 export class Bleeding extends Afflcition {
-  name: string = 'Bleeding';
+  override name = 'Bleeding';
   override maxSeverity: number = 100;
   constructor() {
     super();
@@ -37,43 +38,43 @@ export class Bleeding extends Afflcition {
 }
 
 export class Bloodloss extends Afflcition {
-  name: string = 'Bloodloss';
-  override maxSeverity: number = 500;
+  override name = 'Bloodloss';
+  override maxSeverity: number = 100;
   constructor() {
     super();
   }
 }
 
 export class Lacerations extends Afflcition {
-  name: string = 'Lacerations';
+  override name = 'Lacerations';
   constructor() {
     super();
   }
 }
 
 export class Fracture extends Afflcition {
-  name: string = 'Fracture';
+  override name = 'Fracture';
   constructor() {
     super();
   }
 }
 
 export class Burn extends Afflcition {
-  name: string = 'Burn';
+  override name = 'Burn';
   constructor() {
     super();
   }
 }
 
 export class GunshotWound extends Afflcition {
-  name: string = 'GunshotWound';
+  override name = 'GunshotWound';
   constructor() {
     super();
   }
 }
 
 export class Zapped extends Afflcition {
-  name: string = 'Zapped';
+  override name = 'Zapped';
   constructor() {
     super();
   }

@@ -1296,7 +1296,7 @@ export class GameController {
     const y = 205;
 
     const healthText = new Text({
-      text: Math.round(this.player1.Health.currentHealth) + ' ml',
+      text: Math.round(this.player1.Health.currentHealth),
       style: {
         fontSize: 20,
         fontFamily: 'Orbitron',
@@ -1304,74 +1304,69 @@ export class GameController {
       },
       anchor: 0.5,
       y: y + barHeight / 2,
-      x: 100,
+      x: 110,
     });
     healthText.resolution = 2;
 
     // Background
-    this.healthBar.drawRect(x, y, barWidth, barHeight);
     this.healthBar.beginFill(0x555555);
+    this.healthBar.drawRect(x, y, barWidth, barHeight);
     this.healthBar.endFill();
 
-    const bleedingPercentage = Math.min(
-      this.player1.Health.bloodLoss.severity / this.player1.Health.maxHealth,
-      1,
-    );
-    const regenPercentage = Math.min(
-      this.player1.Health.regeneration / this.player1.Health.maxHealth,
-      1,
-    );
-
-    // Health
+    // Energy
     const healthPercentage =
-      this.player1.Health.currentHealth / this.player1.Health.maxHealth;
+    this.player1.Health.currentHealth / this.player1.Health.maxHealth;
     this.healthBar.beginFill(0xff0000);
     this.healthBar.drawRect(x, y, barWidth * healthPercentage, barHeight);
     this.healthBar.addChild(healthText);
     this.healthBar.endFill();
-
-    // Bleeding effect
-    if (
-      this.player1.Health.currentHealth > 0 &&
-      this.player1.Health.bloodLoss.severity > 0 &&
-      bleedingPercentage > regenPercentage
-    ) {
-      this.healthBar.beginFill(0xffff00);
-      this.healthBar.drawRect(
-        x + barWidth * (healthPercentage - bleedingPercentage),
-        y,
-        barWidth * bleedingPercentage,
-        barHeight,
-      );
-      this.healthBar.endFill();
-    }
-
-    // Regeneration effect
-    if (
-      this.player1.Health.regeneration > 0 &&
-      this.player1.Health.currentHealth < this.player1.Health.maxHealth
-    ) {
-      let regenBarX = x + barWidth * healthPercentage;
-      let regenBarWidth = barWidth * regenPercentage;
-      if (
-        this.player1.Health.bloodLoss.severity > 0 &&
-        regenPercentage < bleedingPercentage
-      ) {
-        regenBarX = x + barWidth * (healthPercentage - bleedingPercentage);
-      } else if (
-        this.player1.Health.currentHealth + this.player1.Health.regeneration >
-        this.player1.Health.maxHealth
-      ) {
-        regenBarWidth =
-          barWidth *
-          ((this.player1.Health.maxHealth - this.player1.Health.currentHealth) /
-            this.player1.Health.maxHealth);
-      }
-      this.healthBar.beginFill(0x00ff00);
-      this.healthBar.drawRect(regenBarX, y, regenBarWidth, barHeight);
-      this.healthBar.endFill();
-    }
   }
+
+    // Background
+    // this.healthBar.drawRect(x, y, barWidth, barHeight);
+    // this.healthBar.beginFill(0x555555);
+    // this.healthBar.endFill();
+
+    // const bleedingPercentage = Math.min(
+    //   this.player1.Health.bloodLoss.severity / this.player1.Health.maxHealth,
+    //   1,
+    // );
+    // const regenPercentage = Math.min(
+    //   this.player1.Health.regeneration / this.player1.Health.maxHealth,
+    //   1,
+    // );
+
+    // // Health
+    // const healthPercentage =
+    //   this.player1.Health.currentHealth / this.player1.Health.maxHealth;
+    // this.healthBar.beginFill(0xff0000);
+    // this.healthBar.drawRect(x, y, barWidth * healthPercentage, barHeight);
+    // this.healthBar.addChild(healthText);
+    // this.healthBar.endFill();
+
+    // // Bleeding effect
+    // if (
+    //   this.player1.Health.currentHealth > 0 &&
+    //   this.player1.Health.bloodLoss.severity > 0 &&
+    //   bleedingPercentage > regenPercentage
+    // ) {
+    //   this.healthBar.beginFill(0xffff00);
+    //   this.healthBar.drawRect(
+    //     x + barWidth * (healthPercentage - bleedingPercentage),
+    //     y,
+    //     barWidth * bleedingPercentage,
+    //     barHeight,
+    //   );
+    //   this.healthBar.endFill();
+    // }
+
+    // // Regeneration effect
+    // if (
+    //   this.player1.Health.regeneration > 0 &&
+    //   this.player1.Health.currentHealth < this.player1.Health.maxHealth
+    // ) {
+    // }
+  // }
 
   drawEnergyBar() {
     this.energyBar.removeChildren();
@@ -2618,7 +2613,7 @@ export class GameController {
       let targetY = player.posY;
      
 
-      if(this.enemyTurn){
+      if(this.enemyTurn || player.destroyed){
         return;
       }
 
@@ -2649,7 +2644,7 @@ export class GameController {
 
   listenForInput(player: Player) {
     window.addEventListener('keydown', (event) => {
-      if(this.enemyTurn){
+      if(this.enemyTurn || player.destroyed){
         return;
       }
       this.setGridFlag(true);
@@ -2812,6 +2807,7 @@ export class GameController {
               const weapon = this.player1.inventory.weaponSlot;
               console.log(weapon);
               console.log(entity[0].Health?.torso);
+              console.log(entity[0].Health?.currentHealth)
               if (weapon) {
                 weapon.use(entity[0]);
               }

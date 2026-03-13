@@ -78,9 +78,8 @@ export class Inventory {
   }
 
   drop(item: Item, isEquipped: boolean) {
-    const x = GameController.current?.player1.posX;
-    const y = GameController.current?.player1.posY;
-    if (typeof x !== 'number' || typeof y !== 'number') return;
+    const x = GameController.current?.player1.posX!;
+    const y = GameController.current?.player1.posY!;
     if (GameController.current?.map.tiles[x][y].item == null) {
       if (isEquipped) {
         this.unequip(item);
@@ -97,7 +96,7 @@ export class Inventory {
       }
       this.shiftItems();
     }
-    this.shiftItems()
+    this.shiftItems();
   }
 
   getItems(): Item[] {

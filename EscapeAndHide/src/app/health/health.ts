@@ -13,17 +13,13 @@ import {
   Lacerations,
   Fracture,
   Bloodloss,
+  Afflcition,
 } from './afflictions';
 
 import { Genetics } from './genetics';
 import { GameController } from '../game.controller';
-import { 
-  Internals,
-  Heart,
-  Lungs,
-  Brain,
-  Liver,
-} from './internals';
+import { Internals, Heart, Lungs, Brain, Liver } from './internals';
+import { Player } from '../player';
 export type LimbName =
   | 'leftArm'
   | 'rightArm'
@@ -37,10 +33,12 @@ export class Health {
   gameController = GameController;
   genetics = new Genetics();
   genes = this.genetics.genes;
-  maxHealth: number = 5000;
-  currentHealth: number = 5000;
+  maxHealth: number = 100;
+  currentHealth: number = 100;
   regeneration: number = 1;
   isUnconscious: boolean = false;
+
+  playerEntity!: Player;
 
   heart: Heart = new Heart();
   lungs: Lungs = new Lungs();
@@ -67,17 +65,22 @@ export class Health {
   constructor(maxHealth: number, currentHealth: number) {
     this.maxHealth = maxHealth;
     this.currentHealth = currentHealth;
+
   }
 
+  setPlayerReference(playerEntity: Player){
+    this.playerEntity = playerEntity;
+  } 
+
   updateBars() {
-      GameController.current?.setHealthBarFlag(true);
-      GameController.current?.setEnergyBarFlag(true);
+    GameController.current?.setHealthBarFlag(true);
+    GameController.current?.setEnergyBarFlag(true);
   }
 
   hitRandomLimb(bleedingIncrease: number) {}
-  
-  damageLimb(limb: LimbName, afflictions: affliction[]) {  
-  for (let affliction of afflictions) {
+
+  damageLimb(limb: LimbName, afflictions: affliction[]) {
+    for (let affliction of afflictions) {
       if (affliction[0] == 'Lacerations') {
         this[limb].lacerations.increaseSeverity(affliction[1]);
       }
@@ -101,7 +104,6 @@ export class Health {
   }
 
   healLimb(afflictionType: affliction[]) {
-    
     const limb = GameController.current?.selectedLimb as LimbName;
     for (let affliction of afflictionType) {
       if (affliction[0] === 'Lacerations') {
@@ -125,44 +127,43 @@ export class Health {
     }
     this.updateAfflictions();
   }
+
   updateAfflictions() {
     //Genetic effects
-
-    this.genetics.genes.forEach((gene) => {
-      this.genetics.triggerGeneEffects(gene, this.heart);
-      this.genetics.triggerGeneEffects(gene, this.lungs);
-      this.genetics.triggerGeneEffects(gene, this.brain);
-      this.genetics.triggerGeneEffects(gene, this.liver);
-    });
-    
-    this.maxHealth = 5000 + this.liver.additionalBlood;
-
+    // this.genetics.genes.forEach((gene) => {
+    //   this.genetics.triggerGeneEffects(gene, this.heart);
+    //   this.genetics.triggerGeneEffects(gene, this.lungs);
+    //   this.genetics.triggerGeneEffects(gene, this.brain);
+    //   this.genetics.triggerGeneEffects(gene, this.liver);
+    // });
 
     this.bloodLoss.severity = 0;
+    this.currentHealth = this.maxHealth;
     for (let limb of this.limbs) {
-      this.bloodLoss.increaseSeverity(limb.bleeding.severity);
-    }
-    this.currentHealth -= this.bloodLoss.severity;
-    if (this.currentHealth < 0) {
-      this.currentHealth = 0;
-    } else {
-      if (this.currentHealth + this.regeneration < this.maxHealth) {
-        this.currentHealth += this.regeneration;
-      } else {
-        this.currentHealth = this.maxHealth;
+      this.bloodLoss.increaseSeverity(
+        limb.bleeding.severity / this.limbs.length,
+      );
+
+      
+      const afflictions = limb.damagingAfflictions;
+      limb.currentHealth = limb.maxHealth;
+      for (let affliction of afflictions) {
+        limb.currentHealth -= affliction.severity;
+        this.currentHealth -= affliction.severity / this.limbs.length;
+        if (limb.currentHealth <= 0 && this.playerEntity) {
+          this.playerEntity.destroy();
+        }
       }
     }
-    if (
-      this.currentHealth < this.maxHealth * 0.5 &&
-      this.hypoxemia.severity < 100
-    ) {
-      this.hypoxemia.increaseSeverity(this.bloodLoss.severity / 20);
-      if (this.hypoxemia.severity >= 100) {
-        this.isUnconscious = true;
-      }
-    }
+    Math.round(this.bloodLoss.severity);
+
     this.updateBars();
     this.gameController.current?.setAfflictionsFlag(true);
+  }
+
+  removeLimb(limb: Limbs) {
+    const index = this.limbs.indexOf(limb);
+    this.limbs.splice(index, 1);
   }
 
   bleedingRegen() {

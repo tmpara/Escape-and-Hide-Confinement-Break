@@ -26,7 +26,6 @@ export class Dummy extends Entity {
   override deadSprite = '/sprites/npc/dummyDead.png';
   override posX = 0;
   override posY = 0;
-
   override collidable = true;
   override damageable = true;
   override Health = new Health(10, 10);
@@ -68,7 +67,7 @@ export class HeavyDummy extends Entity {
   override zIndex = 3;
   override collidable = true;
   override damageable = true;
-  override Health = new Health(5000, 5000);
+  override Health = new Health(100, 100);
   override hiddenOutsideLOS = true;
   override blockLOS = false;
   override flammable = true;
@@ -107,7 +106,7 @@ export class LightInterferanceUnit extends LightInterferanceUnitAI {
   override deadSprite = '/sprites/npc/heavyDummyDead.png';
   override collidable = true;
   override damageable = true;
-  override Health = new Health(1000, 1000);
+  override Health = new Health(100, 100);
   override hiddenOutsideLOS = true;
   override blockLOS = false;
   override flammable = true;
@@ -138,7 +137,7 @@ export class MediumInterferanceUnit extends MediumInterferanceUnitAI {
   override sprite = '/sprites/npc/heavyDummy.png';
   override collidable = true;
   override damageable = true;
-  override Health = new Health(2500, 2500);
+  override Health = new Health(100, 100);
   override hiddenOutsideLOS = true;
   override blockLOS = false;
   override flammable = true;
@@ -159,7 +158,7 @@ export class HeavyInterferanceUnit extends HeavyInterferanceUnitAI {
   override sprite = '/sprites/npc/heavyDummy.png';
   override collidable = true;
   override damageable = true;
-  override Health = new Health(5000, 5000);
+  override Health = new Health(100, 100);
   override hiddenOutsideLOS = true;
   override blockLOS = false;
   override flammable = true;
